@@ -18,10 +18,18 @@ class RequestStaffController extends Controller
         $user = Auth::user();
         $outlet = Outlet::with('owner') -> get();
         $jmlOutlet = $outlet->count();
+        $statusreq = RequestRole::with([
+            'owner:id,name',
+            'outlet:id,nama_outlet'
+        ])
+        ->where('id_staff', Auth::id())
+        ->get();
+
         return Inertia::render('akun_users/request_menjadi_staff',[
             'outlets' => $outlet,
             'jmlOutlet' => $jmlOutlet,
-            'user_id' => $user->id
+            'user_id' => $user->id,
+            'statusreq' => $statusreq
         ]);
     }
 

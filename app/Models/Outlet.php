@@ -20,9 +20,10 @@ class Outlet extends Model
         'telp',
     ];
 
-    public function user()
+    public function users()
     {
-        return $this->belongsToMany(User::class)
+        return $this->belongsToMany(User::class, 'outlet_user')
+        ->withPivot('role_id')
         ->withTimestamps();
     }
 

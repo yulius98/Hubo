@@ -36,6 +36,7 @@ class RequestRole extends Model
 
     public function outlet()
     {
-        return $this->belongsTo(Role::class, 'id_outlet');
+        return $this->belongsTo(Outlet::class, 'id_outlet');
     }
+    
 }

@@ -5,13 +5,13 @@ use App\Http\Controllers\KategoriController;
 use App\Http\Controllers\KelolaProdukController;
 use App\Http\Controllers\OutletController;
 use App\Http\Controllers\ProdukController;
+use App\Http\Controllers\RequestRoleController;
 use App\Http\Controllers\RequestStaffController;
 use App\Http\Controllers\WelcomeController;
 use Illuminate\Support\Facades\Route;
 use Inertia\Inertia;
 use Laravel\WorkOS\Http\Middleware\ValidateSessionWithWorkOS;
 
-//Route::get('/', fn () => Inertia::render('welcome'))->name('home');
 Route::get('/',[WelcomeController::class, 'index'])->name('welcome');
 
 
@@ -47,6 +47,10 @@ Route::middleware(['auth',ValidateSessionWithWorkOS::class,])->group(function ()
 
     Route::get('req_staff', [RequestStaffController::class, 'index'])->name('req_staff');
     Route::post('req_staff', [RequestStaffController::class,'store'])->name('req_staff.add');
+
+    Route::get('add_staff/{outlet_id}', [RequestRoleController::class, 'index'])->name('add_staff');
+    Route::put('add_staff/{id}/terima',[RequestRoleController::class, 'terima'])->name('terima_staff');
+    Route::put('add_staff/{id}/tolak',[RequestRoleController::class, 'tolak'])->name('tolak_staff');
 
 
 

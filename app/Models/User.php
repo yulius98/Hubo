@@ -2,7 +2,6 @@
 
 namespace App\Models;
 
-// use Illuminate\Contracts\Auth\MustVerifyEmail;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\SoftDeletes;
@@ -79,9 +78,10 @@ class User extends Authenticatable
         return $this->hasMany(KeranjangBelanjaKasir::class , 'id_user');
     }
 
-    public function outlet()
+    public function outlets()
     {
-        return $this->belongsToMany(Outlet::class)
+        return $this->belongsToMany(Outlet::class,'outlet_user')
+            ->withPivot('role_id')
             ->withTimestamps();
     }
 
@@ -95,10 +95,14 @@ class User extends Authenticatable
     {
         static::created(function ($user) {
 
-            $defaultRole = Role::where('role', 'user')->first();
+            static $defaultRoleId = null;
 
-            if ($defaultRole) {
-                $user->role()->syncWithoutDetaching([$defaultRole->id]);
+            if (!$defaultRoleId) {
+                $defaultRoleId = Role::where('role', 'user')->value('id');
+            }
+
+            if ($defaultRoleId) {
+                $user->role()->syncWithoutDetaching([$defaultRoleId]);
             }
 
         });

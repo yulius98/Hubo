@@ -80,9 +80,8 @@ export function AppSidebar({ onNavigate }: { onNavigate?: (page: 'dashboard' | '
     const { auth } = usePage().props;
 
     // Check user roles
-    const hasAdminAppRole = auth.user?.role?.some((r: any) => r.role === 'admin app') || false;
-    console.log('role :',hasAdminAppRole)
-
+    const hasAdminAppRole =
+        auth.user?.role?.some((r: any) => r.role === 'admin app') || false;
 
     // Filter nav items based on role
     const filteredNavItems = mainNavItems.filter(item => {

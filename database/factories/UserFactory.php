@@ -20,7 +20,7 @@ class UserFactory extends Factory
 
         return [
             'name' => fake()->name(),
-            'email' => 'yulius.wijaya98@gmail.com',
+            'email' => fake()->unique()->safeEmail(),
             'email_verified_at' => now(),
             'workos_id' => 'fake-'.Str::random(10),
             'avatar' => '',

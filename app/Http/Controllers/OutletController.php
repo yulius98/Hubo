@@ -13,14 +13,18 @@ use Illuminate\Support\Facades\File;
 
 class OutletController extends Controller
 {
+
+    private const STORAGE_OUTLET_PATH = 'app/public/outlets';
+    private const PUBLIC_OUTLET_PATH  = 'storage/outlets';
     /**
      * Display a listing of the resource.
      */
     public function index()
     {
-        $dtoutlet = Auth::user()->outlet;
-        $jmloutlet = count($dtoutlet);
-        return Inertia::render('akun_users/outlet_user_page',['outlets' => $dtoutlet, 'jmlOutlet' => $jmloutlet]);
+
+        $dtoutlet = Auth::user()->outlets;
+        $jmloutlet = $dtoutlet ? count($dtoutlet) : 0;
+        return Inertia::render('akun_users/outlet_user_page',['outlets' => $dtoutlet ?? [], 'jmlOutlet' => $jmloutlet]);
     }
 
     /**
@@ -61,7 +65,7 @@ class OutletController extends Controller
             $image->toWebp(80);
 
             // Simpan langsung ke folder public/outlets
-            $destinationPath = storage_path('app/public/outlets');
+            $destinationPath = storage_path(self::STORAGE_OUTLET_PATH);
 
             if (!File::exists($destinationPath)) {
                 File::makeDirectory($destinationPath, 0755, true);
@@ -76,7 +80,9 @@ class OutletController extends Controller
 
         $outlet = Outlet::create($validated);
         $user = Auth::user();
-        $user->outlet()->attach($outlet->id);
+        $user->outlet()->attach($outlet->id, [
+            'role_id' => 2
+        ]);
         $user->role()->syncWithoutDetaching([2]);
 
 
@@ -115,8 +121,8 @@ class OutletController extends Controller
 
         if ($request->hasFile('gambar')) {
             // Hapus gambar lama jika ada
-            if ($outlet->gambar && file_exists(storage_path('app/public/outlets/' . basename($outlet->gambar)))) {
-                unlink(storage_path('app/public/outlets/' . basename($outlet->gambar)));
+            if ($outlet->gambar && file_exists(storage_path(self::STORAGE_OUTLET_PATH . '/' . basename($outlet->gambar)))) {
+                unlink(storage_path(self::STORAGE_OUTLET_PATH . '/' . basename($outlet->gambar)));
             }
 
             $file = $request->file('gambar');
@@ -135,7 +141,7 @@ class OutletController extends Controller
             }
 
             $image->save($destinationPath . '/' . $filename);
-            $validated['gambar'] = 'storage/outlets/' . $filename;
+            $validated['gambar'] = self::PUBLIC_OUTLET_PATH . '/' . $filename;
         } else {
             // Jika tidak ada file baru, hapus dari validated agar tidak overwrite
             unset($validated['gambar']);
@@ -155,8 +161,8 @@ class OutletController extends Controller
     public function destroy(Outlet $outlet)
     {
         // Hapus gambar jika ada
-        if ($outlet->gambar && file_exists(storage_path('app/public/outlets/' . basename($outlet->gambar)))) {
-            unlink(storage_path('app/public/outlets/' . basename($outlet->gambar)));
+        if ($outlet->gambar && file_exists(storage_path(self::STORAGE_OUTLET_PATH . '/' . basename($outlet->gambar)))) {
+            unlink(storage_path(self::STORAGE_OUTLET_PATH . '/' . basename($outlet->gambar)));
         }
 
         $outlet->delete();

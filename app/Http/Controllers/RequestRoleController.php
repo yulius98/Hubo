@@ -3,16 +3,58 @@
 namespace App\Http\Controllers;
 
 use App\Models\RequestRole;
+use App\Models\User;
 use Illuminate\Http\Request;
+use Inertia\Inertia;
 
 class RequestRoleController extends Controller
 {
     /**
      * Display a listing of the resource.
      */
-    public function index()
+    public function index($outlet_id)
     {
-        //
+
+        $add_staff = RequestRole::with([
+            'staff:id,name',
+            'role:id,role'
+        ])
+        -> where ('id_outlet', $outlet_id)
+        -> where ('status', 'pending')
+        -> get();
+
+        return inertia::render('akun_users/tambah_staff',['add_staff' => $add_staff]);
+    }
+
+    public function terima($id)
+    {
+        $data_staf = RequestRole::findOrFail($id);
+        $user = User::findOrFail($data_staf->id_staff);
+        $user->outlets()->attach(2, [
+            'role_id' => 3
+        ]);
+
+        RequestRole::where('id', $id)
+        ->update([
+            'status' => 'done',
+        ]);
+
+
+
+        return redirect()->back()->with('success', 'Request berhasil dikirim');
+
+    }
+
+    public function tolak($id)
+    {
+
+        RequestRole::where('id', $id)
+        ->update([
+            'status' => 'reject',
+        ]);
+
+        return redirect()->back()->with('success', 'Request berhasil ditolak');
+
     }
 
     /**

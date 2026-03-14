@@ -7,6 +7,7 @@ use App\Models\User;
 use Illuminate\Http\Request;
 use Inertia\Inertia;
 
+
 class RequestRoleController extends Controller
 {
     /**
@@ -19,7 +20,7 @@ class RequestRoleController extends Controller
             'staff:id,name',
             'role:id,role'
         ])
-        -> where ('id_outlet', $outlet_id)
+        -> where ('outlet_id', $outlet_id)
         -> where ('status', 'pending')
         -> get();
 
@@ -29,15 +30,21 @@ class RequestRoleController extends Controller
     public function terima($id)
     {
         $data_staf = RequestRole::findOrFail($id);
-        $user = User::findOrFail($data_staf->id_staff);
-        $user->outlets()->attach(2, [
-            'role_id' => 3
-        ]);
+        $user = User::findOrFail($data_staf->user_id);
+        $user->outlets()->attach(
+            $data_staf->outlet_id,
+            ['role_id' => $data_staf->role_id]
+        );
 
         RequestRole::where('id', $id)
         ->update([
             'status' => 'done',
         ]);
+
+        $user->role()->attach(
+            $data_staf->user_id,
+            ['role_id' => $data_staf->role_id]
+        );
 
 
 

@@ -13,14 +13,14 @@ return new class extends Migration
     {
         Schema::create('request_roles', function (Blueprint $table) {
             $table->id();
-            $table->unsignedBigInteger('id_staff');
-            $table->foreign('id_staff')->references('id')->on('users')->onDelete('cascade');
-            $table->unsignedBigInteger('id_owner');
-            $table->foreign('id_owner')->references('id')->on('users')->onDelete('cascade');
-            $table->unsignedBigInteger('id_role');
-            $table->foreign('id_role')->references('id')->on('roles')->onDelete('cascade');
-            $table->unsignedBigInteger('id_outlet');
-            $table->foreign('id_outlet')->references('id')->on('outlets')->onDelete('cascade');
+            $table->unsignedBigInteger('user_id');
+            $table->foreign('user_id')->references('id')->on('users')->onDelete('cascade');
+            $table->unsignedBigInteger('owner_id');
+            $table->foreign('owner_id')->references('id')->on('users')->onDelete('cascade');
+            $table->unsignedBigInteger('role_id');
+            $table->foreign('role_id')->references('id')->on('roles')->onDelete('cascade');
+            $table->unsignedBigInteger('outlet_id');
+            $table->foreign('outlet_id')->references('id')->on('outlets')->onDelete('cascade');
             $table->enum('status',['pending','done', 'reject'])->default('pending');
             $table->softDeletes();
             $table->timestamps();

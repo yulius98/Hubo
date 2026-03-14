@@ -49,13 +49,15 @@ Route::middleware(['auth',ValidateSessionWithWorkOS::class,])->group(function ()
     Route::post('req_staff', [RequestStaffController::class,'store'])->name('req_staff.add');
 
     Route::get('add_staff/{outlet_id}', [RequestRoleController::class, 'index'])->name('add_staff');
-    Route::put('add_staff/{id}/terima',[RequestRoleController::class, 'terima'])->name('terima_staff');
+    Route::post('add_staff/{id}/terima',[RequestRoleController::class, 'terima'])->name('terima_staff');
     Route::put('add_staff/{id}/tolak',[RequestRoleController::class, 'tolak'])->name('tolak_staff');
 
 
 
 
 });
+
+
 
 require __DIR__.'/settings.php';
 require __DIR__.'/auth.php';

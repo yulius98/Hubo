@@ -22,7 +22,7 @@ class RequestStaffController extends Controller
             'owner:id,name',
             'outlet:id,nama_outlet'
         ])
-        ->where('id_staff', Auth::id())
+        ->where('user_id', Auth::id())
         ->get();
 
         return Inertia::render('akun_users/request_menjadi_staff',[
@@ -46,12 +46,12 @@ class RequestStaffController extends Controller
      */
     public function store(Request $request)
     {
-        //dd($request);
+
         $validated = $request->validate([
-            'id_staff'     => 'required|numeric',
-            'id_owner'    => 'required|numeric',
-            'id_role'     => 'required|numeric',
-            'id_outlet'   => 'required|numeric',
+            'user_id'     => 'required|numeric',
+            'owner_id'    => 'required|numeric',
+            'role_id'     => 'required|numeric',
+            'outlet_id'   => 'required|numeric',
             'status'      => 'required|string',
 
         ]);

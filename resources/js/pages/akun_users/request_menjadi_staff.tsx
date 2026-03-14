@@ -1,28 +1,19 @@
-import AppLayout from '@/layouts/app-layout'
-import { Head, usePage } from '@inertiajs/react';
-import type { BreadcrumbItem } from '@/types'
+import AppLayout from '@/layouts/app-layout';
+import { Head, useForm } from '@inertiajs/react';
+import type { BreadcrumbItem } from '@/types';
 import { req_staff } from '@/routes';
-import React, { useState, useEffect, useRef } from 'react'
-import { router, type PageProps as InertiaPageProps } from '@inertiajs/core'
-import {
-    PlusIcon,
-    PencilSquareIcon,
-    TrashIcon,
-    XMarkIcon,
-    UserPlusIcon,
-    EyeIcon,
-} from '@heroicons/react/24/outline'
+import React, { useState } from 'react';
 
 interface Outlet {
-    id: number,
-    gambar: string,
-    nama_outlet: string,
-    kota: string,
+    id: number;
+    gambar: string;
+    nama_outlet: string;
+    kota: string;
     owner?: Array<{
-        id: number,
-        name: string,
-        email: string
-    }>
+        id: number;
+        name: string;
+        email: string;
+    }>;
 }
 
 interface StatusReq {
@@ -45,7 +36,6 @@ interface RequestUserPageProps {
     statusreq: StatusReq[];
 }
 
-
 const breadcrumbs: BreadcrumbItem[] = [
     {
         title: 'Permintaan Menjadi Karyawan/Staff',
@@ -53,29 +43,23 @@ const breadcrumbs: BreadcrumbItem[] = [
     },
 ];
 
-export default function request_menjadi_staff({
+export default function Request_Menjadi_Staff({
     outlets,
     jmlOutlet,
     user_id,
     statusreq,
-}: RequestUserPageProps) {
-    const [error, setError] = useState('');
-    const [editId, setEditId] = useState(null);
-    const [showForm, setShowForm] = useState(false);
-    const fetchOutletRef = useRef<(() => void) | null>(null);
-    const [page, setPage] = useState(1);
-    const [limit, setLimit] = useState(10);
-    const [selectedRoles, setSelectedRoles] = useState<Record<number, number>>(
-        {},
-    );
-    const totalPages = Math.max(1, Math.ceil(jmlOutlet / limit));
-    const [preview, setPreview] = useState<string | null>(null);
+}: Readonly<RequestUserPageProps>) {
+    const [page] = useState(1);
+    const [limit] = useState(10);
 
-    const [formData, setFormData] = useState({
+    // ================== USEFORM (REKOMENDASI INERTIA) ==================
+    const { data, setData, post, processing, errors, reset } = useForm({
         outlet_id: '',
         role_id: '',
         owner_id: '',
         owner: '',
+        user_id: user_id,
+        status: 'pending',
     });
 
     const handleChange = (
@@ -83,66 +67,38 @@ export default function request_menjadi_staff({
     ) => {
         const { name, value } = e.target;
 
-        // Jika yang diubah adalah outlet_id
+        // Khusus outlet_id → otomatis isi owner + owner_id
         if (name === 'outlet_id' && value) {
-            // Cari outlet yang dipilih
             const selectedOutlet = outlets.find(
                 (outlet) => outlet.id === Number(value),
             );
 
-            if (
-                selectedOutlet &&
-                selectedOutlet.owner &&
-                selectedOutlet.owner.length > 0
-            ) {
-                // Set owner_id dan owner name
-                setFormData((prev) => ({
+            if (selectedOutlet?.owner?.length) {
+                const firstOwner = selectedOutlet.owner[0];
+                setData((prev) => ({
                     ...prev,
-                    [name]: value,
-                    owner_id: selectedOutlet.owner![0].id.toString(),
-                    owner: `${selectedOutlet.owner![0].name} (${selectedOutlet.owner![0].email})`,
+                    outlet_id: value,
+                    owner_id: firstOwner.id.toString(),
+                    owner: `${firstOwner.name} (${firstOwner.email})`,
                 }));
                 return;
             }
         }
 
-        // Untuk field lainnya
-        setFormData((prev) => ({
-            ...prev,
-            [name]: value,
-        }));
-    };
+        // Semua field lain (termasuk role_id, owner, dll) → update biasa
+        setData(name as keyof typeof data, value);
+    };;
 
-    const handlerequest = async (e: any) => {
+    const handlerequest = (e: React.SubmitEvent<HTMLFormElement>) => {
         e.preventDefault();
-        try {
-            const datatoSend = {
-                id_staff: user_id,
-                id_owner: Number(formData.owner_id),
-                id_role: Number(formData.role_id),
-                id_outlet: Number(formData.outlet_id),
-                status: 'pending',
-            };
-
-            
-            router.post('/req_staff', datatoSend, {
-                onSuccess: () => {
-                    setFormData({
-                        outlet_id: '',
-                        role_id: '',
-                        owner_id: '',
-                        owner: '',
-                    });
-                },
-                onError: (errors) => {
-                    console.log(errors);
-                },
-            });
-        } catch (err) {
-            setError('Gagal request');
-            // Tampilkan error detail dari backend jika ada
-            console.log('Error response:', err);
-        }
+        post('/req_staff', {
+            onSuccess: () => {
+                reset(); // bersihkan form otomatis
+            },
+            onError: (err) => {
+                console.log('Validation errors:', err);
+            },
+        });
     };
 
     return (
@@ -171,75 +127,132 @@ export default function request_menjadi_staff({
                         <form onSubmit={handlerequest}>
                             <div className="flex flex-wrap items-end gap-4">
                                 <div className="min-w-[200px] flex-1">
-                                    <label
-                                        htmlFor="nama_outlet"
-                                        className="mb-1.5 block text-sm font-medium text-gray-700 dark:text-gray-300"
-                                    >
-                                        Pilih Outlet
-                                    </label>
-                                    <select
-                                        id="outlet_id"
-                                        name="outlet_id"
-                                        value={formData.outlet_id ?? ''}
-                                        onChange={handleChange}
-                                        required
-                                        className="w-full rounded-xl border border-gray-300 bg-white px-4 py-2.5 text-gray-900 transition-colors focus:border-blue-500 focus:ring-2 focus:ring-blue-500 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-100"
-                                    >
-                                        <option value="">Pilih Outlet</option>
-                                        {outlets.map((item) => (
-                                            <option
-                                                key={item.id}
-                                                value={item.id}
-                                            >
-                                                {item.nama_outlet}
+                                    <div className="mt-4">
+                                        <label
+                                            htmlFor="outlet_id"
+                                            className="mb-1.5 block text-sm font-medium text-gray-700 dark:text-gray-300"
+                                        >
+                                            Pilih Outlet
+                                        </label>
+                                        <select
+                                            id="outlet_id"
+                                            name="outlet_id"
+                                            value={data.outlet_id}
+                                            onChange={handleChange}
+                                            required
+                                            className="w-full rounded-xl border border-gray-300 bg-white px-4 py-2.5 text-gray-900 transition-colors focus:border-blue-500 focus:ring-2 focus:ring-blue-500 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-100"
+                                        >
+                                            <option value="">
+                                                Pilih Outlet
                                             </option>
-                                        ))}
-                                    </select>
-                                    <label
-                                        htmlFor="nama_outlet"
-                                        className="mt-4 mb-1.5 block text-sm font-medium text-gray-700 dark:text-gray-300"
-                                    >
-                                        Nama Pemilik Outlet
-                                    </label>
-                                    <input
-                                        type="text"
-                                        id="owner"
-                                        name="owner"
-                                        value={formData.owner}
-                                        onChange={handleChange}
-                                        readOnly
-                                        className="w-full rounded-xl border border-gray-300 bg-white px-4 py-2.5 text-gray-900 placeholder-gray-400 transition-colors focus:border-blue-500 focus:ring-2 focus:ring-blue-500 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-100 dark:focus:border-blue-500 dark:focus:ring-blue-500"
-                                    />
-                                    <label
-                                        htmlFor="role"
-                                        className="mt-4 mb-1.5 block text-sm font-medium text-gray-700 dark:text-gray-300"
-                                    >
-                                        Pilih Role
-                                    </label>
-                                    <select
-                                        id="role_id"
-                                        name="role_id"
-                                        value={formData.role_id}
-                                        onChange={handleChange}
-                                        required
-                                        className="w-full rounded-xl border border-gray-300 bg-white px-4 py-2.5 text-gray-900 transition-colors focus:border-blue-500 focus:ring-2 focus:ring-blue-500 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-100"
-                                    >
-                                        <option value="">Pilih Role</option>
-                                        <option value="3">Admin Outlet</option>
-                                        <option value="5">Kasir Outlet</option>
-                                    </select>
+                                            {outlets.map((item) => (
+                                                <option
+                                                    key={item.id}
+                                                    value={item.id}
+                                                >
+                                                    {item.nama_outlet}
+                                                </option>
+                                            ))}
+                                        </select>
+                                        {errors.outlet_id && (
+                                            <p className="mt-1 text-sm text-red-600">
+                                                {errors.outlet_id}
+                                            </p>
+                                        )}
+                                    </div>
+
+                                    <div className="mt-4">
+                                        <label
+                                            htmlFor="owner"
+                                            className="mt-4 mb-1.5 block text-sm font-medium text-gray-700 dark:text-gray-300"
+                                        >
+                                            Nama Pemilik Outlet
+                                        </label>
+                                        <input
+                                            type="text"
+                                            id="owner"
+                                            name="owner"
+                                            value={data.owner}
+                                            readOnly
+                                            className="w-full rounded-xl border border-gray-300 bg-white px-4 py-2.5 text-gray-900 placeholder-gray-400 transition-colors focus:border-blue-500 focus:ring-2 focus:ring-blue-500 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-100"
+                                        />
+                                    </div>
+
+                                    <div className="mt-4">
+                                        <label
+                                            htmlFor="role_id"
+                                            className="mt-4 mb-1.5 block text-sm font-medium text-gray-700 dark:text-gray-300"
+                                        >
+                                            Pilih Role
+                                        </label>
+                                        <select
+                                            id="role_id"
+                                            name="role_id"
+                                            value={data.role_id}
+                                            onChange={handleChange}
+                                            required
+                                            className="w-full rounded-xl border border-gray-300 bg-white px-4 py-2.5 text-gray-900 transition-colors focus:border-blue-500 focus:ring-2 focus:ring-blue-500 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-100"
+                                        >
+                                            <option value="">Pilih Role</option>
+                                            <option value="3">
+                                                Admin Outlet
+                                            </option>
+                                            <option value="5">
+                                                Kasir Outlet
+                                            </option>
+                                        </select>
+                                        {errors.role_id && (
+                                            <p className="mt-1 text-sm text-red-600">
+                                                {errors.role_id}
+                                            </p>
+                                        )}
+                                    </div>
                                 </div>
                             </div>
+
+                            {/* ================== TOMBOL SUBMIT DENGAN LOADING ================== */}
                             <button
                                 type="submit"
-                                className="mt-4 inline-flex items-center gap-2 rounded-xl bg-blue-600 px-4 py-2.5 font-medium text-white transition-colors hover:bg-blue-700 focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 dark:focus:ring-offset-gray-800"
+                                disabled={processing}
+                                className={`mt-4 inline-flex items-center gap-2 rounded-xl px-6 py-2.5 font-medium text-white transition-all focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 dark:focus:ring-offset-gray-800 ${
+                                    processing
+                                        ? 'cursor-not-allowed bg-blue-400'
+                                        : 'bg-blue-600 hover:bg-blue-700'
+                                }`}
                             >
-                                Submit
+                                {processing ? (
+                                    <>
+                                        <svg
+                                            className="h-5 w-5 animate-spin"
+                                            xmlns="http://www.w3.org/2000/svg"
+                                            fill="none"
+                                            viewBox="0 0 24 24"
+                                        >
+                                            <circle
+                                                className="opacity-25"
+                                                cx="12"
+                                                cy="12"
+                                                r="10"
+                                                stroke="currentColor"
+                                                strokeWidth="4"
+                                            />
+                                            <path
+                                                className="opacity-75"
+                                                fill="currentColor"
+                                                d="M4 12a8 8 0 018-8v8z"
+                                            />
+                                        </svg>
+                                        Memproses...
+                                    </>
+                                ) : (
+                                    'Submit Permintaan'
+                                )}
                             </button>
                         </form>
                     </div>
                 </div>
 
+                {/* Status Request (tetap sama) */}
                 <div className="overflow-hidden rounded-2xl border border-gray-200 bg-white shadow-sm dark:border-gray-700 dark:bg-gray-800">
                     <div className="flex flex-wrap items-center justify-between gap-2 border-b border-gray-200 px-6 py-4 dark:border-gray-700">
                         <h2 className="text-lg font-semibold text-gray-800 dark:text-gray-100">
@@ -268,7 +281,7 @@ export default function request_menjadi_staff({
                                 {statusreq.length === 0 ? (
                                     <tr>
                                         <td
-                                            colSpan={3}
+                                            colSpan={4}
                                             className="px-6 py-12 text-center text-sm text-gray-500 dark:text-gray-400"
                                         >
                                             Belum ada data request role.

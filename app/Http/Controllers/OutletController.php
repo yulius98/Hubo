@@ -80,7 +80,7 @@ class OutletController extends Controller
 
         $outlet = Outlet::create($validated);
         $user = Auth::user();
-        $user->outlet()->attach($outlet->id, [
+        $user->outlets()->attach($outlet->id, [
             'role_id' => 2
         ]);
         $user->role()->syncWithoutDetaching([2]);

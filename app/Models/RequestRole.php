@@ -12,31 +12,31 @@ class RequestRole extends Model
     use HasFactory, Notifiable, SoftDeletes;
 
     protected $fillable = [
-        'id_staff',
-        'id_owner',
-        'id_role',
-        'id_outlet',
+        'user_id',
+        'owner_id',
+        'role_id',
+        'outlet_id',
         'status'
     ];
 
     public function staff()
     {
-        return $this->belongsTo(User::class, 'id_staff');
+        return $this->belongsTo(User::class, 'user_id');
     }
 
     public function owner()
     {
-        return $this->belongsTo(User::class, 'id_owner');
+        return $this->belongsTo(User::class, 'owner_id');
     }
 
     public function role()
     {
-        return $this->belongsTo(Role::class, 'id_role');
+        return $this->belongsTo(Role::class, 'role_id');
     }
 
     public function outlet()
     {
-        return $this->belongsTo(Outlet::class, 'id_outlet');
+        return $this->belongsTo(Outlet::class, 'outlet_id');
     }
-    
+
 }

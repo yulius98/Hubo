@@ -33,14 +33,21 @@ export default function Tambah_Staf({ add_staff = [] }: TambahStaffProps) {
     const [limit] = useState(10);
 
     // Terima Request
-    const handleTerima = async (id: any) => {
-        router.put(`/add_staff/${id}/terima`);
+    const handleTerima = async (id: number) => {
+        router.post(
+            route('terima_staff', id),
+            {},
+            { preserveState: true, preserveScroll: true },
+        );
     };
 
     // Tolak Request
-    const handleTolak = async (id: any) => {
-        console.log('data yang dikirim :', id);
-        router.put(`/add_staff/${id}/tolak`);
+    const handleTolak = async (id: number) => {
+        router.put(
+            route('tolak_staff', id),
+            {},
+            { preserveState: true, preserveScroll: true },
+        );
     };
 
     return (

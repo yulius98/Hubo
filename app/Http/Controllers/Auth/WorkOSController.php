@@ -28,7 +28,7 @@ class WorkOSController extends Controller
                     return User::updateOrCreate(
                         ['email' => $user->email], // Search by email
                         [
-                            'name' => $user->firstName . ' ' . $user->lastName,
+                            'name' => $user->firstName.' '.$user->lastName,
                             'email_verified_at' => now(),
                             'avatar' => $user->avatar,
                             'workos_id' => $user->id,
@@ -41,7 +41,7 @@ class WorkOSController extends Controller
 
                     // Update user data from WorkOS to keep it synchronized
                     $existingUser->update([
-                        'name' => $user->firstName . ' ' . $user->lastName,
+                        'name' => $user->firstName.' '.$user->lastName,
                         'email' => $user->email,
                         'email_verified_at' => now(),
                         'avatar' => $user->avatar ?? $existingUser->avatar,
@@ -62,7 +62,7 @@ class WorkOSController extends Controller
         } catch (\Exception $e) {
             Log::error('WorkOS authentication failed', [
                 'error' => $e->getMessage(),
-                'trace' => $e->getTraceAsString()
+                'trace' => $e->getTraceAsString(),
             ]);
 
             return redirect()->route('login')->with('error', 'Authentication failed. Please try again.');

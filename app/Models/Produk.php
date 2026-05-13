@@ -12,7 +12,6 @@ class Produk extends Model
 {
     use HasFactory, Notifiable, SoftDeletes;
 
-
     protected $fillable = [
         'id_outlet',
         'id_kategori',
@@ -27,26 +26,26 @@ class Produk extends Model
 
     public function outlet()
     {
-        return $this -> belongsTo(Outlet::class, 'id_outlet');
+        return $this->belongsTo(Outlet::class, 'id_outlet');
     }
 
     public function kategori()
     {
-        return $this -> belongsTo(Kategori::class, 'id_kategori');
+        return $this->belongsTo(Kategori::class, 'id_kategori');
     }
 
     public function transaksi(): HasMany
     {
-        return $this -> hasMany(Transaksi::class, 'id_produk');
+        return $this->hasMany(Transaksi::class, 'id_produk');
     }
 
     public function keranjangbelanjauser(): HasMany
     {
-        return $this -> hasMany(KeranjangBelanjaUser::class, 'id_produk');
+        return $this->hasMany(KeranjangBelanjaUser::class, 'id_produk');
     }
 
     public function keranjangbelanjakasir(): HasMany
     {
-        return $this -> hasMany(KeranjangBelanjaKasir::class, 'id_produk');
+        return $this->hasMany(KeranjangBelanjaKasir::class, 'id_produk');
     }
 }

@@ -5,15 +5,16 @@ namespace App\Http\Controllers;
 use App\Models\Kategori;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
-use Inertia\Inertia;
-use Illuminate\Support\Str;
-use Intervention\Image\ImageManager;
-use Intervention\Image\Drivers\Gd\Driver;
 use Illuminate\Support\Facades\File;
-
+use Illuminate\Support\Str;
+use Inertia\Inertia;
+use Intervention\Image\Drivers\Gd\Driver;
+use Intervention\Image\ImageManager;
 
 class KategoriController extends Controller
 {
+    private const KATEGORI_PATH = 'app/public/kategoris/';
+
     /**
      * Display a listing of the resource.
      */
@@ -22,9 +23,9 @@ class KategoriController extends Controller
         $kategori = Kategori::paginate(10);
         $user = Auth::user();
         $jmlKategori = $kategori->total();
-        return Inertia::render('akun_admin_app/kelola_kategori',['kategoris' => $kategori, 'jmlKategori' => $jmlKategori, 'id_user' => $user->id]);
-    }
 
+        return Inertia::render('akun_admin_app/kelola_kategori', ['kategoris' => $kategori, 'jmlKategori' => $jmlKategori, 'id_user' => $user->id]);
+    }
 
     /**
      * Show the form for creating a new resource.
@@ -41,18 +42,18 @@ class KategoriController extends Controller
     {
 
         $validated = $request->validate([
-            'id_user'       => 'required|numeric',
-            'gambar'        => 'nullable|image|mimes:jpeg,png,jpg,webp,avif|max:200',
-            'kategori'      => 'required|string|max:255',
+            'id_user' => 'required|numeric',
+            'gambar' => 'nullable|image|mimes:jpeg,png,jpg,webp,avif|max:200',
+            'kategori' => 'required|string|max:255',
         ]);
 
         if ($request->hasFile('gambar')) {
             $file = $request->file('gambar');
             $kategoriName = Str::slug($validated['kategori']);
-            $filename = $kategoriName . '.webp';
+            $filename = $kategoriName.'.webp';
 
             // Proses gambar → konversi ke WebP
-            $manager = new ImageManager(new Driver());
+            $manager = new ImageManager(new Driver);
             $image = $manager->read($file);
 
             // Opsional: resize jika mau (contoh max width 1200px)
@@ -62,14 +63,14 @@ class KategoriController extends Controller
             $image->toWebp(80);
 
             // Simpan langsung ke folder public/outlets
-            $destinationPath = storage_path('app/public/kategoris');
+            $destinationPath = storage_path(self::KATEGORI_PATH);
 
-            if (!File::exists($destinationPath)) {
+            if (! File::exists($destinationPath)) {
                 File::makeDirectory($destinationPath, 0755, true);
             }
 
-            $image->save($destinationPath . '/' . $filename);
-            $validated['gambar'] = 'storage/kategoris/' . $filename;
+            $image->save($destinationPath.'/'.$filename);
+            $validated['gambar'] = 'storage/kategoris/'.$filename;
         } else {
             // Jika tidak ada file yang diupload, hapus dari validated
             unset($validated['gambar']);
@@ -103,36 +104,36 @@ class KategoriController extends Controller
     {
         // Validasi dulu (wajib)
         $validated = $request->validate([
-            'id_user'       => 'required|numeric',
-            'gambar'        => 'nullable|image|mimes:jpeg,png,jpg,webp,avif|max:200',
-            'kategori'      => 'required|string|max:255',
+            'id_user' => 'required|numeric',
+            'gambar' => 'nullable|image|mimes:jpeg,png,jpg,webp,avif|max:200',
+            'kategori' => 'required|string|max:255',
 
         ]);
 
         if ($request->hasFile('gambar')) {
             // Hapus gambar lama jika ada
 
-            if ($kategori->gambar && file_exists(storage_path('app/public/kategoris/' . basename($kategori->gambar)))) {
-                unlink(storage_path('app/public/kategoris/' . basename($kategori->gambar)));
+            if ($kategori->gambar && file_exists(storage_path(self::KATEGORI_PATH.basename($kategori->gambar)))) {
+                unlink(storage_path(self::KATEGORI_PATH.basename($kategori->gambar)));
             }
 
             $file = $request->file('gambar');
-            $kategoriName = Str::slug($validated['kategori'],'-');
-            $filename = $kategoriName . '.webp';
+            $kategoriName = Str::slug($validated['kategori'], '-');
+            $filename = $kategoriName.'.webp';
 
-            $manager = new ImageManager(new Driver());
+            $manager = new ImageManager(new Driver);
             $image = $manager->read($file);
             $image->scale(width: 200);
             $image->toWebp(80);
 
             // Ensure directory exists
             $destinationPath = storage_path('app/public/kategoris');
-            if (!File::exists($destinationPath)) {
+            if (! File::exists($destinationPath)) {
                 File::makeDirectory($destinationPath, 0755, true);
             }
 
-            $image->save($destinationPath . '/' . $filename);
-            $validated['gambar'] = 'storage/kategoris/' . $filename;
+            $image->save($destinationPath.'/'.$filename);
+            $validated['gambar'] = 'storage/kategoris/'.$filename;
         } else {
             // Jika tidak ada file baru, hapus dari validated agar tidak overwrite
             unset($validated['gambar']);
@@ -152,8 +153,8 @@ class KategoriController extends Controller
     public function destroy(Kategori $kategori)
     {
         // Hapus gambar jika ada
-        if ($kategori->gambar && file_exists(storage_path('app/public/kategoris/' . basename($kategori->gambar)))) {
-            unlink(storage_path('app/public/kategoris/' . basename($kategori->gambar)));
+        if ($kategori->gambar && file_exists(storage_path(self::KATEGORI_PATH.basename($kategori->gambar)))) {
+            unlink(storage_path(self::KATEGORI_PATH.basename($kategori->gambar)));
         }
 
         $kategori->delete();

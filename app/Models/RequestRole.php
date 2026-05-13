@@ -16,7 +16,7 @@ class RequestRole extends Model
         'owner_id',
         'role_id',
         'outlet_id',
-        'status'
+        'status',
     ];
 
     public function staff()
@@ -38,5 +38,4 @@ class RequestRole extends Model
     {
         return $this->belongsTo(Outlet::class, 'outlet_id');
     }
-
 }

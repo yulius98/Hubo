@@ -1,10 +1,10 @@
 import { Head } from '@inertiajs/react';
+import { useState } from 'react';
+import { AppSidebar } from '@/components/app-sidebar';
 import { PlaceholderPattern } from '@/components/ui/placeholder-pattern';
 import AppLayout from '@/layouts/app-layout';
-import type { BreadcrumbItem } from '@/types';
 import { dashboard } from '@/routes';
-import { AppSidebar } from '@/components/app-sidebar';
-import { useState } from 'react';
+import type { BreadcrumbItem } from '@/types';
 
 
 const breadcrumbs: BreadcrumbItem[] = [

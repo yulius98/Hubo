@@ -16,7 +16,8 @@ class WelcomeController extends Controller
     {
         $kategoris = Kategori::all();
         $products = Produk::all();
-        return Inertia::render('welcome',['products' => $products, 'kategoris' => $kategoris]);
+
+        return Inertia::render('welcome', ['products' => $products, 'kategoris' => $kategoris]);
     }
 
     /**

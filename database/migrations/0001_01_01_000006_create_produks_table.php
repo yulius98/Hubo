@@ -20,9 +20,9 @@ return new class extends Migration
             $table->string('gambar')->nullable();
             $table->string('nama_produk')->unique();
             $table->text('keterangan')->nullable();
-            $table->decimal('harga',50,2);
-            $table->enum('diskon',['yes','no'])->default('no');
-            $table->decimal('harga_diskon',50,2)->nullable();
+            $table->decimal('harga', 50, 2);
+            $table->enum('diskon', ['yes', 'no'])->default('no');
+            $table->decimal('harga_diskon', 50, 2)->nullable();
             $table->softDeletes();
             $table->timestamps();
         });

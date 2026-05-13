@@ -20,7 +20,7 @@ return new class extends Migration
             $table->unsignedBigInteger('id_produk');
             $table->foreign('id_produk')->references('id')->on('produks')->onDelete('cascade');
             $table->integer('jumlah_produk');
-            $table->enum('status',['done','pending'])->default('pending');
+            $table->enum('status', ['done', 'pending'])->default('pending');
             $table->softDeletes();
             $table->timestamps();
         });

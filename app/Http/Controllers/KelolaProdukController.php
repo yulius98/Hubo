@@ -3,10 +3,8 @@
 namespace App\Http\Controllers;
 
 use Illuminate\Http\Request;
-use Inertia\Inertia;
 use Illuminate\Support\Facades\Auth;
-
-
+use Inertia\Inertia;
 
 class KelolaProdukController extends Controller
 {
@@ -15,9 +13,14 @@ class KelolaProdukController extends Controller
      */
     public function index()
     {
-        $dtoutlet = Auth::user()->outlet;
-        $jmloutlet = count($dtoutlet);
-        return Inertia::render('akun_users/kelola_produk',['outlets' => $dtoutlet, 'jmlOutlet' => $jmloutlet]);
+        $dtoutlet = Auth::user()->outlets;
+        if ($dtoutlet) {
+            $jmloutlet = $dtoutlet->count();
+        } else {
+            $jmloutlet = 0;
+        }
+
+        return Inertia::render('akun_users/kelola_produk', ['outlets' => $dtoutlet, 'jmlOutlet' => $jmloutlet]);
     }
 
     /**

@@ -1,10 +1,3 @@
-import React, { useState, useEffect, useRef } from "react"
-import AppLayout from '@/layouts/app-layout'
-import { Head, usePage } from '@inertiajs/react'
-import type { BreadcrumbItem } from '@/types'
-import { router } from "@inertiajs/react";
-import { kategori } from '@/routes';
-import type { PageProps as InertiaPageProps } from '@inertiajs/core'
 import {
     PlusIcon,
     PencilSquareIcon,
@@ -13,6 +6,13 @@ import {
     UserPlusIcon,
     EyeIcon,
 } from '@heroicons/react/24/outline'
+import type { PageProps as InertiaPageProps } from '@inertiajs/core'
+import { Head, usePage } from '@inertiajs/react'
+import { router } from "@inertiajs/react";
+import React, { useState, useEffect, useRef } from "react"
+import AppLayout from '@/layouts/app-layout'
+import { kategori } from '@/routes';
+import type { BreadcrumbItem } from '@/types'
 
 interface Kategori {
     id: number,

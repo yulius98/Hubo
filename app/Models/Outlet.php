@@ -23,18 +23,18 @@ class Outlet extends Model
     public function users()
     {
         return $this->belongsToMany(User::class, 'outlet_user')
-        ->withPivot('role_id')
-        ->withTimestamps();
+            ->withPivot('role_id')
+            ->withTimestamps();
     }
 
     public function produk(): HasMany
     {
-        return $this -> hasMany(Produk::class, 'id_outlet');
+        return $this->hasMany(Produk::class, 'id_outlet');
     }
 
     public function transaksi(): HasMany
     {
-        return $this -> hasMany(Transaksi::class, 'id_outlet');
+        return $this->hasMany(Transaksi::class, 'id_outlet');
     }
 
     public function owner()

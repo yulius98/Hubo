@@ -3,7 +3,7 @@
 namespace Database\Seeders;
 
 use App\Models\Kategori;
-//use Illuminate\Database\Console\Seeds\WithoutModelEvents;
+// use Illuminate\Database\Console\Seeds\WithoutModelEvents;
 use Illuminate\Database\Seeder;
 
 class KategoriSeeder extends Seeder
@@ -35,7 +35,7 @@ class KategoriSeeder extends Seeder
             'storage/kategoris/tas-wanita.webp',
             'storage/kategoris/otomotif.webp',
         ];
-        $kategoris =[
+        $kategoris = [
             'Elektronik',
             'Komputer & Aksesoris',
             'Handphone & Aksesoris',

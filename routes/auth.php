@@ -2,6 +2,7 @@
 
 use App\Http\Controllers\Auth\WorkOSController;
 use Illuminate\Support\Facades\Route;
+
 // use Laravel\WorkOS\Http\Requests\AuthKitAuthenticationRequest;
 // use Laravel\WorkOS\Http\Requests\AuthKitLoginRequest;
 // use Laravel\WorkOS\Http\Requests\AuthKitLogoutRequest;
@@ -18,14 +19,13 @@ use Illuminate\Support\Facades\Route;
 //     return $request->logout();
 // })->middleware(['auth'])->name('logout');
 
+Route::get('login', [WorkOSController::class, 'login'])
+    ->middleware(['guest'])
+    ->name('login');
 
-Route::get('login',[WorkOSController::class, 'login'])
-    -> middleware(['guest'])
-    -> name('login');
+Route::get('authenticate', [WorkOSController::class, 'authenticate'])
+    ->middleware(['guest']);
 
-Route::get('authenticate',[WorkOSController::class, 'authenticate'])
-    -> middleware(['guest']);
-
-Route::post('logout',[WorkOSController::class, 'logout'])
-    -> middleware(['auth'])
-    -> name('logout');
+Route::post('logout', [WorkOSController::class, 'logout'])
+    ->middleware(['auth'])
+    ->name('logout');

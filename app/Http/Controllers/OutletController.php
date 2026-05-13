@@ -5,17 +5,18 @@ namespace App\Http\Controllers;
 use App\Models\Outlet;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\File;
 use Illuminate\Support\Str;
 use Inertia\Inertia;
-use Intervention\Image\ImageManager;
 use Intervention\Image\Drivers\Gd\Driver;
-use Illuminate\Support\Facades\File;
+use Intervention\Image\ImageManager;
 
 class OutletController extends Controller
 {
-
     private const STORAGE_OUTLET_PATH = 'app/public/outlets';
-    private const PUBLIC_OUTLET_PATH  = 'storage/outlets';
+
+    private const PUBLIC_OUTLET_PATH = 'storage/outlets';
+
     /**
      * Display a listing of the resource.
      */
@@ -24,7 +25,8 @@ class OutletController extends Controller
 
         $dtoutlet = Auth::user()->outlets;
         $jmloutlet = $dtoutlet ? count($dtoutlet) : 0;
-        return Inertia::render('akun_users/outlet_user_page',['outlets' => $dtoutlet ?? [], 'jmlOutlet' => $jmloutlet]);
+
+        return Inertia::render('akun_users/outlet_user_page', ['outlets' => $dtoutlet ?? [], 'jmlOutlet' => $jmloutlet]);
     }
 
     /**
@@ -42,20 +44,20 @@ class OutletController extends Controller
     {
 
         $validated = $request->validate([
-            'gambar'        => 'nullable|image|mimes:jpeg,png,jpg,webp,avif|max:200',
-            'nama_outlet'   => 'required|string|max:255',
+            'gambar' => 'nullable|image|mimes:jpeg,png,jpg,webp,avif|max:200',
+            'nama_outlet' => 'required|string|max:255',
             'alamat_outlet' => 'required|string',
-            'kota'          => 'required|string|max:255',
-            'telp'          => 'required|string|max:20',
+            'kota' => 'required|string|max:255',
+            'telp' => 'required|string|max:20',
         ]);
 
         if ($request->hasFile('gambar')) {
             $file = $request->file('gambar');
             $outletName = Str::slug($validated['nama_outlet']); // nama-produk
-            $filename = $outletName . '.webp';
+            $filename = $outletName.'.webp';
 
             // Proses gambar → konversi ke WebP
-            $manager = new ImageManager(new Driver());
+            $manager = new ImageManager(new Driver);
             $image = $manager->read($file);
 
             // Opsional: resize jika mau (contoh max width 1200px)
@@ -67,12 +69,12 @@ class OutletController extends Controller
             // Simpan langsung ke folder public/outlets
             $destinationPath = storage_path(self::STORAGE_OUTLET_PATH);
 
-            if (!File::exists($destinationPath)) {
+            if (! File::exists($destinationPath)) {
                 File::makeDirectory($destinationPath, 0755, true);
             }
 
-            $image->save($destinationPath . '/' . $filename);
-            $validated['gambar'] = 'storage/outlets/' . $filename;
+            $image->save($destinationPath.'/'.$filename);
+            $validated['gambar'] = 'storage/outlets/'.$filename;
         } else {
             // Jika tidak ada file yang diupload, hapus dari validated
             unset($validated['gambar']);
@@ -81,10 +83,9 @@ class OutletController extends Controller
         $outlet = Outlet::create($validated);
         $user = Auth::user();
         $user->outlets()->attach($outlet->id, [
-            'role_id' => 2
+            'role_id' => 2,
         ]);
         $user->role()->syncWithoutDetaching([2]);
-
 
         return redirect()->back()->with('success', 'Outlet berhasil ditambahkan');
     }
@@ -112,36 +113,36 @@ class OutletController extends Controller
     {
         // Validasi dulu (wajib)
         $validated = $request->validate([
-            'gambar'        => 'nullable|image|mimes:jpeg,png,jpg,webp,avif|max:200',
-            'nama_outlet'   => 'required|string|max:255',
+            'gambar' => 'nullable|image|mimes:jpeg,png,jpg,webp,avif|max:200',
+            'nama_outlet' => 'required|string|max:255',
             'alamat_outlet' => 'required|string',
-            'kota'          => 'required|string|max:255',
-            'telp'       => 'required|string|max:20',
+            'kota' => 'required|string|max:255',
+            'telp' => 'required|string|max:20',
         ]);
 
         if ($request->hasFile('gambar')) {
             // Hapus gambar lama jika ada
-            if ($outlet->gambar && file_exists(storage_path(self::STORAGE_OUTLET_PATH . '/' . basename($outlet->gambar)))) {
-                unlink(storage_path(self::STORAGE_OUTLET_PATH . '/' . basename($outlet->gambar)));
+            if ($outlet->gambar && file_exists(storage_path(self::STORAGE_OUTLET_PATH.'/'.basename($outlet->gambar)))) {
+                unlink(storage_path(self::STORAGE_OUTLET_PATH.'/'.basename($outlet->gambar)));
             }
 
             $file = $request->file('gambar');
             $outletName = Str::slug($validated['nama_outlet']);
-            $filename = $outletName . '.webp';
+            $filename = $outletName.'.webp';
 
-            $manager = new ImageManager(new Driver());
+            $manager = new ImageManager(new Driver);
             $image = $manager->read($file);
             $image->scale(width: 200);
             $image->toWebp(80);
 
             // Ensure directory exists
             $destinationPath = storage_path('app/public/outlets');
-            if (!File::exists($destinationPath)) {
+            if (! File::exists($destinationPath)) {
                 File::makeDirectory($destinationPath, 0755, true);
             }
 
-            $image->save($destinationPath . '/' . $filename);
-            $validated['gambar'] = self::PUBLIC_OUTLET_PATH . '/' . $filename;
+            $image->save($destinationPath.'/'.$filename);
+            $validated['gambar'] = self::PUBLIC_OUTLET_PATH.'/'.$filename;
         } else {
             // Jika tidak ada file baru, hapus dari validated agar tidak overwrite
             unset($validated['gambar']);
@@ -161,8 +162,8 @@ class OutletController extends Controller
     public function destroy(Outlet $outlet)
     {
         // Hapus gambar jika ada
-        if ($outlet->gambar && file_exists(storage_path(self::STORAGE_OUTLET_PATH . '/' . basename($outlet->gambar)))) {
-            unlink(storage_path(self::STORAGE_OUTLET_PATH . '/' . basename($outlet->gambar)));
+        if ($outlet->gambar && file_exists(storage_path(self::STORAGE_OUTLET_PATH.'/'.basename($outlet->gambar)))) {
+            unlink(storage_path(self::STORAGE_OUTLET_PATH.'/'.basename($outlet->gambar)));
         }
 
         $outlet->delete();

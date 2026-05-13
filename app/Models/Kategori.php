@@ -20,26 +20,26 @@ class Kategori extends Model
 
     public function user()
     {
-        return $this -> belongsTo(User::class,'id_user');
+        return $this->belongsTo(User::class, 'id_user');
     }
 
     public function produk(): HasMany
     {
-        return $this ->hasMany(Produk::class, 'id_kategori');
+        return $this->hasMany(Produk::class, 'id_kategori');
     }
 
     public function transaksi(): HasMany
     {
-        return $this -> hasMany(Transaksi::class, 'id_kategori');
+        return $this->hasMany(Transaksi::class, 'id_kategori');
     }
 
     public function keranjangbelanjauser(): HasMany
     {
-        return $this -> hasMany(KeranjangBelanjaUser::class, 'id_kategori');
+        return $this->hasMany(KeranjangBelanjaUser::class, 'id_kategori');
     }
 
     public function keranjangbelanjakasir(): HasMany
     {
-        return $this -> hasMany(KeranjangBelanjaKasir::class, 'id_kategori');
+        return $this->hasMany(KeranjangBelanjaKasir::class, 'id_kategori');
     }
 }

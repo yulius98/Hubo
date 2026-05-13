@@ -1,5 +1,14 @@
-import { Link, usePage } from '@inertiajs/react';
-import { BookOpen, Folder, LayoutGrid, Home, Store } from 'lucide-react';
+import { router, usePage } from '@inertiajs/react';
+import {
+    BookOpen,
+    Folder,
+    LayoutGrid,
+    Home,
+    Store,
+    UserCircle,
+    List,
+    Briefcase,
+} from 'lucide-react';
 import { NavFooter } from '@/components/nav-footer';
 import { NavMain } from '@/components/nav-main';
 import { NavUser } from '@/components/nav-user';
@@ -7,15 +16,25 @@ import {
     Sidebar,
     SidebarContent,
     SidebarFooter,
+    SidebarGroup,
+    SidebarGroupLabel,
     SidebarHeader,
     SidebarMenu,
     SidebarMenuButton,
     SidebarMenuItem,
 } from '@/components/ui/sidebar';
+import {
+    homepage,
+    dashboard,
+    myoutlet,
+    myprofile,
+    kelola_produk,
+    kategori,
+    req_staff,
+    cashier,
+} from '@/routes';
 import type { NavItem } from '@/types';
 import AppLogo from './app-logo';
-import { homepage, dashboard, myoutlet, myprofile, kelola_produk, kategori, req_staff } from '@/routes';
-//import homepage from '@/pages/homepage';
 
 const mainNavItems: NavItem[] = [
     {
@@ -27,7 +46,7 @@ const mainNavItems: NavItem[] = [
     {
         title: 'Profile',
         href: myprofile(),
-        icon: Home,
+        icon: UserCircle,
     },
 
     {
@@ -39,7 +58,7 @@ const mainNavItems: NavItem[] = [
     {
         title: 'Kelola Kategori',
         href: kategori(),
-        icon: Home,
+        icon: List,
     },
 
     {
@@ -57,10 +76,14 @@ const mainNavItems: NavItem[] = [
     {
         title: 'Request Menjadi Karyawan',
         href: req_staff(),
-        icon: Store,
+        icon: Briefcase,
     },
 
-
+    {
+        title: 'Buka Layanan Kasir',
+        href: cashier(),
+        icon: Briefcase,
+    },
 ];
 
 const footerNavItems: NavItem[] = [
@@ -76,24 +99,57 @@ const footerNavItems: NavItem[] = [
     },
 ];
 
-export function AppSidebar({ onNavigate }: { onNavigate?: (page: 'dashboard' | 'profile') => void }) {
+export function AppSidebar({
+    onNavigate,
+}: Readonly<{
+    onNavigate?: (page: 'dashboard' | 'profile') => void;
+}>) {
     const { auth } = usePage().props;
 
     // Check user roles
     const hasAdminAppRole =
         auth.user?.role?.some((r: any) => r.role === 'admin app') || false;
 
+    const hasKasirRole =
+        auth.user?.role?.some((r: any) => r.role === 'kasir') || false;
+
+    const { sidebarOutlets, canSelectAll, selectedOutletId } = usePage().props;
+    const hasOutletFilter = sidebarOutlets.length > 0;
+
+    const handleOutletChange = (outletId: number | null) => {
+        router.post('/select-outlet', { outlet_id: outletId }, {
+            preserveScroll: true,
+            preserveState: true,
+        });
+    };
+
     // Filter nav items based on role
-    const filteredNavItems = mainNavItems.filter(item => {
+    const filteredNavItems = mainNavItems.filter((item) => {
         if (hasAdminAppRole) {
             // Admin app can see: Profile, Dashboard, Kelola Kategori
-            return ['Profile', 'Dashboard', 'Kelola Kategori'].includes(item.title);
+            return ['Home', 'Profile', 'Dashboard', 'Kelola Kategori'].includes(
+                item.title,
+            );
+        } else if (hasKasirRole) {
+            return [
+                'Home',
+                'Profile',
+                'Dashboard',
+                'Buka Outlet',
+                'Kelola Produk',
+                'Request Menjadi Karyawan',
+                'Buka Layanan Kasir',
+            ].includes(item.title);
         } else {
-            return ['Home','Profile', 'Dashboard', 'Buka Outlet', 'Kelola Produk', 'Request Menjadi Karyawan'].includes(item.title);
+            return [
+                'Home',
+                'Profile',
+                'Dashboard',
+                'Buka Outlet',
+                'Kelola Produk',
+                'Request Menjadi Karyawan',
+            ].includes(item.title);
         }
-
-        // Default: show all for other roles
-        return true;
     });
 
     return (
@@ -115,6 +171,28 @@ export function AppSidebar({ onNavigate }: { onNavigate?: (page: 'dashboard' | '
             </SidebarHeader>
 
             <SidebarContent>
+                {hasOutletFilter && (
+                    <SidebarGroup>
+                        <SidebarGroupLabel>Pilih Outlet</SidebarGroupLabel>
+                        <div className="px-3 pb-2">
+                            <select
+                                value={selectedOutletId ?? ''}
+                                onChange={(e) => {
+                                    const val = e.target.value;
+                                    handleOutletChange(val ? Number(val) : null);
+                                }}
+                                className="w-full rounded-lg border border-sidebar-border bg-sidebar-accent px-3 py-2 text-sm text-sidebar-accent-foreground focus:outline-none focus:ring-2 focus:ring-sidebar-ring"
+                            >
+                                {canSelectAll && <option value="">All Outlet</option>}
+                                {sidebarOutlets.map((outlet) => (
+                                    <option key={outlet.id} value={outlet.id}>
+                                        {outlet.nama_outlet}
+                                    </option>
+                                ))}
+                            </select>
+                        </div>
+                    </SidebarGroup>
+                )}
                 <NavMain
                     items={filteredNavItems}
                     onItemClick={(item) => {
@@ -126,9 +204,7 @@ export function AppSidebar({ onNavigate }: { onNavigate?: (page: 'dashboard' | '
                         }
                     }}
                 />
-
             </SidebarContent>
-
 
             <SidebarFooter>
                 <NavFooter items={footerNavItems} className="mt-auto" />

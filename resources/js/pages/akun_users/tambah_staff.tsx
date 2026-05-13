@@ -1,8 +1,8 @@
-import AppLayout from '@/layouts/app-layout';
-import { router, Head } from '@inertiajs/react';
-import type { BreadcrumbItem } from '@/types';
-import { useState } from 'react';
 import { MinusCircleIcon, CheckIcon } from '@heroicons/react/24/outline';
+import { router, Head } from '@inertiajs/react';
+import { useState } from 'react';
+import AppLayout from '@/layouts/app-layout';
+import type { BreadcrumbItem } from '@/types';
 
 interface AddStaff {
     id: number;
@@ -32,6 +32,19 @@ export default function Tambah_Staf({ add_staff = [] }: TambahStaffProps) {
     const [page] = useState(1);
     const [limit] = useState(10);
 
+    const getStatusClass = (status: string) => {
+        switch (status) {
+            case 'pending':
+                return 'text-yellow-600 dark:text-yellow-400';
+            case 'accepted':
+                return 'text-green-600 dark:text-green-400';
+            case 'rejected':
+                return 'text-red-600 dark:text-red-400';
+            default:
+                return 'text-gray-600 dark:text-gray-400';
+        }
+    };
+
     // Terima Request
     const handleTerima = async (id: number) => {
         router.post(
@@ -53,100 +66,84 @@ export default function Tambah_Staf({ add_staff = [] }: TambahStaffProps) {
     return (
         <AppLayout breadcrumbs={breadcrumbs}>
             <Head title="Penambahan Karyawan/Staff" />
-            <main className="max-w-8xl mx-auto p-6">
+
+            <main className="max-w-8xl mx-auto p-4 sm:p-6 lg:p-8">
                 {/* Header */}
-                <div className="mb-8">
-                    <h1 className="text-2xl font-bold tracking-tight text-gray-800 md:text-3xl dark:text-gray-100">
+                <div className="mb-6 sm:mb-8">
+                    <h1 className="text-2xl font-bold tracking-tight text-gray-900 sm:text-3xl dark:text-gray-100">
                         Penambahan Karyawan/Staff Outlet
                     </h1>
                 </div>
 
-                <div className="mb-8 overflow-hidden rounded-2xl border border-gray-200 bg-white shadow-sm dark:border-gray-700 dark:bg-gray-800">
-                    <div className="overflow-x-auto">
-                        <table className="w-full" id="tabel_produk">
-                            <thead>
-                                <tr className="bg-gray-100 dark:bg-gray-700/50">
-                                    <th className="w-20 px-6 py-4 text-left text-xs font-semibold tracking-wider text-gray-600 uppercase dark:text-gray-300">
-                                        No
-                                    </th>
-                                    <th className="px-6 py-4 text-left text-xs font-semibold tracking-wider text-gray-600 uppercase dark:text-gray-300">
-                                        Nama Staff
-                                    </th>
-                                    <th className="px-6 py-4 text-left text-xs font-semibold tracking-wider text-gray-600 uppercase dark:text-gray-300">
-                                        Role
-                                    </th>
-                                    <th className="px-6 py-4 text-left text-xs font-semibold tracking-wider text-gray-600 uppercase dark:text-gray-300">
-                                        Status
-                                    </th>
-                                    <th className="px-6 py-4 text-left text-xs font-semibold tracking-wider text-gray-600 uppercase dark:text-gray-300">
-                                        Aksi
-                                    </th>
-                                </tr>
-                            </thead>
-                            <tbody className="divide-y divide-gray-200 dark:divide-gray-700">
-                                {add_staff.length === 0 ? (
-                                    <tr>
-                                        <td
-                                            colSpan={3}
-                                            className="px-6 py-12 text-center text-sm text-gray-500 dark:text-gray-400"
+                {/* Konten utama: Card di mobile, tabel di md+ */}
+                <div className="space-y-4 md:space-y-0 md:rounded-2xl md:border md:border-gray-200 md:bg-white md:shadow-sm md:dark:border-gray-700 md:dark:bg-gray-800">
+                    {add_staff.length === 0 ? (
+                        <div className="rounded-xl border bg-white p-8 text-center text-sm text-gray-500 md:border-0 dark:border-gray-700 dark:bg-gray-800 dark:text-gray-400">
+                            Belum ada data request role.
+                        </div>
+                    ) : (
+                        add_staff.map((item, nourut) => (
+                            <div
+                                key={item.id}
+                                className={`group relative flex flex-col gap-3 rounded-xl border bg-white p-4 shadow-sm transition-colors md:table-row md:border-0 md:bg-transparent md:p-0 md:shadow-none md:hover:bg-gray-50 dark:border-gray-700 dark:bg-gray-800 md:dark:hover:bg-gray-700/50`}
+                            >
+                                {/* Baris 1: No + Nama (header card di mobile) */}
+                                <div className="flex items-center justify-between md:table-cell md:px-6 md:py-4">
+                                    <div className="text-sm font-semibold text-gray-700 md:hidden dark:text-gray-300">
+                                        #{(page - 1) * limit + nourut + 1}
+                                    </div>
+                                    <div className="text-base font-medium text-gray-900 dark:text-gray-100">
+                                        {item.staff?.name || '—'}
+                                    </div>
+                                </div>
+
+                                {/* Role */}
+                                <div className="text-sm text-gray-600 md:table-cell md:px-6 md:py-4 dark:text-gray-400">
+                                    <span className="mr-2 inline-block font-semibold text-gray-700 md:hidden dark:text-gray-300">
+                                        Role:
+                                    </span>
+                                    {item.role?.role || '—'}
+                                </div>
+
+                                {/* Status */}
+                                <div className="text-sm text-gray-600 md:table-cell md:px-6 md:py-4 dark:text-gray-400">
+                                    <span className="mr-2 inline-block font-semibold text-gray-700 md:hidden dark:text-gray-300">
+                                        Status:
+                                    </span>
+                                    <span
+                                        className={getStatusClass(item.status)}
+                                    >
+                                        {item.status}
+                                    </span>
+                                </div>
+
+                                {/* Aksi */}
+                                <div className="text-right md:table-cell md:px-6 md:py-4">
+                                    <div className="flex flex-col gap-3 sm:flex-row md:justify-end">
+                                        <button
+                                            type="button"
+                                            onClick={() =>
+                                                handleTerima(item.id)
+                                            }
+                                            className={`flex flex-1 items-center justify-center gap-1.5 rounded-lg bg-green-50 px-4 py-2.5 text-sm font-medium text-green-700 transition-colors hover:bg-green-100 md:flex-none dark:bg-green-900/30 dark:text-green-300 dark:hover:bg-green-900/50`}
                                         >
-                                            Belum ada data request role.
-                                        </td>
-                                    </tr>
-                                ) : (
-                                    add_staff.map((item, nourut) => (
-                                        <tr
-                                            key={item.id}
-                                            className="bg-white transition-colors hover:bg-gray-50 dark:bg-gray-800 dark:hover:bg-gray-700/50"
+                                            <CheckIcon className="h-4 w-4" />
+                                            Terima
+                                        </button>
+
+                                        <button
+                                            type="button"
+                                            onClick={() => handleTolak(item.id)}
+                                            className={`flex flex-1 items-center justify-center gap-1.5 rounded-lg bg-red-50 px-4 py-2.5 text-sm font-medium text-red-700 transition-colors hover:bg-red-100 md:flex-none dark:bg-red-900/30 dark:text-red-300 dark:hover:bg-red-900/50`}
                                         >
-                                            <td className="px-6 py-4 text-sm text-gray-600 tabular-nums dark:text-gray-400">
-                                                {(page - 1) * limit +
-                                                    nourut +
-                                                    1}
-                                            </td>
-                                            <td className="px-6 py-4 text-sm font-medium text-gray-900 dark:text-gray-100">
-                                                {item.staff?.name}
-                                            </td>
-                                            <td className="px-6 py-4 text-sm font-medium text-gray-900 dark:text-gray-100">
-                                                {item.role?.role}
-                                            </td>
-                                            <td className="px-6 py-4 text-sm font-medium text-gray-900 dark:text-gray-100">
-                                                {item.status}
-                                            </td>
-                                            <td className="px-6 py-4 text-right">
-                                                <div className="flex justify-center gap-2">
-                                                    <button
-                                                        type="button"
-                                                        onClick={() =>
-                                                            handleTerima(
-                                                                item.id,
-                                                            )
-                                                        }
-                                                        className="inline-flex items-center gap-1.5 rounded-lg bg-blue-50 px-3 py-1.5 text-sm font-medium text-blue-700 transition-colors hover:bg-blue-100 dark:bg-blue-900/30 dark:text-blue-300 dark:hover:bg-blue-900/50"
-                                                        title="Detail"
-                                                    >
-                                                        <CheckIcon className="h-4 w-4" />
-                                                        Terima
-                                                    </button>
-                                                    <button
-                                                        type="button"
-                                                        onClick={() =>
-                                                            handleTolak(item.id)
-                                                        }
-                                                        className="inline-flex items-center gap-1.5 rounded-lg bg-blue-50 px-3 py-1.5 text-sm font-medium text-blue-700 transition-colors hover:bg-blue-100 dark:bg-blue-900/30 dark:text-blue-300 dark:hover:bg-blue-900/50"
-                                                        title="Detail"
-                                                    >
-                                                        <MinusCircleIcon className="h-4 w-4" />
-                                                        Tolak
-                                                    </button>
-                                                </div>
-                                            </td>
-                                        </tr>
-                                    ))
-                                )}
-                            </tbody>
-                        </table>
-                    </div>
+                                            <MinusCircleIcon className="h-4 w-4" />
+                                            Tolak
+                                        </button>
+                                    </div>
+                                </div>
+                            </div>
+                        ))
+                    )}
                 </div>
             </main>
         </AppLayout>

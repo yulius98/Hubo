@@ -23,21 +23,21 @@ class Transaksi extends Model
 
     public function user()
     {
-        return $this -> belongsTo(User::class,'id_user');
+        return $this->belongsTo(User::class, 'id_user');
     }
 
     public function outlet()
     {
-        return $this -> belongsTo(Outlet::class,'id_outlet');
+        return $this->belongsTo(Outlet::class, 'id_outlet');
     }
 
     public function kategori()
     {
-        return $this -> belongsTo(Kategori::class,'id_kategori');
+        return $this->belongsTo(Kategori::class, 'id_kategori');
     }
 
     public function produk()
     {
-        return $this -> belongsTo(Produk::class, 'id_produk');
+        return $this->belongsTo(Produk::class, 'id_produk');
     }
 }

@@ -3,17 +3,19 @@
 namespace App\Http\Controllers;
 
 use App\Models\Kategori;
-use App\Models\Produk;
 use App\Models\Outlet;
+use App\Models\Produk;
 use Illuminate\Http\Request;
-use Inertia\Inertia;
-use Illuminate\Support\Str;
-use Intervention\Image\ImageManager;
-use Intervention\Image\Drivers\Gd\Driver;
 use Illuminate\Support\Facades\File;
+use Illuminate\Support\Str;
+use Inertia\Inertia;
+use Intervention\Image\Drivers\Gd\Driver;
+use Intervention\Image\ImageManager;
 
 class ProdukController extends Controller
 {
+    private const PRODUK_IMAGE_PATH = 'app/public/produks/';
+
     /**
      * Display a listing of the resource.
      */
@@ -21,18 +23,18 @@ class ProdukController extends Controller
     {
         $outlet = Outlet::findOrFail($outlet_id);
         $kategori = Kategori::all();
-        $produk = Produk::where('id_outlet', $outlet_id)
-                ->with('kategori')
-                ->paginate(10);
+        $produk = Produk::with('kategori:id,kategori')
+            ->where('id_outlet', $outlet->id)
+            ->paginate(10);
+
         $jmlProduk = $produk->total();
 
-        return Inertia::render('akun_users/produk_user_page',[
-            'outlet'    => $outlet,
-            'kategori'  => $kategori,
-            'produk'    => $produk,
+        return Inertia::render('akun_users/produk_user_page', [
+            'outlet' => $outlet,
+            'kategori' => $kategori,
+            'produk' => $produk,
             'jmlProduk' => $jmlProduk,
         ]);
-
 
     }
 
@@ -49,24 +51,24 @@ class ProdukController extends Controller
      */
     public function store(Request $request)
     {
-           $validated = $request->validate([
-                'id_outlet'     => 'required|numeric',
-                'id_kategori'   =>  'required|numeric',
-                'gambar'        => 'nullable|image|mimes:jpeg,png,jpg,webp,avif|max:200',
-                'nama_produk'   => 'required|string|max:255',
-                'keterangan'    => 'nullable|string',
-                'harga'         => 'required|numeric',
-                'diskon'        => 'required|string',
-                'harga_diskon'  => 'nullable|numeric',
-            ]);
+        $validated = $request->validate([
+            'id_outlet' => 'required|numeric',
+            'id_kategori' => 'required|numeric',
+            'gambar' => 'nullable|image|mimes:jpeg,png,jpg,webp,avif|max:200',
+            'nama_produk' => 'required|string|max:255',
+            'keterangan' => 'nullable|string',
+            'harga' => 'required|numeric',
+            'diskon' => 'required|string',
+            'harga_diskon' => 'nullable|numeric',
+        ]);
 
         if ($request->hasFile('gambar')) {
             $file = $request->file('gambar');
             $produkName = Str::slug($validated['nama_produk']); // nama-produk
-            $filename = $produkName . '.webp';
+            $filename = $produkName.'.webp';
 
             // Proses gambar → konversi ke WebP
-            $manager = new ImageManager(new Driver());
+            $manager = new ImageManager(new Driver);
             $image = $manager->read($file);
 
             // Opsional: resize jika mau (contoh max width 1200px)
@@ -76,14 +78,14 @@ class ProdukController extends Controller
             $image->toWebp(80);
 
             // Simpan langsung ke folder public/outlets
-            $destinationPath = storage_path('app/public/produks');
+            $destinationPath = storage_path(self::PRODUK_IMAGE_PATH);
 
-            if (!File::exists($destinationPath)) {
+            if (! File::exists($destinationPath)) {
                 File::makeDirectory($destinationPath, 0755, true);
             }
 
-            $image->save($destinationPath . '/' . $filename);
-            $validated['gambar'] = 'storage/produks/' . $filename;
+            $image->save($destinationPath.basename($filename));
+            $validated['gambar'] = 'storage/produks/'.$filename;
         } else {
             // Jika tidak ada file yang diupload, hapus dari validated
             unset($validated['gambar']);
@@ -116,41 +118,39 @@ class ProdukController extends Controller
     public function update(Request $request, Produk $produk)
     {
         $validated = $request->validate([
-            'id_outlet'     => 'required|numeric',
-            'id_kategori'   =>  'required|numeric',
-            'gambar'        => 'nullable|image|mimes:jpeg,png,jpg,webp,avif|max:200',
-            'nama_produk'   => 'required|string|max:255',
-            'keterangan'    => 'nullable|string',
-            'harga'         => 'required|numeric',
-            'diskon'        => 'required|string',
-            'harga_diskon'  => 'nullable|numeric',
+            'id_outlet' => 'required|numeric',
+            'id_kategori' => 'required|numeric',
+            'gambar' => 'nullable|image|mimes:jpeg,png,jpg,webp,avif|max:200',
+            'nama_produk' => 'required|string|max:255',
+            'keterangan' => 'nullable|string',
+            'harga' => 'required|numeric',
+            'diskon' => 'required|string',
+            'harga_diskon' => 'nullable|numeric',
         ]);
-
-        //dd($validated);
 
         if ($request->hasFile('gambar')) {
             // Hapus gambar lama jika ada
-            if ($produk->gambar && file_exists(storage_path('app/public/produks/' . basename($produk->gambar)))) {
-                unlink(storage_path('app/public/produks/' . basename($produk->gambar)));
+            if ($produk->gambar && file_exists(storage_path(self::PRODUK_IMAGE_PATH.basename($produk->gambar)))) {
+                unlink(storage_path(self::PRODUK_IMAGE_PATH.basename($produk->gambar)));
             }
 
             $file = $request->file('gambar');
-            $produkName = Str::slug($validated['nama_produk'],'-');
-            $filename = $produkName . '.webp';
+            $produkName = Str::slug($validated['nama_produk'], '-');
+            $filename = $produkName.'.webp';
 
-            $manager = new ImageManager(new Driver());
+            $manager = new ImageManager(new Driver);
             $image = $manager->read($file);
             $image->scale(width: 200);
             $image->toWebp(80);
 
             // Ensure directory exists
-            $destinationPath = storage_path('app/public/outlets');
-            if (!File::exists($destinationPath)) {
+            $destinationPath = storage_path(self::PRODUK_IMAGE_PATH);
+            if (! File::exists($destinationPath)) {
                 File::makeDirectory($destinationPath, 0755, true);
             }
 
-            $image->save($destinationPath . '/' . $filename);
-            $validated['gambar'] = 'storage/outlets/' . $filename;
+            $image->save($destinationPath.basename($filename));
+            $validated['gambar'] = 'storage/outlets/'.$filename;
         } else {
             // Jika tidak ada file baru, hapus dari validated agar tidak overwrite
             unset($validated['gambar']);
@@ -170,8 +170,8 @@ class ProdukController extends Controller
     public function destroy(Produk $produk)
     {
         // Hapus gambar jika ada
-        if ($produk->gambar && file_exists(storage_path('app/public/produks/' . basename($produk->gambar)))) {
-            unlink(storage_path('app/public/produks/' . basename($produk->gambar)));
+        if ($produk->gambar && file_exists(storage_path(self::PRODUK_IMAGE_PATH.basename($produk->gambar)))) {
+            unlink(storage_path(self::PRODUK_IMAGE_PATH.basename($produk->gambar)));
         }
 
         $produk->delete();

@@ -7,7 +7,6 @@ use App\Models\User;
 use Illuminate\Http\Request;
 use Inertia\Inertia;
 
-
 class RequestRoleController extends Controller
 {
     /**
@@ -18,13 +17,13 @@ class RequestRoleController extends Controller
 
         $add_staff = RequestRole::with([
             'staff:id,name',
-            'role:id,role'
+            'role:id,role',
         ])
-        -> where ('outlet_id', $outlet_id)
-        -> where ('status', 'pending')
-        -> get();
+            ->where('outlet_id', $outlet_id)
+            ->where('status', 'pending')
+            ->get();
 
-        return inertia::render('akun_users/tambah_staff',['add_staff' => $add_staff]);
+        return Inertia::render('akun_users/tambah_staff', ['add_staff' => $add_staff]);
     }
 
     public function terima($id)
@@ -37,16 +36,14 @@ class RequestRoleController extends Controller
         );
 
         RequestRole::where('id', $id)
-        ->update([
-            'status' => 'done',
-        ]);
+            ->update([
+                'status' => 'done',
+            ]);
 
         $user->role()->attach(
             $data_staf->user_id,
             ['role_id' => $data_staf->role_id]
         );
-
-
 
         return redirect()->back()->with('success', 'Request berhasil dikirim');
 
@@ -56,9 +53,9 @@ class RequestRoleController extends Controller
     {
 
         RequestRole::where('id', $id)
-        ->update([
-            'status' => 'reject',
-        ]);
+            ->update([
+                'status' => 'reject',
+            ]);
 
         return redirect()->back()->with('success', 'Request berhasil ditolak');
 

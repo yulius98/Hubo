@@ -12,12 +12,12 @@ class Role extends Model
     use HasFactory, Notifiable, SoftDeletes;
 
     protected $fillable = [
-        'role'
+        'role',
     ];
 
     public function user()
     {
-        return $this -> belongsToMany(User::class)
+        return $this->belongsToMany(User::class)
             ->withTimestamps();
     }
 
@@ -25,6 +25,4 @@ class Role extends Model
     {
         return $this->hasMany(RequestRole::class, 'id_role');
     }
-
-
 }

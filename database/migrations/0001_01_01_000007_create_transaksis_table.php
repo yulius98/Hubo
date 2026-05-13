@@ -22,7 +22,7 @@ return new class extends Migration
             $table->foreign('id_kategori')->references('id')->on('kategoris')->onDelete('cascade');
             $table->unsignedBigInteger('id_produk');
             $table->foreign('id_produk')->references('id')->on('produks')->onDelete('cascade');
-            $table->enum('jenis_transaksi',['IN','OUT']);
+            $table->enum('jenis_transaksi', ['IN', 'OUT']);
             $table->integer('jumlah_produk');
             $table->softDeletes();
             $table->timestamps();

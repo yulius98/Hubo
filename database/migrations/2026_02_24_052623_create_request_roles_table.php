@@ -21,7 +21,7 @@ return new class extends Migration
             $table->foreign('role_id')->references('id')->on('roles')->onDelete('cascade');
             $table->unsignedBigInteger('outlet_id');
             $table->foreign('outlet_id')->references('id')->on('outlets')->onDelete('cascade');
-            $table->enum('status',['pending','done', 'reject'])->default('pending');
+            $table->enum('status', ['pending', 'done', 'reject'])->default('pending');
             $table->softDeletes();
             $table->timestamps();
         });

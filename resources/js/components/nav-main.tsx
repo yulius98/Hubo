@@ -9,12 +9,10 @@ import {
 import { useCurrentUrl } from '@/hooks/use-current-url';
 import type { NavItem } from '@/types';
 
-
 type NavMainProps = {
     items: NavItem[];
     onItemClick?: (item: NavItem) => void; // tambahkan properti opsional
 };
-
 
 export function NavMain({ items = [], onItemClick }: NavMainProps) {
     const { isCurrentUrl } = useCurrentUrl();

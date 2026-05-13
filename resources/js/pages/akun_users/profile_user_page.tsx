@@ -1,5 +1,6 @@
 import { Transition } from '@headlessui/react';
 import { Form, Head, usePage } from '@inertiajs/react';
+import { update } from '@/actions/App/Http/Controllers/Settings/ProfileController';
 import DeleteUser from '@/components/delete-user';
 import Heading from '@/components/heading';
 import InputError from '@/components/input-error';
@@ -7,10 +8,9 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import AppLayout from '@/layouts/app-layout';
-import SettingsLayout from '@/layouts/settings/layout';
-import type { BreadcrumbItem } from '@/types';
-import { update } from '@/actions/App/Http/Controllers/Settings/ProfileController';
+
 import { edit } from '@/routes/profile';
+import type { BreadcrumbItem } from '@/types';
 
 const breadcrumbs: BreadcrumbItem[] = [
     {
@@ -82,6 +82,26 @@ export default function Profile() {
                                         className="mt-2"
                                         message={errors.email}
                                     />
+                                </div>
+
+                                <div className="grid gap-2">
+                                    <Label>Role / Hak Akses</Label>
+                                    <div className="flex flex-wrap gap-2">
+                                        {auth.user.role?.length ? (
+                                            auth.user.role.map((r) => (
+                                                <span
+                                                    key={r.id}
+                                                    className="inline-flex items-center rounded-full bg-gradient-to-r from-blue-500 to-cyan-500 px-3.5 py-1.5 text-xs font-semibold text-white shadow-sm"
+                                                >
+                                                    {r.role}
+                                                </span>
+                                            ))
+                                        ) : (
+                                            <span className="text-sm text-neutral-500">
+                                                Tidak ada role
+                                            </span>
+                                        )}
+                                    </div>
                                 </div>
 
                                 <div className="flex items-center gap-4">

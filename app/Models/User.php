@@ -2,16 +2,16 @@
 
 namespace App\Models;
 
+use Database\Factories\UserFactory;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\SoftDeletes;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
-use App\Models\Role;
 
 class User extends Authenticatable
 {
-    /** @use HasFactory<\Database\Factories\UserFactory> */
+    /** @use HasFactory<UserFactory> */
     use HasFactory, Notifiable, SoftDeletes;
 
     /**
@@ -55,32 +55,32 @@ class User extends Authenticatable
 
     public function kategori(): HasMany
     {
-        return $this->hasMany(Kategori::class , 'id_user');
+        return $this->hasMany(Kategori::class, 'id_user');
     }
 
     public function produk(): HasMany
     {
-        return $this->hasMany(Produk::class , 'id_user');
+        return $this->hasMany(Produk::class, 'id_user');
     }
 
     public function transaksi(): HasMany
     {
-        return $this->hasMany(Transaksi::class , 'id_user');
+        return $this->hasMany(Transaksi::class, 'id_user');
     }
 
     public function keranjangbelanjauser(): HasMany
     {
-        return $this->hasMany(KeranjangBelanjaUser::class , 'id_user');
+        return $this->hasMany(KeranjangBelanjaUser::class, 'id_user');
     }
 
     public function keranjangbelanjakasir(): HasMany
     {
-        return $this->hasMany(KeranjangBelanjaKasir::class , 'id_user');
+        return $this->hasMany(KeranjangBelanjaKasir::class, 'id_user');
     }
 
     public function outlets()
     {
-        return $this->belongsToMany(Outlet::class,'outlet_user')
+        return $this->belongsToMany(Outlet::class, 'outlet_user')
             ->withPivot('role_id')
             ->withTimestamps();
     }
@@ -97,7 +97,7 @@ class User extends Authenticatable
 
             static $defaultRoleId = null;
 
-            if (!$defaultRoleId) {
+            if (! $defaultRoleId) {
                 $defaultRoleId = Role::where('role', 'user')->value('id');
             }
 
@@ -117,6 +117,4 @@ class User extends Authenticatable
     {
         return $this->belongsTo(User::class, 'id_owner');
     }
-
-
 }

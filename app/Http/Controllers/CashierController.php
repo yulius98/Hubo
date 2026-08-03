@@ -2,8 +2,8 @@
 
 namespace App\Http\Controllers;
 
-use App\Models\Outlet;
 use App\Models\Produk;
+use App\Models\Role;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
@@ -14,15 +14,28 @@ class CashierController extends Controller
     /**
      * Display a listing of the resource.
      */
-    public function index()
+    public function index(Request $request)
     {
+        $user = Auth::user();
+        $kasirRoleId = Role::where('role', 'kasir')->value('id');
+        $ownerRoleId = Role::where('role', 'owner outlet')->value('id');
 
-        $outlet = Outlet::whereHas('users', function ($q) {
-            $q->where('users.id', Auth::id())   // ambil id user yang sedang login
-                ->where('outlet_user.role_id', 5); // pastikan role kasir
-        })
-            ->select(['id', 'nama_outlet'])
+        $outlet = $user->outlets()
+            ->wherePivot('role_id', $kasirRoleId)
+            ->select(['outlets.id', 'outlets.nama_outlet'])
             ->first();
+
+        if (! $outlet) {
+            $owned = $user->outlets()
+                ->wherePivot('role_id', $ownerRoleId)
+                ->select(['outlets.id', 'outlets.nama_outlet'])
+                ->get();
+
+            $selectedOutletId = (int) $request->session()->get('selected_outlet_id');
+            $outlet = $owned->firstWhere('id', $selectedOutletId) ?? $owned->first();
+        }
+
+        abort_unless($outlet, 403, 'Unauthorized.');
 
         $produks = Produk::where('id_outlet', $outlet->id)
             ->orderBy('nama_produk')
@@ -37,8 +50,7 @@ class CashierController extends Controller
             }], 'jumlah_produk')
             ->get();
 
-        return Inertia::render('akun_users/Cashier_page', ['outlet' => $outlet ?? [], 'produks' => $produks]);
-
+        return Inertia::render('akun_users/Cashier_page', ['outlet' => $outlet, 'produks' => $produks]);
     }
 
     /**

@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Models\Outlet;
+use App\Models\Role;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\File;
@@ -82,10 +83,11 @@ class OutletController extends Controller
 
         $outlet = Outlet::create($validated);
         $user = Auth::user();
+        $ownerRoleId = Role::where('role', 'owner outlet')->value('id');
         $user->outlets()->attach($outlet->id, [
-            'role_id' => 2,
+            'role_id' => $ownerRoleId,
         ]);
-        $user->role()->syncWithoutDetaching([2]);
+        $user->role()->syncWithoutDetaching([$ownerRoleId]);
 
         return redirect()->back()->with('success', 'Outlet berhasil ditambahkan');
     }
@@ -111,6 +113,8 @@ class OutletController extends Controller
      */
     public function update(Request $request, Outlet $outlet)
     {
+        $this->authorize('update', $outlet);
+
         // Validasi dulu (wajib)
         $validated = $request->validate([
             'gambar' => 'nullable|image|mimes:jpeg,png,jpg,webp,avif|max:200',
@@ -161,6 +165,8 @@ class OutletController extends Controller
      */
     public function destroy(Outlet $outlet)
     {
+        $this->authorize('delete', $outlet);
+
         // Hapus gambar jika ada
         if ($outlet->gambar && file_exists(storage_path(self::STORAGE_OUTLET_PATH.'/'.basename($outlet->gambar)))) {
             unlink(storage_path(self::STORAGE_OUTLET_PATH.'/'.basename($outlet->gambar)));

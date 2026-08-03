@@ -433,7 +433,7 @@ Hubo/
 │   │   ├── layouts/            # Layout components
 │   │   ├── pages/              # Page components
 │   │   │   ├── akun_users/    # User account pages
-│   │   │   ├── akun_admin_app/ # Admin pages
+│   │   │   ├── produk/        # Product pages
 │   │   │   └── settings/      # Settings pages
 │   │   ├── lib/                # Utility functions
 │   │   └── types/              # TypeScript types

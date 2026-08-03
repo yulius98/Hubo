@@ -16,7 +16,6 @@ class RoleSeeder extends Seeder
             'user',
             'owner outlet',
             'admin outlet',
-            'admin app',
             'kasir',
         ];
 

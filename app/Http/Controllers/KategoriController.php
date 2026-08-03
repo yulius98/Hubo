@@ -3,6 +3,8 @@
 namespace App\Http\Controllers;
 
 use App\Models\Kategori;
+use App\Models\Outlet;
+use App\Models\Role;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\File;
@@ -20,11 +22,38 @@ class KategoriController extends Controller
      */
     public function index()
     {
-        $kategori = Kategori::paginate(10);
         $user = Auth::user();
+        $user->load('role');
+
+        $ownerRoleId = Role::where('role', 'owner outlet')->value('id');
+        $adminRoleId = Role::where('role', 'admin outlet')->value('id');
+        $roleNames = $user->role->pluck('role')->toArray();
+
+        if (in_array('owner outlet', $roleNames)) {
+            $accessibleOutlets = $user->outlets()->wherePivot('role_id', $ownerRoleId)->pluck('outlets.id');
+        } elseif (in_array('admin outlet', $roleNames)) {
+            $accessibleOutlets = $user->outlets()->wherePivot('role_id', $adminRoleId)->pluck('outlets.id');
+        } else {
+            $accessibleOutlets = collect([]);
+        }
+
+        $selectedOutletId = (int) session('selected_outlet_id', 0);
+
+        if ($selectedOutletId && $accessibleOutlets->contains($selectedOutletId)) {
+            $outlet = Outlet::find($selectedOutletId);
+            $this->authorize('viewAny', [Kategori::class, $outlet]);
+
+            $outletIds = collect([$selectedOutletId]);
+        } else {
+            $outletIds = $accessibleOutlets;
+        }
+
+        $kategori = Kategori::query()
+            ->whereIn('id_outlet', $outletIds)
+            ->paginate(10);
         $jmlKategori = $kategori->total();
 
-        return Inertia::render('akun_admin_app/kelola_kategori', ['kategoris' => $kategori, 'jmlKategori' => $jmlKategori, 'id_user' => $user->id]);
+        return Inertia::render('akun_users/kelola_kategori', ['kategoris' => $kategori, 'jmlKategori' => $jmlKategori, 'id_user' => $user->id]);
     }
 
     /**
@@ -43,9 +72,16 @@ class KategoriController extends Controller
 
         $validated = $request->validate([
             'id_user' => 'required|numeric',
+            'id_outlet' => 'nullable|integer|exists:outlets,id',
             'gambar' => 'nullable|image|mimes:jpeg,png,jpg,webp,avif|max:200',
             'kategori' => 'required|string|max:255',
         ]);
+
+        $validated['id_outlet'] = $validated['id_outlet'] ?? session('selected_outlet_id');
+
+        $outlet = $validated['id_outlet'] ? Outlet::find($validated['id_outlet']) : null;
+        abort_unless($outlet, 403, 'Silakan pilih outlet terlebih dahulu.');
+        $this->authorize('create', [Kategori::class, $outlet]);
 
         if ($request->hasFile('gambar')) {
             $file = $request->file('gambar');
@@ -105,10 +141,17 @@ class KategoriController extends Controller
         // Validasi dulu (wajib)
         $validated = $request->validate([
             'id_user' => 'required|numeric',
+            'id_outlet' => 'nullable|integer|exists:outlets,id',
             'gambar' => 'nullable|image|mimes:jpeg,png,jpg,webp,avif|max:200',
             'kategori' => 'required|string|max:255',
 
         ]);
+
+        $validated['id_outlet'] = $validated['id_outlet'] ?? session('selected_outlet_id');
+
+        $outlet = $validated['id_outlet'] ? Outlet::find($validated['id_outlet']) : $kategori->outlet;
+        abort_unless($outlet, 403, 'Silakan pilih outlet terlebih dahulu.');
+        $this->authorize('update', $kategori);
 
         if ($request->hasFile('gambar')) {
             // Hapus gambar lama jika ada
@@ -152,6 +195,8 @@ class KategoriController extends Controller
      */
     public function destroy(Kategori $kategori)
     {
+        $this->authorize('delete', $kategori);
+
         // Hapus gambar jika ada
         if ($kategori->gambar && file_exists(storage_path(self::KATEGORI_PATH.basename($kategori->gambar)))) {
             unlink(storage_path(self::KATEGORI_PATH.basename($kategori->gambar)));

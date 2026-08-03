@@ -7,35 +7,67 @@ import {
     SidebarMenuItem,
 } from '@/components/ui/sidebar';
 import { useCurrentUrl } from '@/hooks/use-current-url';
+import { cn } from '@/lib/utils';
 import type { NavItem } from '@/types';
 
-type NavMainProps = {
+export type NavSection = {
+    label: string;
     items: NavItem[];
-    onItemClick?: (item: NavItem) => void; // tambahkan properti opsional
 };
 
-export function NavMain({ items = [], onItemClick }: NavMainProps) {
+type NavMainProps = {
+    sections?: NavSection[];
+    onItemClick?: (item: NavItem) => void;
+};
+
+export function NavMain({ sections = [], onItemClick }: NavMainProps) {
     const { isCurrentUrl } = useCurrentUrl();
 
     return (
-        <SidebarGroup className="px-2 py-0">
-            <SidebarGroupLabel>Platform</SidebarGroupLabel>
-            <SidebarMenu>
-                {items.map((item) => (
-                    <SidebarMenuItem key={item.title}>
-                        <SidebarMenuButton
-                            asChild
-                            isActive={isCurrentUrl(item.href)}
-                            tooltip={{ children: item.title }}
-                        >
-                            <Link href={item.href} prefetch>
-                                {item.icon && <item.icon />}
-                                <span>{item.title}</span>
-                            </Link>
-                        </SidebarMenuButton>
-                    </SidebarMenuItem>
-                ))}
-            </SidebarMenu>
-        </SidebarGroup>
+        <>
+            {sections.map((section) => (
+                <SidebarGroup key={section.label} className="px-2 py-0">
+                    <SidebarGroupLabel className="px-2 text-[10px] font-semibold tracking-[0.2em] text-sidebar-foreground/45 uppercase">
+                        {section.label}
+                    </SidebarGroupLabel>
+                    <SidebarMenu className="gap-1 px-1">
+                        {section.items.map((item) => {
+                            const active = isCurrentUrl(item.href);
+
+                            return (
+                                <SidebarMenuItem key={item.title}>
+                                    <SidebarMenuButton
+                                        asChild
+                                        isActive={active}
+                                        tooltip={{ children: item.title }}
+                                        className={cn(
+                                            'h-9 rounded-lg px-3 text-[13px] font-medium transition-all duration-200',
+                                            'text-sidebar-foreground/75 hover:bg-sidebar-accent hover:text-sidebar-accent-foreground',
+                                            active &&
+                                                'bg-gradient-to-r from-indigo-500/90 via-blue-500/85 to-cyan-500/80 text-white shadow-lg shadow-indigo-500/25',
+                                        )}
+                                    >
+                                        <Link
+                                            href={item.href}
+                                            prefetch
+                                            onClick={() => onItemClick?.(item)}
+                                            className="relative"
+                                        >
+                                            {active && (
+                                                <span className="absolute top-1/2 left-0 h-5 w-1 -translate-y-1/2 rounded-r-full bg-gradient-to-b from-cyan-300 to-indigo-400" />
+                                            )}
+                                            {item.icon && (
+                                                <item.icon className="size-4 shrink-0" />
+                                            )}
+                                            <span>{item.title}</span>
+                                        </Link>
+                                    </SidebarMenuButton>
+                                </SidebarMenuItem>
+                            );
+                        })}
+                    </SidebarMenu>
+                </SidebarGroup>
+            ))}
+        </>
     );
 }

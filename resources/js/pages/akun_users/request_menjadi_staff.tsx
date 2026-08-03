@@ -29,7 +29,9 @@ interface RequestUserPageProps {
     jmlOutlet: number;
     user_id: number;
     statusreq: StatusReq[];
-    userOutletRoles: number[];
+    userRoles: string[];
+    adminRoleId: number;
+    kasirRoleId: number;
 }
 
 const breadcrumbs: BreadcrumbItem[] = [
@@ -44,16 +46,19 @@ export default function Request_Menjadi_Staff({
     jmlOutlet,
     user_id,
     statusreq,
-    userOutletRoles,
+    userRoles,
+    adminRoleId,
+    kasirRoleId,
 }: Readonly<RequestUserPageProps>) {
     const [page] = useState(1);
     const [limit] = useState(10);
 
-    const isKasir = userOutletRoles.includes(5);
-    const isAdmin = userOutletRoles.includes(3);
+    const isOwner = userRoles.includes('owner outlet');
+    const isKasir = userRoles.includes('kasir');
+    const isAdmin = userRoles.includes('admin outlet');
 
-    const canRequestKasir = !isKasir && !isAdmin;
-    const canRequestAdmin = !isKasir;
+    const canRequestKasir = !isOwner && !isKasir && !isAdmin;
+    const canRequestAdmin = !isOwner && !isKasir;
     const noRolesAvailable = !canRequestKasir && !canRequestAdmin;
 
     const getStatusStyles = (status: string) => {
@@ -136,6 +141,11 @@ export default function Request_Menjadi_Staff({
                     </div>
 
                     <div className="px-5 py-6 sm:p-6">
+                        {isOwner && (
+                            <div className="mb-6 rounded-lg border border-yellow-300 bg-yellow-50 px-4 py-3 text-sm text-yellow-800 dark:border-yellow-600/40 dark:bg-yellow-900/30 dark:text-yellow-200">
+                                Anda adalah <strong>Pemilik Outlet</strong>. Anda tidak dapat mengajukan menjadi karyawan/staff.
+                            </div>
+                        )}
                         {isKasir && (
                             <div className="mb-6 rounded-lg border border-yellow-300 bg-yellow-50 px-4 py-3 text-sm text-yellow-800 dark:border-yellow-600/40 dark:bg-yellow-900/30 dark:text-yellow-200">
                                 Anda sudah terdaftar sebagai <strong>Kasir</strong> di salah satu outlet. Anda tidak dapat mengajukan menjadi kasir lagi, dan tidak dapat mengajukan menjadi admin.
@@ -146,7 +156,13 @@ export default function Request_Menjadi_Staff({
                                 Anda sudah terdaftar sebagai <strong>Admin Outlet</strong>. Anda tidak dapat mengajukan role lain.
                             </div>
                         )}
-                        <form onSubmit={handlerequest} className="space-y-6">
+
+                        {noRolesAvailable ? (
+                            <div className="rounded-lg border border-gray-200 bg-gray-50 px-4 py-8 text-center text-sm text-gray-500 dark:border-gray-700 dark:bg-gray-900/40 dark:text-gray-400">
+                                Tidak ada role yang dapat Anda ajukan.
+                            </div>
+                        ) : (
+                            <form onSubmit={handlerequest} className="space-y-6">
                             <div className="grid grid-cols-1 gap-5 sm:grid-cols-2 lg:gap-6">
                                 {/* Pilih Outlet */}
                                 <div>
@@ -218,10 +234,10 @@ export default function Request_Menjadi_Staff({
                                         className="block w-full rounded-lg border border-gray-300 bg-white px-4 py-2.5 text-gray-900 focus:border-blue-500 focus:ring-2 focus:ring-blue-500 sm:text-sm dark:border-gray-600 dark:bg-gray-700 dark:text-gray-100"
                                     >
                                         <option value="">— Pilih Role —</option>
-                                        <option value="3" disabled={!canRequestAdmin}>
+                                        <option value={adminRoleId} disabled={!canRequestAdmin}>
                                             Admin Outlet{!canRequestAdmin ? ' (tidak tersedia)' : ''}
                                         </option>
-                                        <option value="5" disabled={!canRequestKasir}>
+                                        <option value={kasirRoleId} disabled={!canRequestKasir}>
                                             Kasir Outlet{!canRequestKasir ? ' (tidak tersedia)' : ''}
                                         </option>
                                     </select>
@@ -268,7 +284,8 @@ export default function Request_Menjadi_Staff({
                                     )}
                                 </button>
                             </div>
-                        </form>
+                            </form>
+                        )}
                     </div>
                 </div>
 

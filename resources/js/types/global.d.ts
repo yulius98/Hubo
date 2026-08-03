@@ -21,5 +21,6 @@ declare module '@inertiajs/core' {
         sidebarOutlets: OutletOption[];
         canSelectAll: boolean;
         selectedOutletId: number | null;
+        sidebarOpen?: boolean;
     }
 }

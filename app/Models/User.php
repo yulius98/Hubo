@@ -117,4 +117,17 @@ class User extends Authenticatable
     {
         return $this->belongsTo(User::class, 'id_owner');
     }
+
+    public function hasRole(string $role): bool
+    {
+        return $this->role()->where('role', $role)->exists();
+    }
+
+    public function hasOutletRole(Outlet $outlet, string $role): bool
+    {
+        return $this->outlets()
+            ->wherePivot('outlet_id', $outlet->id)
+            ->wherePivotIn('role_id', Role::where('role', $role)->pluck('id'))
+            ->exists();
+    }
 }

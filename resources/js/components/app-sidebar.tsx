@@ -1,16 +1,17 @@
 import { router, usePage } from '@inertiajs/react';
 import {
-    BookOpen,
-    Folder,
-    LayoutGrid,
+    Boxes,
+    Briefcase,
+    Building2,
+    ChevronDown,
     Home,
+    LayoutGrid,
+    List,
+    ReceiptText,
     Store,
     UserCircle,
-    List,
-    Briefcase,
 } from 'lucide-react';
-import { NavFooter } from '@/components/nav-footer';
-import { NavMain } from '@/components/nav-main';
+import { NavMain, type NavSection } from '@/components/nav-main';
 import { NavUser } from '@/components/nav-user';
 import {
     Sidebar,
@@ -22,16 +23,17 @@ import {
     SidebarMenu,
     SidebarMenuButton,
     SidebarMenuItem,
+    useSidebar,
 } from '@/components/ui/sidebar';
 import {
-    homepage,
+    cashier,
     dashboard,
+    homepage,
+    kategori,
     myoutlet,
     myprofile,
-    kelola_produk,
-    kategori,
+    produk,
     req_staff,
-    cashier,
 } from '@/routes';
 import type { NavItem } from '@/types';
 import AppLogo from './app-logo';
@@ -68,12 +70,6 @@ const mainNavItems: NavItem[] = [
     },
 
     {
-        title: 'Kelola Produk',
-        href: kelola_produk(),
-        icon: Store,
-    },
-
-    {
         title: 'Request Menjadi Karyawan',
         href: req_staff(),
         icon: Briefcase,
@@ -82,21 +78,17 @@ const mainNavItems: NavItem[] = [
     {
         title: 'Buka Layanan Kasir',
         href: cashier(),
-        icon: Briefcase,
+        icon: ReceiptText,
     },
 ];
 
-const footerNavItems: NavItem[] = [
-    {
-        title: 'Repository',
-        href: 'https://github.com/laravel/react-starter-kit',
-        icon: Folder,
-    },
-    {
-        title: 'Documentation',
-        href: 'https://laravel.com/docs/starter-kits#react',
-        icon: BookOpen,
-    },
+const menuUtamaTitles = ['Home', 'Profile', 'Dashboard', 'Buka Outlet'];
+
+const manajemenTitles = [
+    'Kelola Kategori',
+    'Kelola Produk',
+    'Request Menjadi Karyawan',
+    'Buka Layanan Kasir',
 ];
 
 export function AppSidebar({
@@ -105,28 +97,41 @@ export function AppSidebar({
     onNavigate?: (page: 'dashboard' | 'profile') => void;
 }>) {
     const { auth } = usePage().props;
+    const { isMobile, setOpenMobile } = useSidebar();
 
     // Check user roles
-    const hasAdminAppRole =
-        auth.user?.role?.some((r: any) => r.role === 'admin app') || false;
-
-    const hasKasirRole =
-        auth.user?.role?.some((r: any) => r.role === 'kasir') || false;
+    const userRoles = (auth.user?.role ?? []).map((r: any) => r.role);
+    const hasOwnerRole = userRoles.includes('owner outlet');
+    const hasAdminRole = userRoles.includes('admin outlet');
+    const hasKasirRole = userRoles.includes('kasir');
 
     const { sidebarOutlets, canSelectAll, selectedOutletId } = usePage().props;
     const hasOutletFilter = sidebarOutlets.length > 0;
 
     const handleOutletChange = (outletId: number | null) => {
-        router.post('/select-outlet', { outlet_id: outletId }, {
-            preserveScroll: true,
-            preserveState: true,
-        });
+        if (window.location.pathname.startsWith('/produk/')) {
+            router.visit(produk(outletId ?? 0), { preserveScroll: true });
+        } else {
+            router.post('/select-outlet', { outlet_id: outletId }, {
+                preserveScroll: true,
+                preserveState: true,
+            });
+        }
     };
 
     // Filter nav items based on role
     const filteredNavItems = mainNavItems.filter((item) => {
-        if (hasAdminAppRole) {
-            // Admin app can see: Profile, Dashboard, Kelola Kategori
+        if (hasOwnerRole) {
+            return [
+                'Home',
+                'Profile',
+                'Dashboard',
+                'Kelola Kategori',
+                'Buka Outlet',
+                'Request Menjadi Karyawan',
+                'Buka Layanan Kasir',
+            ].includes(item.title);
+        } else if (hasAdminRole) {
             return ['Home', 'Profile', 'Dashboard', 'Kelola Kategori'].includes(
                 item.title,
             );
@@ -136,7 +141,6 @@ export function AppSidebar({
                 'Profile',
                 'Dashboard',
                 'Buka Outlet',
-                'Kelola Produk',
                 'Request Menjadi Karyawan',
                 'Buka Layanan Kasir',
             ].includes(item.title);
@@ -146,25 +150,45 @@ export function AppSidebar({
                 'Profile',
                 'Dashboard',
                 'Buka Outlet',
-                'Kelola Produk',
                 'Request Menjadi Karyawan',
             ].includes(item.title);
         }
     });
 
+    // Add dynamic kelola produk based on selected outlet
+    if (hasOwnerRole || hasAdminRole) {
+        filteredNavItems.push({
+            title: 'Kelola Produk',
+            href: produk(selectedOutletId ?? 0),
+            icon: Boxes,
+        });
+    }
+
+    const sections: NavSection[] = [
+        {
+            label: 'Menu Utama',
+            items: filteredNavItems.filter((item) =>
+                menuUtamaTitles.includes(item.title),
+            ),
+        },
+        {
+            label: 'Manajemen',
+            items: filteredNavItems.filter((item) =>
+                manajemenTitles.includes(item.title),
+            ),
+        },
+    ].filter((section) => section.items.length > 0);
+
     return (
         <Sidebar collapsible="icon" variant="inset">
-            <SidebarHeader>
-                <SidebarMenu>
+            <SidebarHeader className="relative border-b border-sidebar-border/50">
+                <div className="pointer-events-none absolute inset-x-0 -top-16 h-44 bg-[radial-gradient(70%_70%_at_50%_0%,rgba(99,102,241,0.4),transparent)]" />
+                <SidebarMenu className="relative">
                     <SidebarMenuItem>
                         <SidebarMenuButton size="lg" asChild>
                             <div>
-                                <AppLogo />
+                                <AppLogo subtitleClassName="text-sidebar-foreground/50" />
                             </div>
-
-                            {/* <Link href='#' prefetch>
-                                <AppLogo />
-                            </Link> */}
                         </SidebarMenuButton>
                     </SidebarMenuItem>
                 </SidebarMenu>
@@ -172,30 +196,39 @@ export function AppSidebar({
 
             <SidebarContent>
                 {hasOutletFilter && (
-                    <SidebarGroup>
-                        <SidebarGroupLabel>Pilih Outlet</SidebarGroupLabel>
-                        <div className="px-3 pb-2">
+                    <SidebarGroup className="px-3 pt-2">
+                        <SidebarGroupLabel className="px-1 pb-1.5 text-[10px] font-semibold tracking-[0.2em] text-sidebar-foreground/45 uppercase">
+                            Outlet Aktif
+                        </SidebarGroupLabel>
+                        <div className="relative px-1">
+                            <Building2 className="pointer-events-none absolute top-1/2 left-4 size-4 -translate-y-1/2 text-sidebar-foreground/40" />
                             <select
                                 value={selectedOutletId ?? ''}
                                 onChange={(e) => {
                                     const val = e.target.value;
                                     handleOutletChange(val ? Number(val) : null);
                                 }}
-                                className="w-full rounded-lg border border-sidebar-border bg-sidebar-accent px-3 py-2 text-sm text-sidebar-accent-foreground focus:outline-none focus:ring-2 focus:ring-sidebar-ring"
+                                className="h-9 w-full cursor-pointer appearance-none rounded-lg border border-sidebar-border/60 bg-sidebar-accent/40 pr-8 pl-9 text-[13px] font-medium text-sidebar-foreground outline-none transition focus:border-sidebar-ring/70 focus:ring-2 focus:ring-sidebar-ring/20"
                             >
-                                {canSelectAll && <option value="">All Outlet</option>}
+                                {canSelectAll && (
+                                    <option value="">All Outlet</option>
+                                )}
                                 {sidebarOutlets.map((outlet) => (
                                     <option key={outlet.id} value={outlet.id}>
                                         {outlet.nama_outlet}
                                     </option>
                                 ))}
                             </select>
+                            <ChevronDown className="pointer-events-none absolute top-1/2 right-3.5 size-4 -translate-y-1/2 text-sidebar-foreground/40" />
                         </div>
                     </SidebarGroup>
                 )}
                 <NavMain
-                    items={filteredNavItems}
+                    sections={sections}
                     onItemClick={(item) => {
+                        if (isMobile) {
+                            setOpenMobile(false);
+                        }
                         if (item.title === 'Profile') {
                             onNavigate?.('profile');
                         }
@@ -207,7 +240,11 @@ export function AppSidebar({
             </SidebarContent>
 
             <SidebarFooter>
-                <NavFooter items={footerNavItems} className="mt-auto" />
+                <div className="px-6 pb-1 group-data-[collapsible=icon]:hidden">
+                    <span className="text-[10px] font-medium tracking-[0.2em] text-sidebar-foreground/35 uppercase">
+                        HUBO v1.0.0
+                    </span>
+                </div>
                 <NavUser />
             </SidebarFooter>
         </Sidebar>

@@ -5,7 +5,7 @@ import {
     XMarkIcon,
 } from '@heroicons/react/24/outline';
 import { Head, router } from '@inertiajs/react';
-import React, { useState, useRef } from 'react';
+import React, { useState, useRef, useCallback, useMemo, memo } from 'react';
 import AppLayout from '@/layouts/app-layout';
 import { produk } from '@/routes';
 import type { BreadcrumbItem } from '@/types';
@@ -15,12 +15,17 @@ interface Kategori {
     gambar: string;
     kategori: string;
 }
+
 interface Produk {
     id: number | null;
     nama_produk: string;
     harga: number;
     gambar: string;
     kategori?: { id: number; kategori: string };
+    id_kategori?: number;
+    keterangan?: string;
+    diskon?: string;
+    harga_diskon?: number;
 }
 
 interface PaginatedProduk {
@@ -30,13 +35,6 @@ interface PaginatedProduk {
     per_page: number;
     total: number;
 }
-
-const breadcrumbs: BreadcrumbItem[] = [
-    {
-        title: 'Produk',
-        href: '/produk',
-    },
-];
 
 interface Outlet {
     id: number;
@@ -53,11 +51,174 @@ interface ProdukUserPageProps {
     jmlProduk: number;
 }
 
-const formatRupiah = (value: any) =>
-    new Intl.NumberFormat('id-ID', {
-        style: 'currency',
-        currency: 'IDR',
-    }).format(value);
+const breadcrumbs: BreadcrumbItem[] = [
+    {
+        title: 'Produk',
+        href: '/produk',
+    },
+];
+
+interface ProdukTableRowProps {
+    item: Produk;
+    index: number;
+    page: number;
+    limit: number;
+    formatRupiah: (value: number) => string;
+    onEdit: (item: Produk) => void;
+    onDelete: (id: number) => void;
+}
+
+const ProdukTableRow = memo(function ProdukTableRow({
+    item,
+    index,
+    page,
+    limit,
+    formatRupiah,
+    onEdit,
+    onDelete,
+}: Readonly<ProdukTableRowProps>) {
+    const nomor = (page - 1) * limit + index + 1;
+    const handleEditClick = useCallback(() => onEdit(item), [item, onEdit]);
+    const handleDeleteClick = useCallback(() => onDelete(item.id!), [item.id, onDelete]);
+
+    return (
+        <tr className="bg-white transition-colors hover:bg-gray-50 dark:bg-gray-800 dark:hover:bg-gray-700/50">
+            <td className="px-6 py-4 text-sm text-gray-600 tabular-nums dark:text-gray-400">
+                {nomor}
+            </td>
+            <td className="px-6 py-4 text-sm font-medium text-gray-900 dark:text-gray-100">
+                {item.kategori?.kategori}
+            </td>
+            <td className="px-6 py-4 text-sm font-medium text-gray-900 dark:text-gray-100">
+                {item.gambar ? (
+                    <img
+                        src={`/${item.gambar}`}
+                        alt={item.nama_produk}
+                        className="h-20 w-20 rounded-lg object-cover"
+                    />
+                ) : (
+                    <div className="flex h-20 w-20 items-center justify-center rounded-lg bg-gray-200 dark:bg-gray-700">
+                        <span className="text-xs text-gray-400">No Image</span>
+                    </div>
+                )}
+            </td>
+            <td className="px-6 py-4 text-sm font-medium text-gray-900 dark:text-gray-100">
+                {item.nama_produk?.length > 50
+                    ? item.nama_produk.slice(0, 10) + '...'
+                    : item.nama_produk}
+            </td>
+            <td className="px-6 py-4 text-sm font-medium text-gray-900 dark:text-gray-100">
+                {formatRupiah(item.harga)}
+            </td>
+            <td className="px-6 py-4 text-sm font-medium text-gray-900 dark:text-gray-100">
+                {item.diskon}
+            </td>
+            <td className="w-40 px-6 py-4 text-center text-sm font-medium text-gray-900 dark:text-gray-100">
+                {formatRupiah(item.harga_diskon ?? 0)}
+            </td>
+            <td className="max-w-xs px-6 py-4 text-sm font-medium text-gray-900 dark:text-gray-100">
+                {(item.keterangan ?? '').length > 200
+                    ? (item.keterangan ?? '').slice(0, 50) + '...'
+                    : item.keterangan ?? ''}
+            </td>
+            <td className="px-6 py-4 text-right">
+                <div className="flex justify-center gap-2">
+                    <button
+                        type="button"
+                        onClick={handleEditClick}
+                        className="inline-flex items-center gap-1.5 rounded-lg bg-blue-50 px-3 py-1.5 text-sm font-medium text-blue-700 transition-colors hover:bg-blue-100 dark:bg-blue-900/30 dark:text-blue-300 dark:hover:bg-blue-900/50"
+                        title="Edit"
+                    >
+                        <PencilSquareIcon className="h-4 w-4" />
+                        Edit Produk
+                    </button>
+
+                    <button
+                        type="button"
+                        onClick={handleDeleteClick}
+                        className="inline-flex items-center gap-1.5 rounded-lg bg-red-50 px-3 py-1.5 text-sm font-medium text-red-700 transition-colors hover:bg-red-100 dark:bg-red-900/30 dark:text-red-300 dark:hover:bg-red-900/50"
+                        title="Hapus"
+                    >
+                        <TrashIcon className="h-4 w-4" />
+                        Hapus Produk
+                    </button>
+                </div>
+            </td>
+        </tr>
+    );
+});
+
+interface ProdukCardMobileProps {
+    item: Produk;
+    formatRupiah: (value: number) => string;
+    onEdit: (item: Produk) => void;
+    onDelete: (id: number) => void;
+}
+
+const ProdukCardMobile = memo(function ProdukCardMobile({
+    item,
+    formatRupiah,
+    onEdit,
+    onDelete,
+}: Readonly<ProdukCardMobileProps>) {
+    const handleEditClick = useCallback(() => onEdit(item), [item, onEdit]);
+    const handleDeleteClick = useCallback(() => onDelete(item.id!), [item.id, onDelete]);
+
+    return (
+        <div className="space-y-4 px-5 py-6 hover:bg-gray-50 dark:hover:bg-gray-700/40">
+            <div className="flex items-start gap-4">
+                {item.gambar ? (
+                    <img
+                        src={`/${item.gambar}`}
+                        alt={item.nama_produk}
+                        className="h-16 w-16 rounded-lg object-cover sm:h-20 sm:w-20"
+                    />
+                ) : (
+                    <div className="flex h-16 w-16 items-center justify-center rounded-lg bg-gray-200 text-xs text-gray-500 sm:h-20 sm:w-20 dark:bg-gray-700 dark:text-gray-400">
+                        No Image
+                    </div>
+                )}
+                <div className="min-w-0 flex-1">
+                    <p className="mt-0.5 text-sm text-gray-600 dark:text-gray-400">
+                        {item.kategori?.kategori}
+                    </p>
+                    <h3 className="font-medium text-gray-900 dark:text-gray-100">
+                        {item.nama_produk}
+                    </h3>
+                    <p className="mt-0.5 text-sm text-gray-600 dark:text-gray-400">
+                        {item.diskon === 'yes' ? (
+                            <>
+                                <span className="mr-2 text-red-500 line-through">
+                                    {formatRupiah(item.harga)}
+                                </span>
+                                <span>{formatRupiah(item.harga_diskon ?? 0)}</span>
+                            </>
+                        ) : (
+                            <span>{formatRupiah(item.harga)}</span>
+                        )}
+                    </p>
+                </div>
+            </div>
+
+            <div className="grid grid-cols-2 gap-3 text-sm">
+                <div className="flex flex-wrap gap-2">
+                    <button
+                        onClick={handleEditClick}
+                        className="flex-1 rounded-lg bg-blue-50 px-3 py-2 text-xs font-medium text-blue-700 hover:bg-blue-100 sm:text-sm dark:bg-blue-900/30 dark:text-blue-300 dark:hover:bg-blue-900/50"
+                    >
+                        <PencilSquareIcon className="inline h-4 w-4" /> Edit
+                    </button>
+                    <button
+                        onClick={handleDeleteClick}
+                        className="flex-1 rounded-lg bg-red-50 px-3 py-2 text-xs font-medium text-red-700 hover:bg-red-100 sm:text-sm dark:bg-red-900/30 dark:text-red-300 dark:hover:bg-red-900/50"
+                    >
+                        <TrashIcon className="inline h-4 w-4" /> Hapus
+                    </button>
+                </div>
+            </div>
+        </div>
+    );
+});
 
 export default function Produk_User_Page({
     outlet,
@@ -66,19 +227,32 @@ export default function Produk_User_Page({
     jmlProduk,
 }: Readonly<ProdukUserPageProps>) {
     const [error, setError] = useState('');
-    const [editId, setEditId] = useState(null);
+    const [editId, setEditId] = useState<number | null>(null);
     const [showForm, setShowForm] = useState(false);
     const [page, setPage] = useState(1);
     const [limit] = useState(10);
     const [preview, setPreview] = useState<string | null>(null);
     const kategoris = kategori ?? [];
     const fetchProdukRef = useRef<(() => void) | null>(null);
-    const totalPages = Math.max(1, Math.ceil(jmlProduk / limit));
 
-    // Extract data array from paginator object
-    const produk = Array.isArray(produkPaginated)
-        ? produkPaginated
-        : produkPaginated?.data || [];
+    const totalPages = useMemo(
+        () => Math.max(1, Math.ceil(jmlProduk / limit)),
+        [jmlProduk, limit]
+    );
+
+    const produk = useMemo(
+        () =>
+            Array.isArray(produkPaginated)
+                ? produkPaginated
+                : produkPaginated?.data || [],
+        [produkPaginated]
+    );
+
+    const formatRupiah = useCallback((value: number) =>
+        new Intl.NumberFormat('id-ID', {
+            style: 'currency',
+            currency: 'IDR',
+        }).format(value), []);
 
     const [formData, setFormData] = useState<{
         id: number | null;
@@ -104,171 +278,148 @@ export default function Produk_User_Page({
         harga_diskon: '',
     });
 
-    const handleImageChange = (e: any) => {
-        const file = e.target.files[0];
+    const handleImageChange = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
+        const file = e.target.files?.[0];
         if (file) {
             setFormData((prev) => ({ ...prev, gambar: file }));
-            setPreview(URL.createObjectURL(file)); // preview sebelum upload
+            setPreview(URL.createObjectURL(file));
         }
-    };
+    }, []);
 
-    const handleChange = (e: any) => {
+    const handleChange = useCallback((e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>) => {
         const { name, value } = e.target;
-        if (name == 'kategori') {
+        if (name === 'kategori') {
             setFormData((prev) => ({
                 ...prev,
                 kategori: value,
-                id_kategori: value,
+                id_kategori: value ? Number(value) : null,
             }));
         } else {
             setFormData((prev) => ({ ...prev, [name]: value }));
         }
-    };
+    }, []);
 
-    // CREATE
-    const handleCreate = async (e: any) => {
-        e.preventDefault();
-        try {
-            // Tampilkan data yang akan dikirim ke backend
-            const dataToSend = {
-                id: formData.id,
-                id_outlet: outlet.id,
-                id_kategori: formData.id_kategori,
-                gambar: formData.gambar,
-                nama_produk: formData.nama_produk,
-                keterangan: formData.keterangan,
-                harga: formData.harga,
-                diskon: formData.diskon,
-                harga_diskon: formData.harga_diskon,
-            };
+    const resetForm = useCallback(() => {
+        setShowForm(false);
+        setEditId(null);
+        setFormData({
+            id: null,
+            id_outlet: null,
+            id_kategori: null,
+            kategori: '',
+            gambar: null,
+            nama_produk: '',
+            keterangan: '',
+            harga: '',
+            diskon: '',
+            harga_diskon: '',
+        });
+        setPreview(null);
+        setError('');
+    }, []);
 
-            router.post('/produk', dataToSend, {
-                onSuccess: () => {
-                    setShowForm(false);
-                    setFormData({
-                        id: null,
-                        id_outlet: null,
-                        id_kategori: null,
-                        kategori: '',
-                        gambar: null,
-                        nama_produk: '',
-                        keterangan: '',
-                        harga: '',
-                        diskon: '',
-                        harga_diskon: '',
-                    });
-                    setPreview(null);
-                },
-                onError: (errors) => {
-                    console.log(errors);
-                },
-            });
-
-            // Refresh produk table after create
-            if (fetchProdukRef.current) fetchProdukRef.current();
-        } catch (err) {
-            setError('Gagal menambah produk');
-            // Tampilkan error detail dari backend jika ada
-            console.log('Error response:', err);
+    const toggleForm = useCallback(() => {
+        setShowForm((prev) => !prev);
+        if (showForm) {
+            resetForm();
         }
-    };
+    }, [showForm, resetForm]);
 
-    // UPDATE
-    const handleUpdate = async (e: any) => {
+    const handleCreate = useCallback((e: React.SubmitEvent) => {
         e.preventDefault();
-        try {
-            const dataToSend = {
-                id: formData.id,
-                id_outlet: outlet.id,
-                id_kategori: formData.id_kategori,
-                gambar: formData.gambar,
-                nama_produk: formData.nama_produk,
-                keterangan: formData.keterangan,
-                harga: formData.harga,
-                diskon: formData.diskon,
-                harga_diskon: formData.harga_diskon,
-            };
+        const dataToSend = {
+            id: formData.id,
+            id_outlet: outlet.id,
+            id_kategori: formData.id_kategori,
+            gambar: formData.gambar,
+            nama_produk: formData.nama_produk,
+            keterangan: formData.keterangan,
+            harga: formData.harga,
+            diskon: formData.diskon,
+            harga_diskon: formData.harga_diskon,
+        };
 
-            console.log('data yang diupdate :', dataToSend);
-            router.put(`/produk/${formData.id}`, dataToSend);
+        router.post('/produk', dataToSend, {
+            preserveScroll: true,
+            preserveState: true,
+            onSuccess: () => {
+                resetForm();
+            },
+            onError: (errors) => {
+                console.log(errors);
+            },
+        });
 
-            setShowForm(false);
-            setEditId(null);
-            setFormData({
-                id: null,
-                id_outlet: null,
-                id_kategori: null,
-                kategori: '',
-                gambar: null,
-                nama_produk: '',
-                keterangan: '',
-                harga: '',
-                diskon: '',
-                harga_diskon: '',
-            });
-            setPreview(null);
+        if (fetchProdukRef.current) fetchProdukRef.current();
+    }, [formData, outlet, resetForm]);
 
-            if (fetchProdukRef.current) fetchProdukRef.current();
-        } catch {
-            setError('Gagal mengedit produk');
-        }
-    };
+    const handleUpdate = useCallback((e: React.SubmitEvent) => {
+        e.preventDefault();
+        const dataToSend = {
+            id: formData.id,
+            id_outlet: outlet.id,
+            id_kategori: formData.id_kategori,
+            gambar: formData.gambar,
+            nama_produk: formData.nama_produk,
+            keterangan: formData.keterangan,
+            harga: formData.harga,
+            diskon: formData.diskon,
+            harga_diskon: formData.harga_diskon,
+        };
 
-    // Edit button
-    const handleEdit = (item: any) => {
+        router.put(`/produk/${formData.id}`, dataToSend, {
+            preserveScroll: true,
+            preserveState: true,
+            onSuccess: () => {
+                resetForm();
+            },
+        });
+
+        if (fetchProdukRef.current) fetchProdukRef.current();
+    }, [formData, outlet, resetForm]);
+
+    const handleEdit = useCallback((item: Produk) => {
         setEditId(item.id);
         setFormData({
             id: item.id,
             id_outlet: outlet.id,
-            id_kategori: item.id_kategori,
+            id_kategori: item.id_kategori ?? null,
             kategori: item.id_kategori?.toString() || '',
             gambar: null,
             nama_produk: item.nama_produk,
-            keterangan: item.keterangan,
+            keterangan: item.keterangan || '',
             harga: item.harga?.toString() || '',
             diskon: item.diskon || '',
             harga_diskon: item.harga_diskon?.toString() || '',
         });
-        // Set preview for existing image
         if (item.gambar) {
             setPreview(`/${item.gambar}`);
         }
         setShowForm(true);
-    };
+    }, [outlet]);
 
-    // DELETE
-    const handleDelete = async (id: any) => {
+    const handleDelete = useCallback((id: number) => {
         if (!globalThis.confirm('Yakin hapus data ini?')) return;
-        try {
-            router.delete(`/produk/${id}`);
+        router.delete(`/produk/${id}`, {
+            preserveScroll: true,
+            preserveState: true,
+        });
+        resetForm();
+        if (fetchProdukRef.current) fetchProdukRef.current();
+    }, [resetForm]);
 
-            setShowForm(false);
-            setEditId(null);
-            setFormData({
-                id: null,
-                id_outlet: null,
-                id_kategori: null,
-                kategori: '',
-                gambar: null,
-                nama_produk: '',
-                keterangan: '',
-                harga: '',
-                diskon: '',
-                harga_diskon: '',
-            });
-            setPreview(null);
+    const handlePrevPage = useCallback(() => {
+        setPage((p) => Math.max(1, p - 1));
+    }, []);
 
-            if (fetchProdukRef.current) fetchProdukRef.current();
-        } catch {
-            setError('Gagal menghapus produk');
-        }
-    };
+    const handleNextPage = useCallback(() => {
+        setPage((p) => (p < totalPages ? p + 1 : p));
+    }, [totalPages]);
 
     return (
         <AppLayout breadcrumbs={breadcrumbs}>
             <Head title="Produk" />
             <main className="mx-auto max-w-7xl px-4 py-6 sm:px-6 lg:px-8">
-                {/* Header */}
                 <div className="mb-6 sm:mb-8">
                     <h1 className="text-2xl font-bold text-gray-900 sm:text-3xl dark:text-gray-100">
                         Kelola Produk {outlet.nama_outlet}
@@ -277,14 +428,13 @@ export default function Produk_User_Page({
                         Tambah, edit, atau hapus produk.
                     </p>
                 </div>
-                {/* Error alert */}
+
                 {error && (
                     <div className="mb-6 rounded-xl border border-red-200 bg-red-50 p-4 text-sm text-red-700 dark:border-red-800 dark:bg-red-900/20 dark:text-red-300">
                         {error}
                     </div>
                 )}
 
-                {/* Card: Form Tambah/Edit */}
                 <div className="mb-8 overflow-hidden rounded-xl border border-gray-200 bg-white shadow dark:border-gray-700 dark:bg-gray-800">
                     <div className="flex flex-col gap-3 border-b border-gray-200 px-5 py-4 sm:flex-row sm:items-center sm:justify-between sm:px-6 dark:border-gray-700">
                         <h2 className="text-lg font-semibold text-gray-800 dark:text-gray-100">
@@ -292,24 +442,7 @@ export default function Produk_User_Page({
                         </h2>
                         <button
                             type="button"
-                            onClick={() => {
-                                setShowForm(!showForm);
-                                setEditId(null);
-                                setFormData({
-                                    id: null,
-                                    id_outlet: null,
-                                    id_kategori: null,
-                                    kategori: '',
-                                    gambar: null,
-                                    nama_produk: '',
-                                    keterangan: '',
-                                    harga: '',
-                                    diskon: '',
-                                    harga_diskon: '',
-                                });
-                                setPreview(null);
-                                setError('');
-                            }}
+                            onClick={toggleForm}
                             className="flex items-center justify-center gap-2 rounded-lg bg-blue-600 px-4 py-2.5 text-sm font-medium text-white hover:bg-blue-700 focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 focus:outline-none sm:text-base dark:focus:ring-offset-gray-900"
                         >
                             {showForm ? (
@@ -325,12 +458,12 @@ export default function Produk_User_Page({
                             )}
                         </button>
                     </div>
+
                     {showForm && (
                         <form
                             onSubmit={editId ? handleUpdate : handleCreate}
                             className="divide-y divide-gray-200 dark:divide-gray-700"
                         >
-                            {/* <div className="flex flex-wrap items-end gap-4"> */}
                             <div className="grid gap-5 p-5 sm:grid-cols-2 sm:gap-6 sm:p-6">
                                 <div>
                                     <label
@@ -349,18 +482,16 @@ export default function Produk_User_Page({
                                     >
                                         <option value="">Pilih Kategori</option>
                                         {kategoris.map((item) => (
-                                            <option
-                                                key={item.id}
-                                                value={item.id}
-                                            >
+                                            <option key={item.id} value={item.id}>
                                                 {item.kategori}
                                             </option>
                                         ))}
                                     </select>
                                 </div>
+
                                 <div>
                                     <label
-                                        htmlFor="nama_outlet"
+                                        htmlFor="gambar"
                                         className="mb-1.5 block text-sm font-medium text-gray-700 dark:text-gray-300"
                                     >
                                         Gambar Produk
@@ -382,9 +513,10 @@ export default function Produk_User_Page({
                                         </div>
                                     )}
                                 </div>
+
                                 <div>
                                     <label
-                                        htmlFor="nama_outlet"
+                                        htmlFor="nama_produk"
                                         className="mb-1.5 block text-sm font-medium text-gray-700 dark:text-gray-300"
                                     >
                                         Nama Produk
@@ -397,9 +529,10 @@ export default function Produk_User_Page({
                                         onChange={handleChange}
                                         placeholder="Contoh: Lenovo"
                                         required
-                                        className="w-full rounded-xl border border-gray-300 bg-white px-4 py-2.5 text-gray-900 placeholder-gray-400 transition-colors focus:border-blue-500 focus:ring-2 focus:ring-blue-500 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-100 dark:focus:border-blue-500 dark:focus:ring-blue-500"
+                                        className="w-full rounded-xl border border-gray-300 bg-white px-4 py-2.5 text-gray-900 placeholder-gray-400 transition-colors focus:border-blue-500 focus:ring-2 focus:ring-blue-500 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-100"
                                     />
                                 </div>
+
                                 <div>
                                     <label
                                         htmlFor="harga"
@@ -419,6 +552,7 @@ export default function Produk_User_Page({
                                         className="w-full rounded-xl border border-gray-300 bg-white px-4 py-2.5 text-gray-900 placeholder-gray-400 transition-colors focus:border-blue-500 focus:ring-2 focus:ring-blue-500 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-100"
                                     />
                                 </div>
+
                                 <div>
                                     <label
                                         htmlFor="diskon"
@@ -439,6 +573,7 @@ export default function Produk_User_Page({
                                         <option value="no">No</option>
                                     </select>
                                 </div>
+
                                 <div>
                                     <label
                                         htmlFor="harga_diskon"
@@ -458,7 +593,8 @@ export default function Produk_User_Page({
                                     />
                                 </div>
                             </div>
-                            <div>
+
+                            <div className="pt-5">
                                 <label
                                     htmlFor="keterangan"
                                     className="mb-1.5 block text-sm font-medium text-gray-700 dark:text-gray-300"
@@ -471,20 +607,23 @@ export default function Produk_User_Page({
                                     value={formData.keterangan}
                                     onChange={handleChange}
                                     placeholder="Opsional"
-                                    className="h-100 w-full rounded-xl border border-gray-300 bg-white px-4 py-2.5 text-gray-900 placeholder-gray-400 transition-colors focus:border-blue-500 focus:ring-2 focus:ring-blue-500 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-100"
+                                    rows={3}
+                                    className="w-full rounded-xl border border-gray-300 bg-white px-4 py-2.5 text-gray-900 placeholder-gray-400 transition-colors focus:border-blue-500 focus:ring-2 focus:ring-blue-500 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-100"
                                 />
                             </div>
-                            <button
-                                type="submit"
-                                className="mt-4 shrink-0 rounded-xl bg-blue-600 px-5 py-2.5 font-medium text-white transition-colors hover:bg-blue-700 focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 dark:focus:ring-offset-gray-800"
-                            >
-                                {editId ? 'Simpan Perubahan' : 'Tambah'}
-                            </button>
+
+                            <div className="pt-5">
+                                <button
+                                    type="submit"
+                                    className="mt-4 shrink-0 rounded-xl bg-blue-600 px-5 py-2.5 font-medium text-white transition-colors hover:bg-blue-700 focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 dark:focus:ring-offset-gray-800"
+                                >
+                                    {editId ? 'Simpan Perubahan' : 'Tambah'}
+                                </button>
+                            </div>
                         </form>
                     )}
                 </div>
 
-                {/* Card: Tabel Kategori */}
                 <div className="overflow-hidden rounded-2xl border border-gray-200 bg-white shadow-sm dark:border-gray-700 dark:bg-gray-800">
                     <div className="flex flex-wrap items-center justify-between gap-2 border-b border-gray-200 px-6 py-4 dark:border-gray-700">
                         <h2 className="text-lg font-semibold text-gray-800 dark:text-gray-100">
@@ -499,7 +638,6 @@ export default function Produk_User_Page({
                         </span>
                     </div>
 
-                    {/* Mobile: Card View */}
                     <div className="md:hidden">
                         {produk.length === 0 ? (
                             <div className="px-5 py-12 text-center text-sm text-gray-500 dark:text-gray-400">
@@ -508,83 +646,18 @@ export default function Produk_User_Page({
                         ) : (
                             <div className="divide-y divide-gray-200 dark:divide-gray-700">
                                 {produk.map((item) => (
-                                    <div
+                                    <ProdukCardMobile
                                         key={item.id}
-                                        className="space-y-4 px-5 py-6 hover:bg-gray-50 dark:hover:bg-gray-700/40"
-                                    >
-                                        <div className="flex items-start gap-4">
-                                            {item.gambar ? (
-                                                <img
-                                                    src={`/${item.gambar}`}
-                                                    alt={item.nama_produk}
-                                                    className="h-16 w-16 rounded-lg object-cover sm:h-20 sm:w-20"
-                                                />
-                                            ) : (
-                                                <div className="flex h-16 w-16 items-center justify-center rounded-lg bg-gray-200 text-xs text-gray-500 sm:h-20 sm:w-20 dark:bg-gray-700 dark:text-gray-400">
-                                                    No Image
-                                                </div>
-                                            )}
-                                            <div className="min-w-0 flex-1">
-                                                <p className="mt-0.5 text-sm text-gray-600 dark:text-gray-400">
-                                                    {item.kategori?.kategori}
-                                                </p>
-                                                <h3 className="font-medium text-gray-900 dark:text-gray-100">
-                                                    {item.nama_produk}
-                                                </h3>
-                                                <p className="mt-0.5 text-sm text-gray-600 dark:text-gray-400">
-                                                    {item.diskon === 'yes' ? (
-                                                        <>
-                                                            <span className="mr-2 text-red-500 line-through">
-                                                                {formatRupiah(
-                                                                    item.harga,
-                                                                )}
-                                                            </span>
-                                                            <span>
-                                                                {formatRupiah(
-                                                                    item.harga_diskon,
-                                                                )}
-                                                            </span>
-                                                        </>
-                                                    ) : (
-                                                        <span>
-                                                            {formatRupiah(
-                                                                item.harga,
-                                                            )}
-                                                        </span>
-                                                    )}
-                                                </p>
-                                            </div>
-                                        </div>
-
-                                        <div className="grid grid-cols-2 gap-3 text-sm">
-                                            <div className="flex flex-wrap gap-2">
-                                                <button
-                                                    onClick={() =>
-                                                        handleEdit(item)
-                                                    }
-                                                    className="flex-1 rounded-lg bg-blue-50 px-3 py-2 text-xs font-medium text-blue-700 hover:bg-blue-100 sm:text-sm dark:bg-blue-900/30 dark:text-blue-300 dark:hover:bg-blue-900/50"
-                                                >
-                                                    <PencilSquareIcon className="inline h-4 w-4" />{' '}
-                                                    Edit
-                                                </button>
-                                                <button
-                                                    onClick={() =>
-                                                        handleDelete(item.id)
-                                                    }
-                                                    className="flex-1 rounded-lg bg-red-50 px-3 py-2 text-xs font-medium text-red-700 hover:bg-red-100 sm:text-sm dark:bg-red-900/30 dark:text-red-300 dark:hover:bg-red-900/50"
-                                                >
-                                                    <TrashIcon className="inline h-4 w-4" />{' '}
-                                                    Hapus
-                                                </button>
-                                            </div>
-                                        </div>
-                                    </div>
+                                        item={item}
+                                        formatRupiah={formatRupiah}
+                                        onEdit={handleEdit}
+                                        onDelete={handleDelete}
+                                    />
                                 ))}
                             </div>
                         )}
                     </div>
 
-                    {/* Desktop & Tablet: Table view */}
                     <div className="hidden md:block">
                         <div className="overflow-x-scroll">
                             <table className="w-full" id="tabel_produk">
@@ -623,99 +696,24 @@ export default function Produk_User_Page({
                                     {produk.length === 0 ? (
                                         <tr>
                                             <td
-                                                colSpan={3}
+                                                colSpan={9}
                                                 className="px-6 py-12 text-center text-sm text-gray-500 dark:text-gray-400"
                                             >
-                                                Belum ada data outlet. Klik
-                                                &quot;Tambah Kategori&quot;
-                                                untuk menambah.
+                                                Belum ada data produk.
                                             </td>
                                         </tr>
                                     ) : (
-                                        produk.map((item, nourut) => (
-                                            <tr
+                                        produk.map((item, index) => (
+                                            <ProdukTableRow
                                                 key={item.id}
-                                                className="bg-white transition-colors hover:bg-gray-50 dark:bg-gray-800 dark:hover:bg-gray-700/50"
-                                            >
-                                                <td className="px-6 py-4 text-sm text-gray-600 tabular-nums dark:text-gray-400">
-                                                    {(page - 1) * limit +
-                                                        nourut +
-                                                        1}
-                                                </td>
-                                                <td className="px-6 py-4 text-sm font-medium text-gray-900 dark:text-gray-100">
-                                                    {item.kategori.kategori}
-                                                </td>
-                                                <td className="px-6 py-4 text-sm font-medium text-gray-900 dark:text-gray-100">
-                                                    {item.gambar ? (
-                                                        <img
-                                                            src={`/${item.gambar}`}
-                                                            alt={
-                                                                item.nama_produk
-                                                            }
-                                                            className="h-20 w-20 rounded-lg object-cover"
-                                                        />
-                                                    ) : (
-                                                        <div className="flex h-20 w-20 items-center justify-center rounded-lg bg-gray-200 dark:bg-gray-700">
-                                                            <span className="text-xs text-gray-400">
-                                                                No Image
-                                                            </span>
-                                                        </div>
-                                                    )}
-                                                </td>
-                                                <td className="px-6 py-4 text-sm font-medium text-gray-900 dark:text-gray-100">
-                                                    {item.nama_produk?.length > 50 ? item.nama_produk.slice(0,10,) + '...': item.nama_produk}
-                                                </td>
-                                                <td className="px-6 py-4 text-sm font-medium text-gray-900 dark:text-gray-100">
-                                                    {formatRupiah(item.harga)}
-                                                </td>
-                                                <td className="px-6 py-4 text-sm font-medium text-gray-900 dark:text-gray-100">
-                                                    {item.diskon}
-                                                </td>
-                                                <td className="px-6 py-4 text-sm font-medium text-gray-900 dark:text-gray-100">
-                                                    {formatRupiah(
-                                                        item.harga_diskon,
-                                                    )}
-                                                </td>
-                                                <td className="max-w-xs px-6 py-4 text-sm font-medium text-gray-900 dark:text-gray-100">
-                                                    {item.keterangan?.length >
-                                                    200
-                                                        ? item.keterangan.slice(
-                                                              0,
-                                                              50,
-                                                          ) + '...'
-                                                        : item.keterangan}
-                                                </td>
-
-                                                <td className="px-6 py-4 text-right">
-                                                    <div className="flex justify-center gap-2">
-                                                        <button
-                                                            type="button"
-                                                            onClick={() =>
-                                                                handleEdit(item)
-                                                            }
-                                                            className="inline-flex items-center gap-1.5 rounded-lg bg-blue-50 px-3 py-1.5 text-sm font-medium text-blue-700 transition-colors hover:bg-blue-100 dark:bg-blue-900/30 dark:text-blue-300 dark:hover:bg-blue-900/50"
-                                                            title="Edit"
-                                                        >
-                                                            <PencilSquareIcon className="h-4 w-4" />
-                                                            Edit Produk
-                                                        </button>
-
-                                                        <button
-                                                            type="button"
-                                                            onClick={() =>
-                                                                handleDelete(
-                                                                    item.id,
-                                                                )
-                                                            }
-                                                            className="inline-flex items-center gap-1.5 rounded-lg bg-red-50 px-3 py-1.5 text-sm font-medium text-red-700 transition-colors hover:bg-red-100 dark:bg-red-900/30 dark:text-red-300 dark:hover:bg-red-900/50"
-                                                            title="Hapus"
-                                                        >
-                                                            <TrashIcon className="h-4 w-4" />
-                                                            Hapus Produk
-                                                        </button>
-                                                    </div>
-                                                </td>
-                                            </tr>
+                                                item={item}
+                                                index={index}
+                                                page={page}
+                                                limit={limit}
+                                                formatRupiah={formatRupiah}
+                                                onEdit={handleEdit}
+                                                onDelete={handleDelete}
+                                            />
                                         ))
                                     )}
                                 </tbody>
@@ -723,14 +721,11 @@ export default function Produk_User_Page({
                         </div>
                     </div>
 
-                    {/* Pagination */}
                     <div className="flex flex-wrap items-center justify-between gap-4 border-t border-gray-200 px-6 py-4 dark:border-gray-700">
                         <div className="flex items-center gap-2">
                             <button
                                 type="button"
-                                onClick={() =>
-                                    setPage((p) => Math.max(1, p - 1))
-                                }
+                                onClick={handlePrevPage}
                                 disabled={page === 1}
                                 className="rounded-lg bg-gray-100 px-4 py-2 text-sm font-medium text-gray-700 transition-colors hover:bg-gray-200 disabled:cursor-not-allowed disabled:opacity-50 dark:bg-gray-700 dark:text-gray-300 dark:hover:bg-gray-600"
                             >
@@ -741,9 +736,7 @@ export default function Produk_User_Page({
                             </span>
                             <button
                                 type="button"
-                                onClick={() =>
-                                    setPage((p) => (p < totalPages ? p + 1 : p))
-                                }
+                                onClick={handleNextPage}
                                 disabled={page >= totalPages}
                                 className="rounded-lg bg-gray-100 px-4 py-2 text-sm font-medium text-gray-700 transition-colors hover:bg-gray-200 disabled:cursor-not-allowed disabled:opacity-50 dark:bg-gray-700 dark:text-gray-300 dark:hover:bg-gray-600"
                             >

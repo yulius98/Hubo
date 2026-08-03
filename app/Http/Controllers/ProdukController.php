@@ -6,6 +6,7 @@ use App\Models\Kategori;
 use App\Models\Outlet;
 use App\Models\Produk;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\File;
 use Illuminate\Support\Str;
 use Inertia\Inertia;
@@ -19,10 +20,32 @@ class ProdukController extends Controller
     /**
      * Display a listing of the resource.
      */
-    public function index($outlet_id)
+    public function index(string $outlet_id)
     {
+        if ($outlet_id === 'all' || (int) $outlet_id === 0) {
+            $userOutletIds = Auth::user()->outlets->pluck('id');
+
+            $kategori = Kategori::whereIn('id_outlet', $userOutletIds)->get();
+
+            $produk = Produk::with('kategori:id,kategori')
+                ->whereIn('id_outlet', $userOutletIds)
+                ->paginate(10);
+
+            $jmlProduk = $produk->total();
+
+            return Inertia::render('akun_users/produk_user_page', [
+                'outlet' => (object) ['id' => 0, 'nama_outlet' => 'All Outlet'],
+                'kategori' => $kategori,
+                'produk' => $produk,
+                'jmlProduk' => $jmlProduk,
+            ]);
+        }
+
         $outlet = Outlet::findOrFail($outlet_id);
-        $kategori = Kategori::all();
+        $this->authorize('viewAny', [Produk::class, $outlet]);
+
+        $kategori = Kategori::where('id_outlet', $outlet->id)->get();
+
         $produk = Produk::with('kategori:id,kategori')
             ->where('id_outlet', $outlet->id)
             ->paginate(10);
@@ -61,6 +84,9 @@ class ProdukController extends Controller
             'diskon' => 'required|string',
             'harga_diskon' => 'nullable|numeric',
         ]);
+
+        $outlet = Outlet::findOrFail($validated['id_outlet']);
+        $this->authorize('create', [Produk::class, $outlet]);
 
         if ($request->hasFile('gambar')) {
             $file = $request->file('gambar');
@@ -101,7 +127,12 @@ class ProdukController extends Controller
      */
     public function show(Produk $produk)
     {
-        //
+        $produk->load('kategori:id,kategori');
+
+        return Inertia::render('produk/detail', [
+            'product' => $produk,
+            'user' => Auth::check() ? Auth::user() : null,
+        ]);
     }
 
     /**
@@ -127,6 +158,8 @@ class ProdukController extends Controller
             'diskon' => 'required|string',
             'harga_diskon' => 'nullable|numeric',
         ]);
+
+        $this->authorize('update', $produk);
 
         if ($request->hasFile('gambar')) {
             // Hapus gambar lama jika ada
@@ -169,6 +202,8 @@ class ProdukController extends Controller
      */
     public function destroy(Produk $produk)
     {
+        $this->authorize('delete', $produk);
+
         // Hapus gambar jika ada
         if ($produk->gambar && file_exists(storage_path(self::PRODUK_IMAGE_PATH.basename($produk->gambar)))) {
             unlink(storage_path(self::PRODUK_IMAGE_PATH.basename($produk->gambar)));

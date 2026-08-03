@@ -1,5 +1,9 @@
 <?php
 
+use App\Models\Outlet;
+use App\Models\Role;
+use App\Models\User;
+use Database\Seeders\RoleSeeder;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Tests\TestCase;
 
@@ -47,4 +51,41 @@ expect()->extend('toBeOne', function () {
 function something()
 {
     // ..
+}
+
+function seedRoles(): void
+{
+    app(RoleSeeder::class)->run();
+}
+
+function roleId(string $roleName): int
+{
+    seedRoles();
+
+    return Role::where('role', $roleName)->firstOrFail()->id;
+}
+
+function createUserWithGlobalRole(string $roleName): User
+{
+    $user = User::factory()->create();
+    $user->role()->attach(roleId($roleName));
+
+    return $user;
+}
+
+function createOutlet(array $attributes = []): Outlet
+{
+    return Outlet::create(array_merge([
+        'nama_outlet' => 'Outlet '.fake()->unique()->word(),
+        'alamat_outlet' => 'Jalan Mawar No. 1',
+        'kota' => 'Jakarta',
+        'telp' => '0812-3456-7890',
+    ], $attributes));
+}
+
+function attachUserToOutlet(User $user, Outlet $outlet, string $roleName): User
+{
+    $user->outlets()->attach($outlet->id, ['role_id' => roleId($roleName)]);
+
+    return $user;
 }

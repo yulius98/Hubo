@@ -2,6 +2,7 @@
 
 namespace App\Http\Middleware;
 
+use App\Models\Role;
 use Illuminate\Http\Request;
 use Inertia\Middleware;
 
@@ -42,12 +43,14 @@ class HandleInertiaRequests extends Middleware
         if ($user) {
             $user->load('role');
             $roleNames = $user->role->pluck('role')->toArray();
+            $ownerRoleId = Role::where('role', 'owner outlet')->value('id');
+            $adminRoleId = Role::where('role', 'admin outlet')->value('id');
 
             if (in_array('owner outlet', $roleNames)) {
-                $outlets = $user->outlets()->wherePivot('role_id', 2)->get(['outlets.id', 'outlets.nama_outlet']);
+                $outlets = $user->outlets()->wherePivot('role_id', $ownerRoleId)->get(['outlets.id', 'outlets.nama_outlet']);
                 $canSelectAll = true;
             } elseif (in_array('admin outlet', $roleNames)) {
-                $outlets = $user->outlets()->wherePivot('role_id', 3)->get(['outlets.id', 'outlets.nama_outlet']);
+                $outlets = $user->outlets()->wherePivot('role_id', $adminRoleId)->get(['outlets.id', 'outlets.nama_outlet']);
                 $canSelectAll = false;
             } else {
                 $outlets = $user->outlets()->get(['outlets.id', 'outlets.nama_outlet']);
@@ -66,6 +69,7 @@ class HandleInertiaRequests extends Middleware
             'sidebarOutlets' => $outlets,
             'canSelectAll' => $canSelectAll,
             'selectedOutletId' => $request->session()->get('selected_outlet_id'),
+            'locale' => $request->session()->get('locale', 'id'),
         ];
     }
 }

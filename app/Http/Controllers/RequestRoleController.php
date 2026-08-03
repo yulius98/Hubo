@@ -2,7 +2,9 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\Outlet;
 use App\Models\RequestRole;
+use App\Models\Role;
 use App\Models\User;
 use Illuminate\Http\Request;
 use Inertia\Inertia;
@@ -14,6 +16,8 @@ class RequestRoleController extends Controller
      */
     public function index($outlet_id)
     {
+        $outlet = Outlet::findOrFail($outlet_id);
+        $this->authorize('viewAny', [RequestRole::class, $outlet]);
 
         $add_staff = RequestRole::with([
             'staff:id,name',
@@ -23,13 +27,32 @@ class RequestRoleController extends Controller
             ->where('status', 'pending')
             ->get();
 
-        return Inertia::render('akun_users/tambah_staff', ['add_staff' => $add_staff]);
+        $roles = Role::pluck('role', 'id');
+        $staff = $outlet->users()
+            ->get(['users.id', 'users.name'])
+            ->map(fn (User $staffUser) => [
+                'id' => $staffUser->id,
+                'name' => $staffUser->name,
+                'role' => $roles[$staffUser->pivot->role_id] ?? null,
+            ])
+            ->values();
+
+        return Inertia::render('akun_users/tambah_staff', ['add_staff' => $add_staff, 'staff' => $staff, 'outlet_id' => $outlet->id]);
     }
 
     public function terima($id)
     {
         $data_staf = RequestRole::findOrFail($id);
+        $this->authorize('approve', $data_staf);
+
+        if ($data_staf->status !== 'pending') {
+            return redirect()->back()->with('error', 'Request sudah diproses.');
+        }
+
         $user = User::findOrFail($data_staf->user_id);
+
+        // Ganti role lama di outlet yang sama agar tidak ada konflik.
+        $user->outlets()->detach($data_staf->outlet_id);
         $user->outlets()->attach(
             $data_staf->outlet_id,
             ['role_id' => $data_staf->role_id]
@@ -40,10 +63,7 @@ class RequestRoleController extends Controller
                 'status' => 'done',
             ]);
 
-        $user->role()->attach(
-            $data_staf->user_id,
-            ['role_id' => $data_staf->role_id]
-        );
+        $user->role()->syncWithoutDetaching([$data_staf->role_id]);
 
         return redirect()->back()->with('success', 'Request berhasil dikirim');
 
@@ -51,6 +71,8 @@ class RequestRoleController extends Controller
 
     public function tolak($id)
     {
+        $data_staf = RequestRole::findOrFail($id);
+        $this->authorize('reject', $data_staf);
 
         RequestRole::where('id', $id)
             ->update([
@@ -59,6 +81,40 @@ class RequestRoleController extends Controller
 
         return redirect()->back()->with('success', 'Request berhasil ditolak');
 
+    }
+
+    public function removeStaff(Request $request, Outlet $outlet)
+    {
+        $this->authorize('update', $outlet);
+
+        $validated = $request->validate([
+            'staff_id' => 'required|exists:users,id',
+        ]);
+
+        $staff = User::findOrFail($validated['staff_id']);
+
+        if ($staff->hasOutletRole($outlet, 'owner outlet')) {
+            return redirect()->back()->with('error', 'Owner tidak dapat dihapus dari outlet-nya sendiri.');
+        }
+
+        $staff->outlets()->detach($outlet->id);
+
+        $remainingRoleIds = $staff->outlets()
+            ->get()
+            ->pluck('pivot.role_id')
+            ->unique()
+            ->values()
+            ->toArray();
+
+        $userRoleId = Role::where('role', 'user')->value('id');
+
+        foreach ($staff->role()->get() as $role) {
+            if ($role->id !== $userRoleId && ! in_array($role->id, $remainingRoleIds)) {
+                $staff->role()->detach($role->id);
+            }
+        }
+
+        return redirect()->back()->with('success', 'Staff berhasil dihapus dari outlet.');
     }
 
     /**

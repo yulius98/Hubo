@@ -21,8 +21,17 @@ class Produk extends Model
         'harga',
         'diskon',
         'harga_diskon',
-
+        'stok',
+        'rating',
     ];
+
+    protected function casts(): array
+    {
+        return [
+            'stok' => 'integer',
+            'rating' => 'float',
+        ];
+    }
 
     public function outlet()
     {

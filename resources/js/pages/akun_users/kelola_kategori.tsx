@@ -3,13 +3,12 @@ import {
     PencilSquareIcon,
     TrashIcon,
     XMarkIcon,
-    UserPlusIcon,
     EyeIcon,
-} from '@heroicons/react/24/outline'
-import type { PageProps as InertiaPageProps } from '@inertiajs/core'
-import { Head, usePage } from '@inertiajs/react'
-import { router } from "@inertiajs/react";
-import React, { useState, useEffect, useRef } from "react"
+} from '@heroicons/react/24/outline';
+import type { PageProps as InertiaPageProps } from '@inertiajs/core';
+import { Head, usePage } from '@inertiajs/react';
+import { router } from '@inertiajs/react';
+import React, { useState, useRef, useCallback } from 'react';
 import AppLayout from '@/layouts/app-layout'
 import { kategori } from '@/routes';
 import type { BreadcrumbItem } from '@/types'
@@ -44,7 +43,7 @@ const breadcrumbs: BreadcrumbItem[] = [
     },
 ];
 
-export default function kelola_kategori() {
+export default function KelolaKategoriPage() {
     const [error, setError] = useState("")
     const [editId, setEditId] = useState(null)
     const [showForm, setShowForm] = useState(false)
@@ -62,29 +61,40 @@ export default function kelola_kategori() {
         kategori: "",
     });
 
-    const handleImageChange = (e: any) => {
+    const resetForm = useCallback(() => {
+        setShowForm(false);
+        setEditId(null);
+        setFormData({
+            id: null,
+            id_user: null,
+            gambar: null,
+            kategori: "",
+        });
+        setPreview(null);
+        setError("");
+    }, []);
+
+    const handleImageChange = useCallback((e: any) => {
         const file = e.target.files[0];
         if (file) {
             setFormData(prev => ({ ...prev, gambar: file }));
-            setPreview(URL.createObjectURL(file)); // preview sebelum upload
+            setPreview(URL.createObjectURL(file));
         }
-    };
+    }, []);
 
-    const handleChange = (e:any) => {
+    const handleChange = useCallback((e:any) => {
         const { name, value } = e.target;
         if (name == 'kategori' ) {
         setFormData(prev => ({ ...prev, kategori: value, id_kategori: value }));
         } else {
         setFormData(prev => ({ ...prev,[name]:value}));
         }
-
-    };
+    }, []);
 
     // CREATE
-    const handleCreate = async (e: any) => {
+    const handleCreate = useCallback(async (e: any) => {
         e.preventDefault();
         try {
-        // Tampilkan data yang akan dikirim ke backend
         const dataToSend = {
             id_user: id_user,
             gambar: formData.gambar,
@@ -92,71 +102,54 @@ export default function kelola_kategori() {
         };
 
         router.post("kelola_kategori", dataToSend, {
+            preserveScroll: true,
+            preserveState: true,
             onSuccess: () => {
-                setShowForm(false);
-                setFormData({
-                    id: null,
-                    id_user: null,
-                    gambar: null,
-                    kategori: "",
-                });
-                setPreview(null);
+                resetForm();
             },
             onError: (errors) => {
                 console.log(errors);
             }
         });
 
-        // Refresh produk table after create
         if (fetchKategoriRef.current) fetchKategoriRef.current();
         } catch (err) {
         setError("Gagal menambah kategori");
-        // Tampilkan error detail dari backend jika ada
         console.log('Error response:', err);
         }
-    };
+    }, [id_user, formData, resetForm]);
 
     // Edit button
-    const handleEdit = (item: any) => {
+    const handleEdit = useCallback((item: any) => {
         setEditId(item.id);
         setFormData({
             id: item.id,
             id_user: item.id_user,
             gambar: item.gambar,
             kategori: item.kategori,
-
-
-        })
-        // Set preview for existing image
+        });
         if (item.gambar) {
             setPreview(`/${item.gambar}`);
         }
         setShowForm(true);
-    };
-
+    }, []);
 
     // UPDATE
-    const handleUpdate = async (e: any) => {
+    const handleUpdate = useCallback(async (e: any) => {
         e.preventDefault();
         try {
         const dataToSend = {
             id_user: id_user,
             gambar: formData.gambar,
             kategori: formData.kategori,
-            _method: 'PUT', // Method spoofing untuk file upload
+            _method: 'PUT',
         };
 
         router.post(`/kelola_kategori/${formData.id}`, dataToSend, {
+            preserveScroll: true,
+            preserveState: true,
             onSuccess: () => {
-                setShowForm(false);
-                setEditId(null);
-                setFormData({
-                    id: null,
-                    id_user: null,
-                    gambar: null,
-                    kategori: "",
-                });
-                setPreview(null);
+                resetForm();
                 if (fetchKategoriRef.current) fetchKategoriRef.current();
             },
             onError: (errors) => {
@@ -167,37 +160,29 @@ export default function kelola_kategori() {
         } catch (err) {
         setError("Gagal mengedit kategori");
         }
-    };
+    }, [id_user, formData, resetForm]);
 
     // DELETE
-    const handleDelete = async (id: any) => {
+    const handleDelete = useCallback(async (id: any) => {
         if (!window.confirm("Yakin hapus data ini?")) return;
         try {
-
-        router.delete(`/kelola_kategori/${id}`);
-
-        setShowForm(false);
-        setEditId(null);
-        setFormData({
-            id: null,
-            id_user: null,
-            gambar: null,
-            kategori: "",
-
+        router.delete(`/kelola_kategori/${id}`, {
+            preserveScroll: true,
+            preserveState: true,
         });
-        setPreview(null);
+
+        resetForm();
 
         if (fetchKategoriRef.current) fetchKategoriRef.current();
         } catch {
         setError("Gagal menghapus kategori");
         }
-    };
-
+    }, [resetForm]);
 
     // TAMBAH
-    const handleTambahProduk = async (id: any) => {
+    const handleTambahProduk = useCallback((id: any) => {
         router.get(`/kelola_kategori/${id}`);
-    };
+    }, []);
 
 
 

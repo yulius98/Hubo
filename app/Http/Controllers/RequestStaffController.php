@@ -4,8 +4,10 @@ namespace App\Http\Controllers;
 
 use App\Models\Outlet;
 use App\Models\RequestRole;
+use App\Models\Role;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Validation\Rule;
 use Illuminate\Validation\ValidationException;
 use Inertia\Inertia;
 
@@ -26,19 +28,21 @@ class RequestStaffController extends Controller
             ->where('user_id', Auth::id())
             ->get();
 
-        $userOutletRoles = $user->outlets()
-            ->get()
-            ->pluck('pivot.role_id')
-            ->unique()
-            ->values()
+        $userRoles = $user->role()
+            ->pluck('role')
             ->toArray();
+
+        $adminRoleId = Role::where('role', 'admin outlet')->value('id');
+        $kasirRoleId = Role::where('role', 'kasir')->value('id');
 
         return Inertia::render('akun_users/request_menjadi_staff', [
             'outlets' => $outlet,
             'jmlOutlet' => $jmlOutlet,
             'user_id' => $user->id,
             'statusreq' => $statusreq,
-            'userOutletRoles' => $userOutletRoles,
+            'userRoles' => $userRoles,
+            'adminRoleId' => $adminRoleId,
+            'kasirRoleId' => $kasirRoleId,
         ]);
     }
 
@@ -55,16 +59,29 @@ class RequestStaffController extends Controller
      */
     public function store(Request $request)
     {
+        $ownerRoleId = Role::where('role', 'owner outlet')->value('id');
+        $adminRoleId = Role::where('role', 'admin outlet')->value('id');
+        $kasirRoleId = Role::where('role', 'kasir')->value('id');
+
         $validated = $request->validate([
             'user_id' => 'required|numeric',
             'owner_id' => 'required|numeric',
-            'role_id' => 'required|numeric|in:3,5',
+            'role_id' => ['required', 'numeric', Rule::in([$adminRoleId, $kasirRoleId])],
             'outlet_id' => 'required|numeric',
             'status' => 'required|string',
         ]);
 
         $user = Auth::user();
         $roleId = (int) $validated['role_id'];
+
+        $outlet = Outlet::with('owner')->find($validated['outlet_id']);
+        $actualOwner = $outlet?->owner->first();
+
+        if (! $actualOwner || (int) $actualOwner->id !== (int) $validated['owner_id']) {
+            throw ValidationException::withMessages([
+                'owner_id' => 'Pemilik outlet yang dipilih tidak valid.',
+            ]);
+        }
 
         $userOutletRoles = $user->outlets()
             ->get()
@@ -80,8 +97,10 @@ class RequestStaffController extends Controller
 
         $allUserRoleIds = array_unique(array_merge($userOutletRoles, $userGlobalRoles));
 
-        $isKasir = in_array(5, $allUserRoleIds);
-        $isAdmin = in_array(3, $allUserRoleIds);
+        $isOwner = in_array($ownerRoleId, $allUserRoleIds);
+        $isKasir = in_array($kasirRoleId, $allUserRoleIds);
+        $isAdmin = in_array($adminRoleId, $allUserRoleIds);
+
         $hasPending = RequestRole::where('user_id', $user->id)
             ->where('outlet_id', $validated['outlet_id'])
             ->where('role_id', $roleId)
@@ -94,19 +113,25 @@ class RequestStaffController extends Controller
             ]);
         }
 
-        if ($roleId === 5 && $isKasir) {
+        if ($isOwner) {
+            throw ValidationException::withMessages([
+                'role_id' => 'Anda sudah menjadi owner outlet dan tidak dapat mengajukan menjadi karyawan.',
+            ]);
+        }
+
+        if ($roleId === $kasirRoleId && $isKasir) {
             throw ValidationException::withMessages([
                 'role_id' => 'Anda sudah menjadi kasir di salah satu outlet dan tidak dapat mengajukan menjadi kasir lagi.',
             ]);
         }
 
-        if ($roleId === 5 && $isAdmin) {
+        if ($roleId === $kasirRoleId && $isAdmin) {
             throw ValidationException::withMessages([
                 'role_id' => 'Anda sudah menjadi admin dan tidak bisa mengajukan menjadi kasir.',
             ]);
         }
 
-        if ($roleId === 3 && $isKasir) {
+        if ($roleId === $adminRoleId && $isKasir) {
             throw ValidationException::withMessages([
                 'role_id' => 'Anda sudah menjadi kasir dan tidak bisa mengajukan menjadi admin.',
             ]);

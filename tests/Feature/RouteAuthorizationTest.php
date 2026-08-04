@@ -45,15 +45,16 @@ it('allows owner and admin but denies kasir when storing products', function () 
     $outlet = createOutlet();
     $kategori = Kategori::create([
         'id_user' => User::factory()->create()->id,
-        'id_outlet' => $outlet->id,
         'kategori' => 'Minuman',
     ]);
+    $kategori->outlets()->attach($outlet->id);
 
     $payload = [
         'id_outlet' => $outlet->id,
         'id_kategori' => $kategori->id,
         'nama_produk' => 'Es Jeruk',
         'keterangan' => 'Segar',
+        'harga_beli' => 3000,
         'harga' => 5000,
         'diskon' => 'no',
     ];
@@ -72,9 +73,9 @@ it('denies an owner from storing products in an outlet they do not own', functio
     $otherOutlet = createOutlet();
     $kategori = Kategori::create([
         'id_user' => User::factory()->create()->id,
-        'id_outlet' => $otherOutlet->id,
         'kategori' => 'Minuman',
     ]);
+    $kategori->outlets()->attach($otherOutlet->id);
 
     $owner = attachUserToOutlet(createUserWithGlobalRole('owner outlet'), $ownedOutlet, 'owner outlet');
 
@@ -82,6 +83,7 @@ it('denies an owner from storing products in an outlet they do not own', functio
         'id_outlet' => $otherOutlet->id,
         'id_kategori' => $kategori->id,
         'nama_produk' => 'Es Jeruk B',
+        'harga_beli' => 3000,
         'harga' => 5000,
         'diskon' => 'no',
     ])->assertForbidden();

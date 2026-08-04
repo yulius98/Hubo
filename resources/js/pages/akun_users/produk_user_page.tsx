@@ -19,6 +19,8 @@ interface Kategori {
 interface Produk {
     id: number | null;
     nama_produk: string;
+    harga_beli: number;
+    margin: number;
     harga: number;
     gambar: string;
     kategori?: { id: number; kategori: string };
@@ -109,6 +111,12 @@ const ProdukTableRow = memo(function ProdukTableRow({
             </td>
             <td className="px-6 py-4 text-sm font-medium text-gray-900 dark:text-gray-100">
                 {formatRupiah(item.harga)}
+            </td>
+            <td className="px-6 py-4 text-sm font-medium text-gray-900 dark:text-gray-100">
+                {formatRupiah(item.harga_beli ?? 0)}
+            </td>
+            <td className="px-6 py-4 text-sm font-medium text-gray-900 dark:text-gray-100">
+                {formatRupiah(item.margin ?? 0)}
             </td>
             <td className="px-6 py-4 text-sm font-medium text-gray-900 dark:text-gray-100">
                 {item.diskon}
@@ -262,6 +270,7 @@ export default function Produk_User_Page({
         gambar: File | null;
         nama_produk: string;
         keterangan: string;
+        harga_beli: string;
         harga: string;
         diskon: string;
         harga_diskon: string;
@@ -273,6 +282,7 @@ export default function Produk_User_Page({
         gambar: null,
         nama_produk: '',
         keterangan: '',
+        harga_beli: '',
         harga: '',
         diskon: '',
         harga_diskon: '',
@@ -310,6 +320,7 @@ export default function Produk_User_Page({
             gambar: null,
             nama_produk: '',
             keterangan: '',
+            harga_beli: '',
             harga: '',
             diskon: '',
             harga_diskon: '',
@@ -334,6 +345,7 @@ export default function Produk_User_Page({
             gambar: formData.gambar,
             nama_produk: formData.nama_produk,
             keterangan: formData.keterangan,
+            harga_beli: formData.harga_beli,
             harga: formData.harga,
             diskon: formData.diskon,
             harga_diskon: formData.harga_diskon,
@@ -362,6 +374,7 @@ export default function Produk_User_Page({
             gambar: formData.gambar,
             nama_produk: formData.nama_produk,
             keterangan: formData.keterangan,
+            harga_beli: formData.harga_beli,
             harga: formData.harga,
             diskon: formData.diskon,
             harga_diskon: formData.harga_diskon,
@@ -388,6 +401,7 @@ export default function Produk_User_Page({
             gambar: null,
             nama_produk: item.nama_produk,
             keterangan: item.keterangan || '',
+            harga_beli: item.harga_beli?.toString() || '',
             harga: item.harga?.toString() || '',
             diskon: item.diskon || '',
             harga_diskon: item.harga_diskon?.toString() || '',
@@ -529,6 +543,26 @@ export default function Produk_User_Page({
                                         onChange={handleChange}
                                         placeholder="Contoh: Lenovo"
                                         required
+                                        className="w-full rounded-xl border border-gray-300 bg-white px-4 py-2.5 text-gray-900 placeholder-gray-400 transition-colors focus:border-blue-500 focus:ring-2 focus:ring-blue-500 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-100"
+                                    />
+                                </div>
+
+                                <div>
+                                    <label
+                                        htmlFor="harga_beli"
+                                        className="mb-1.5 block text-sm font-medium text-gray-700 dark:text-gray-300"
+                                    >
+                                        Harga Beli (Rp)
+                                    </label>
+                                    <input
+                                        type="number"
+                                        id="harga_beli"
+                                        name="harga_beli"
+                                        value={formData.harga_beli}
+                                        onChange={handleChange}
+                                        placeholder="0"
+                                        required
+                                        min="0"
                                         className="w-full rounded-xl border border-gray-300 bg-white px-4 py-2.5 text-gray-900 placeholder-gray-400 transition-colors focus:border-blue-500 focus:ring-2 focus:ring-blue-500 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-100"
                                     />
                                 </div>
@@ -679,6 +713,12 @@ export default function Produk_User_Page({
                                             Harga
                                         </th>
                                         <th className="px-6 py-4 text-left text-xs font-semibold tracking-wider text-gray-600 uppercase dark:text-gray-300">
+                                            Harga Beli
+                                        </th>
+                                        <th className="px-6 py-4 text-left text-xs font-semibold tracking-wider text-gray-600 uppercase dark:text-gray-300">
+                                            Margin
+                                        </th>
+                                        <th className="px-6 py-4 text-left text-xs font-semibold tracking-wider text-gray-600 uppercase dark:text-gray-300">
                                             Diskon
                                         </th>
                                         <th className="w-40 px-6 py-4 text-center text-xs font-semibold tracking-wider text-gray-600 uppercase dark:text-gray-300">
@@ -696,7 +736,7 @@ export default function Produk_User_Page({
                                     {produk.length === 0 ? (
                                         <tr>
                                             <td
-                                                colSpan={9}
+                                                colSpan={11}
                                                 className="px-6 py-12 text-center text-sm text-gray-500 dark:text-gray-400"
                                             >
                                                 Belum ada data produk.

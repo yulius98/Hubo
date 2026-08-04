@@ -28,11 +28,14 @@ it('owner and admin can create products but cashier cannot', function () {
 it('only owner and admin of a product outlet can delete it', function () {
     $outlet = createOutlet();
     $kategoriOwner = User::factory()->create();
-    $kategori = Kategori::create(['id_user' => $kategoriOwner->id, 'id_outlet' => $outlet->id, 'kategori' => 'Minuman']);
+    $kategori = Kategori::create(['id_user' => $kategoriOwner->id, 'kategori' => 'Minuman']);
+    $kategori->outlets()->attach($outlet->id);
     $produk = Produk::create([
         'id_outlet' => $outlet->id,
         'id_kategori' => $kategori->id,
         'nama_produk' => 'Es Teh',
+        'harga_beli' => 3000,
+        'margin' => 2000,
         'harga' => 5000,
     ]);
 

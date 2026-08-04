@@ -5,6 +5,7 @@ namespace App\Models;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\SoftDeletes;
 use Illuminate\Notifications\Notifiable;
@@ -15,19 +16,19 @@ class Kategori extends Model
 
     protected $fillable = [
         'id_user',
-        'id_outlet',
         'gambar',
         'kategori',
     ];
 
-    public function user()
+    public function user(): BelongsTo
     {
         return $this->belongsTo(User::class, 'id_user');
     }
 
-    public function outlet(): BelongsTo
+    public function outlets(): BelongsToMany
     {
-        return $this->belongsTo(Outlet::class, 'id_outlet');
+        return $this->belongsToMany(Outlet::class, 'kategori_outlet', 'id_kategori', 'id_outlet')
+            ->withTimestamps();
     }
 
     public function produk(): HasMany

@@ -68,7 +68,8 @@ function ActionDropdown({
             }
         }
         document.addEventListener('mousedown', handleClickOutside);
-        return () => document.removeEventListener('mousedown', handleClickOutside);
+        return () =>
+            document.removeEventListener('mousedown', handleClickOutside);
     }, [open, onClose]);
 
     return (
@@ -92,14 +93,20 @@ function ActionDropdown({
                         className="absolute right-0 z-30 mt-2 w-44 origin-top-right overflow-hidden rounded-xl border border-gray-200 bg-white shadow-lg dark:border-gray-600 dark:bg-gray-800"
                     >
                         <button
-                            onClick={() => { onClose(); onProduk(item.id); }}
+                            onClick={() => {
+                                onClose();
+                                onProduk(item.id);
+                            }}
                             className="flex w-full items-center gap-3 px-4 py-2.5 text-sm text-gray-700 transition hover:bg-blue-50 dark:text-gray-200 dark:hover:bg-blue-900/20"
                         >
                             <RectangleStackIcon className="h-4 w-4 text-blue-600 dark:text-blue-400" />
                             Produk
                         </button>
                         <button
-                            onClick={() => { onClose(); onStaff(item.id); }}
+                            onClick={() => {
+                                onClose();
+                                onStaff(item.id);
+                            }}
                             className="flex w-full items-center gap-3 px-4 py-2.5 text-sm text-gray-700 transition hover:bg-blue-50 dark:text-gray-200 dark:hover:bg-blue-900/20"
                         >
                             <UserPlusIcon className="h-4 w-4 text-blue-600 dark:text-blue-400" />
@@ -107,14 +114,20 @@ function ActionDropdown({
                         </button>
                         <div className="border-t border-gray-100 dark:border-gray-700" />
                         <button
-                            onClick={() => { onClose(); onEdit(item); }}
+                            onClick={() => {
+                                onClose();
+                                onEdit(item);
+                            }}
                             className="flex w-full items-center gap-3 px-4 py-2.5 text-sm text-gray-700 transition hover:bg-yellow-50 dark:text-gray-200 dark:hover:bg-yellow-900/20"
                         >
                             <PencilSquareIcon className="h-4 w-4 text-yellow-600 dark:text-yellow-400" />
                             Edit
                         </button>
                         <button
-                            onClick={() => { onClose(); onDelete(item.id); }}
+                            onClick={() => {
+                                onClose();
+                                onDelete(item.id);
+                            }}
                             className="flex w-full items-center gap-3 px-4 py-2.5 text-sm text-red-600 transition hover:bg-red-50 dark:text-red-400 dark:hover:bg-red-900/20"
                         >
                             <TrashIcon className="h-4 w-4" />
@@ -166,17 +179,23 @@ function OutletModal({
                     initial={{ opacity: 0 }}
                     animate={{ opacity: 1 }}
                     exit={{ opacity: 0 }}
-                    className="fixed inset-0 z-50 flex items-center justify-center overflow-y-auto bg-black/50 px-4 py-6 backdrop-blur-sm"
-                    onClick={(e) => { if (e.target === e.currentTarget) onClose(); }}
+                    className="fixed inset-0 z-50 flex items-start justify-center overflow-y-auto bg-black/50 px-4 py-6 backdrop-blur-sm"
+                    onClick={(e) => {
+                        if (e.target === e.currentTarget) onClose();
+                    }}
                 >
                     <motion.div
                         initial={{ opacity: 0, scale: 0.95, y: 20 }}
                         animate={{ opacity: 1, scale: 1, y: 0 }}
                         exit={{ opacity: 0, scale: 0.95, y: 20 }}
-                        transition={{ type: 'spring', stiffness: 300, damping: 30 }}
-                        className="relative w-full max-w-2xl rounded-2xl border border-gray-200 bg-white shadow-2xl dark:border-gray-700 dark:bg-gray-800"
+                        transition={{
+                            type: 'spring',
+                            stiffness: 300,
+                            damping: 30,
+                        }}
+                        className="relative my-auto flex max-h-[calc(100dvh-3rem)] w-full max-w-2xl flex-col rounded-2xl border border-gray-200 bg-white shadow-2xl dark:border-gray-700 dark:bg-gray-800"
                     >
-                        <div className="flex items-center justify-between border-b border-gray-200 px-6 py-4 dark:border-gray-700">
+                        <div className="flex shrink-0 items-center justify-between border-b border-gray-200 px-6 py-4 dark:border-gray-700">
                             <h2 className="text-lg font-semibold text-gray-900 dark:text-gray-100">
                                 {editId ? 'Edit Outlet' : 'Tambah Outlet Baru'}
                             </h2>
@@ -189,11 +208,17 @@ function OutletModal({
                             </button>
                         </div>
 
-                        <form onSubmit={onSubmit} className="px-6 py-5">
-                            <div className="grid gap-5 sm:grid-cols-2 sm:gap-6">
-                                <div className="space-y-5">
+                        <form
+                            onSubmit={onSubmit}
+                            className="min-h-0 flex-1 overflow-y-auto overscroll-contain px-6 py-4"
+                        >
+                            <div className="grid gap-4 sm:grid-cols-2 sm:gap-5">
+                                <div className="space-y-4">
                                     <div>
-                                        <label htmlFor="outlet-gambar" className="mb-1.5 block text-sm font-medium text-gray-700 dark:text-gray-300">
+                                        <label
+                                            htmlFor="outlet-gambar"
+                                            className="mb-1.5 block text-sm font-medium text-gray-700 dark:text-gray-300"
+                                        >
                                             Foto / Logo Outlet
                                         </label>
                                         <input
@@ -213,8 +238,14 @@ function OutletModal({
                                     </div>
 
                                     <div>
-                                        <label htmlFor="outlet-nama" className="mb-1.5 block text-sm font-medium text-gray-700 dark:text-gray-300">
-                                            Nama Outlet <span className="text-red-500">*</span>
+                                        <label
+                                            htmlFor="outlet-nama"
+                                            className="mb-1.5 block text-sm font-medium text-gray-700 dark:text-gray-300"
+                                        >
+                                            Nama Outlet{' '}
+                                            <span className="text-red-500">
+                                                *
+                                            </span>
                                         </label>
                                         <input
                                             id="outlet-nama"
@@ -229,8 +260,14 @@ function OutletModal({
                                     </div>
 
                                     <div>
-                                        <label htmlFor="outlet-alamat" className="mb-1.5 block text-sm font-medium text-gray-700 dark:text-gray-300">
-                                            Alamat Lengkap <span className="text-red-500">*</span>
+                                        <label
+                                            htmlFor="outlet-alamat"
+                                            className="mb-1.5 block text-sm font-medium text-gray-700 dark:text-gray-300"
+                                        >
+                                            Alamat Lengkap{' '}
+                                            <span className="text-red-500">
+                                                *
+                                            </span>
                                         </label>
                                         <input
                                             id="outlet-alamat"
@@ -245,10 +282,16 @@ function OutletModal({
                                     </div>
                                 </div>
 
-                                <div className="space-y-5">
+                                <div className="space-y-4">
                                     <div>
-                                        <label htmlFor="outlet-kota" className="mb-1.5 block text-sm font-medium text-gray-700 dark:text-gray-300">
-                                            Kota / Kabupaten <span className="text-red-500">*</span>
+                                        <label
+                                            htmlFor="outlet-kota"
+                                            className="mb-1.5 block text-sm font-medium text-gray-700 dark:text-gray-300"
+                                        >
+                                            Kota / Kabupaten{' '}
+                                            <span className="text-red-500">
+                                                *
+                                            </span>
                                         </label>
                                         <input
                                             id="outlet-kota"
@@ -263,7 +306,10 @@ function OutletModal({
                                     </div>
 
                                     <div>
-                                        <label htmlFor="outlet-telp" className="mb-1.5 block text-sm font-medium text-gray-700 dark:text-gray-300">
+                                        <label
+                                            htmlFor="outlet-telp"
+                                            className="mb-1.5 block text-sm font-medium text-gray-700 dark:text-gray-300"
+                                        >
                                             Nomor Telepon / WA
                                         </label>
                                         <input
@@ -277,13 +323,15 @@ function OutletModal({
                                         />
                                     </div>
 
-                                    <div className="flex items-end pt-2 sm:pt-8">
+                                    <div className="flex items-end pt-2 sm:pt-6">
                                         <button
                                             type="submit"
                                             disabled={isSubmitting}
                                             className="w-full rounded-lg bg-blue-600 px-6 py-3 text-sm font-medium text-white transition hover:bg-blue-700 focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 focus:outline-none disabled:cursor-not-allowed disabled:opacity-60 sm:py-2.5"
                                         >
-                                            {isSubmitting ? 'Menyimpan...' : submitLabel}
+                                            {isSubmitting
+                                                ? 'Menyimpan...'
+                                                : submitLabel}
                                         </button>
                                     </div>
                                 </div>
@@ -316,18 +364,24 @@ export default function Outlet_User_Page() {
     const { outlets: rawOutlets, jmlOutlet } = usePage<OutletPageProps>().props;
     const outlets = rawOutlets ?? [];
 
-    const handleImageChange = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
-        const file = e.target.files?.[0];
-        if (file) {
-            setFormData((prev) => ({ ...prev, gambar: file }));
-            setPreview(URL.createObjectURL(file));
-        }
-    }, []);
+    const handleImageChange = useCallback(
+        (e: React.ChangeEvent<HTMLInputElement>) => {
+            const file = e.target.files?.[0];
+            if (file) {
+                setFormData((prev) => ({ ...prev, gambar: file }));
+                setPreview(URL.createObjectURL(file));
+            }
+        },
+        [],
+    );
 
-    const handleChange = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
-        const { name, value } = e.target;
-        setFormData((prev) => ({ ...prev, [name]: value }));
-    }, []);
+    const handleChange = useCallback(
+        (e: React.ChangeEvent<HTMLInputElement>) => {
+            const { name, value } = e.target;
+            setFormData((prev) => ({ ...prev, [name]: value }));
+        },
+        [],
+    );
 
     const resetForm = useCallback(() => {
         setFormData({
@@ -353,62 +407,79 @@ export default function Outlet_User_Page() {
         resetForm();
     }, [resetForm]);
 
-    const handleCreate = useCallback((e: React.SubmitEvent) => {
-        e.preventDefault();
-        setIsSubmitting(true);
-        const data = new FormData();
-        if (formData.gambar) data.append('gambar', formData.gambar);
-        data.append('nama_outlet', formData.nama_outlet);
-        data.append('alamat_outlet', formData.alamat_outlet);
-        data.append('kota', formData.kota);
-        data.append('telp', formData.telp);
+    const handleCreate = useCallback(
+        (e: React.SubmitEvent) => {
+            e.preventDefault();
+            setIsSubmitting(true);
+            const data = new FormData();
+            if (formData.gambar) data.append('gambar', formData.gambar);
+            data.append('nama_outlet', formData.nama_outlet);
+            data.append('alamat_outlet', formData.alamat_outlet);
+            data.append('kota', formData.kota);
+            data.append('telp', formData.telp);
 
-        router.post('myoutlet', data, {
-            preserveScroll: true,
-            preserveState: true,
-            onSuccess: () => {
-                closeForm();
-                setIsSubmitting(false);
-            },
-            onError: (errors) => {
-                console.log(errors);
-                setIsSubmitting(false);
-            },
-        });
-    }, [formData, closeForm]);
+            router.post('myoutlet', data, {
+                preserveScroll: true,
+                preserveState: true,
+                onSuccess: () => {
+                    closeForm();
+                    setIsSubmitting(false);
+                },
+                onError: (errors) => {
+                    console.log(errors);
+                    setIsSubmitting(false);
+                },
+            });
+        },
+        [formData, closeForm],
+    );
 
-    const handleUpdate = useCallback((e: React.SubmitEvent) => {
-        e.preventDefault();
-        setIsSubmitting(true);
-        const data = new FormData();
-        data.append('_method', 'PUT');
-        if (formData.gambar) data.append('gambar', formData.gambar);
-        data.append('nama_outlet', formData.nama_outlet);
-        data.append('alamat_outlet', formData.alamat_outlet);
-        data.append('kota', formData.kota);
-        data.append('telp', formData.telp);
+    const handleUpdate = useCallback(
+        (e: React.SubmitEvent) => {
+            e.preventDefault();
+            setIsSubmitting(true);
+            const data = new FormData();
+            data.append('_method', 'PUT');
+            if (formData.gambar) data.append('gambar', formData.gambar);
+            data.append('nama_outlet', formData.nama_outlet);
+            data.append('alamat_outlet', formData.alamat_outlet);
+            data.append('kota', formData.kota);
+            data.append('telp', formData.telp);
 
-        router.post(`/myoutlet/${formData.id}`, data, {
-            preserveScroll: true,
-            preserveState: true,
-            onSuccess: () => {
-                closeForm();
-                setIsSubmitting(false);
-            },
-            onError: () => setIsSubmitting(false),
-        });
-    }, [formData, closeForm]);
+            router.post(`/myoutlet/${formData.id}`, data, {
+                preserveScroll: true,
+                preserveState: true,
+                onSuccess: () => {
+                    closeForm();
+                    setIsSubmitting(false);
+                },
+                onError: () => setIsSubmitting(false),
+            });
+        },
+        [formData, closeForm],
+    );
 
     const handleDelete = useCallback((id: number) => {
-        if (!confirm('Yakin ingin menghapus outlet ini? Semua data terkait akan ikut terhapus.')) return;
+        if (
+            !confirm(
+                'Yakin ingin menghapus outlet ini? Semua data terkait akan ikut terhapus.',
+            )
+        )
+            return;
         router.delete(`/myoutlet/${id}`, {
             preserveScroll: true,
             preserveState: true,
         });
     }, []);
 
-    const handleTambahProduk = useCallback((id: number) => router.get(`/produk/${id}`), []);
-    const handleTambahStaff = useCallback((id: number) => router.get(`/add_staff/${id}`), []);
+    const handleTambahProduk = useCallback(
+        (id: number) => router.get(`/produk/${id}`),
+        [],
+    );
+    const handleTambahStaff = useCallback(
+        (id: number) => router.get(`/add_staff/${id}`),
+        [],
+    );
 
     const handleEdit = useCallback((item: Outlet) => {
         setEditId(item.id);
@@ -518,14 +589,24 @@ export default function Outlet_User_Page() {
                                             <div className="shrink-0 self-center">
                                                 <ActionDropdown
                                                     item={item}
-                                                    open={openDropdownId === item.id}
+                                                    open={
+                                                        openDropdownId ===
+                                                        item.id
+                                                    }
                                                     onToggle={() =>
-                                                        setOpenDropdownId((prev) =>
-                                                            prev === item.id ? null : item.id,
+                                                        setOpenDropdownId(
+                                                            (prev) =>
+                                                                prev === item.id
+                                                                    ? null
+                                                                    : item.id,
                                                         )
                                                     }
-                                                    onClose={() => setOpenDropdownId(null)}
-                                                    onProduk={handleTambahProduk}
+                                                    onClose={() =>
+                                                        setOpenDropdownId(null)
+                                                    }
+                                                    onProduk={
+                                                        handleTambahProduk
+                                                    }
                                                     onStaff={handleTambahStaff}
                                                     onEdit={handleEdit}
                                                     onDelete={handleDelete}
@@ -552,13 +633,13 @@ export default function Outlet_User_Page() {
                                         <th className="px-5 py-4 text-left text-xs font-semibold tracking-wider text-gray-500 uppercase sm:px-6 dark:text-gray-400">
                                             Alamat
                                         </th>
-                                        <th className="hidden px-5 py-4 text-left text-xs font-semibold tracking-wider text-gray-500 uppercase lg:table-cell sm:px-6 dark:text-gray-400">
+                                        <th className="hidden px-5 py-4 text-left text-xs font-semibold tracking-wider text-gray-500 uppercase sm:px-6 lg:table-cell dark:text-gray-400">
                                             Kota
                                         </th>
                                         <th className="hidden px-5 py-4 text-left text-xs font-semibold tracking-wider text-gray-500 uppercase sm:table-cell sm:px-6 dark:text-gray-400">
                                             Telepon
                                         </th>
-                                        <th className="w-28 px-5 py-4 text-center text-xs font-semibold tracking-wider text-gray-500 uppercase sm:px-6 sm:w-32 dark:text-gray-400">
+                                        <th className="w-28 px-5 py-4 text-center text-xs font-semibold tracking-wider text-gray-500 uppercase sm:w-32 sm:px-6 dark:text-gray-400">
                                             Aksi
                                         </th>
                                     </tr>
@@ -588,7 +669,9 @@ export default function Outlet_User_Page() {
                                                         {item.gambar ? (
                                                             <img
                                                                 src={`/${item.gambar}`}
-                                                                alt={item.nama_outlet}
+                                                                alt={
+                                                                    item.nama_outlet
+                                                                }
                                                                 className="h-10 w-10 shrink-0 rounded-lg object-cover sm:h-12 sm:w-12"
                                                             />
                                                         ) : (
@@ -598,7 +681,9 @@ export default function Outlet_User_Page() {
                                                         )}
                                                         <div className="min-w-0">
                                                             <div className="text-sm font-medium text-gray-900 dark:text-gray-100">
-                                                                {item.nama_outlet}
+                                                                {
+                                                                    item.nama_outlet
+                                                                }
                                                             </div>
                                                             <div className="text-xs text-gray-400 lg:hidden dark:text-gray-500">
                                                                 {item.kota}
@@ -606,10 +691,10 @@ export default function Outlet_User_Page() {
                                                         </div>
                                                     </div>
                                                 </td>
-                                                <td className="min-w-72 max-w-2xl truncate px-5 py-4 text-sm text-gray-700 sm:px-6 dark:text-gray-300">
+                                                <td className="max-w-2xl min-w-72 truncate px-5 py-4 text-sm text-gray-700 sm:px-6 dark:text-gray-300">
                                                     {item.alamat_outlet}
                                                 </td>
-                                                <td className="hidden px-5 py-4 text-sm whitespace-nowrap text-gray-700 lg:table-cell sm:px-6 dark:text-gray-300">
+                                                <td className="hidden px-5 py-4 text-sm whitespace-nowrap text-gray-700 sm:px-6 lg:table-cell dark:text-gray-300">
                                                     {item.kota}
                                                 </td>
                                                 <td className="hidden px-5 py-4 text-sm whitespace-nowrap text-gray-700 sm:table-cell sm:px-6 dark:text-gray-300">
@@ -618,15 +703,30 @@ export default function Outlet_User_Page() {
                                                 <td className="px-5 py-4 text-center whitespace-nowrap sm:px-6">
                                                     <ActionDropdown
                                                         item={item}
-                                                        open={openDropdownId === item.id}
+                                                        open={
+                                                            openDropdownId ===
+                                                            item.id
+                                                        }
                                                         onToggle={() =>
-                                                            setOpenDropdownId((prev) =>
-                                                                prev === item.id ? null : item.id,
+                                                            setOpenDropdownId(
+                                                                (prev) =>
+                                                                    prev ===
+                                                                    item.id
+                                                                        ? null
+                                                                        : item.id,
                                                             )
                                                         }
-                                                        onClose={() => setOpenDropdownId(null)}
-                                                        onProduk={handleTambahProduk}
-                                                        onStaff={handleTambahStaff}
+                                                        onClose={() =>
+                                                            setOpenDropdownId(
+                                                                null,
+                                                            )
+                                                        }
+                                                        onProduk={
+                                                            handleTambahProduk
+                                                        }
+                                                        onStaff={
+                                                            handleTambahStaff
+                                                        }
                                                         onEdit={handleEdit}
                                                         onDelete={handleDelete}
                                                     />

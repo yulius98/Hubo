@@ -11,14 +11,16 @@ function createTransaksi(User $user, Outlet $outlet, string $jenis = 'IN', int $
 {
     $kategori = Kategori::create([
         'id_user' => $user->id,
-        'id_outlet' => $outlet->id,
         'kategori' => 'Minuman '.fake()->unique()->word(),
     ]);
+    $kategori->outlets()->attach($outlet->id);
 
     $produk = Produk::create([
         'id_outlet' => $outlet->id,
         'id_kategori' => $kategori->id,
         'nama_produk' => 'Produk '.fake()->unique()->word(),
+        'harga_beli' => 8000,
+        'margin' => 2000,
         'harga' => 10000,
     ]);
 

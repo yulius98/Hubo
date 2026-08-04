@@ -40,20 +40,23 @@ class KategoriController extends Controller
         $selectedOutletId = (int) session('selected_outlet_id', 0);
 
         if ($selectedOutletId && $accessibleOutlets->contains($selectedOutletId)) {
-            $outlet = Outlet::find($selectedOutletId);
-            $this->authorize('viewAny', [Kategori::class, $outlet]);
-
-            $outletIds = collect([$selectedOutletId]);
+            $this->authorize('viewAny', [Kategori::class, Outlet::find($selectedOutletId)]);
         } else {
-            $outletIds = $accessibleOutlets;
+            $selectedOutletId = 0;
         }
 
         $kategori = Kategori::query()
-            ->whereIn('id_outlet', $outletIds)
-            ->paginate(10);
-        $jmlKategori = $kategori->total();
+            ->with('outlets:id,nama_outlet')
+            ->orderBy('kategori')
+            ->get();
+        $jmlKategori = $kategori->count();
 
-        return Inertia::render('akun_users/kelola_kategori', ['kategoris' => $kategori, 'jmlKategori' => $jmlKategori, 'id_user' => $user->id]);
+        return Inertia::render('akun_users/kelola_kategori', [
+            'kategoris' => $kategori,
+            'jmlKategori' => $jmlKategori,
+            'id_user' => $user->id,
+            'selectedOutletId' => $selectedOutletId,
+        ]);
     }
 
     /**
@@ -72,16 +75,22 @@ class KategoriController extends Controller
 
         $validated = $request->validate([
             'id_user' => 'required|numeric',
-            'id_outlet' => 'nullable|integer|exists:outlets,id',
+            'outlet_ids' => 'nullable|array',
+            'outlet_ids.*' => 'integer|exists:outlets,id',
             'gambar' => 'nullable|image|mimes:jpeg,png,jpg,webp,avif|max:200',
             'kategori' => 'required|string|max:255',
         ]);
 
-        $validated['id_outlet'] = $validated['id_outlet'] ?? session('selected_outlet_id');
+        $outletIds = array_values(array_unique($validated['outlet_ids'] ?? []));
 
-        $outlet = $validated['id_outlet'] ? Outlet::find($validated['id_outlet']) : null;
-        abort_unless($outlet, 403, 'Silakan pilih outlet terlebih dahulu.');
-        $this->authorize('create', [Kategori::class, $outlet]);
+        if (! empty($outletIds)) {
+            $outlets = Outlet::whereIn('id', $outletIds)->get();
+            abort_unless($outlets->count() === count($outletIds), 403, 'Outlet tidak ditemukan.');
+
+            foreach ($outlets as $outlet) {
+                $this->authorize('create', [Kategori::class, $outlet]);
+            }
+        }
 
         if ($request->hasFile('gambar')) {
             $file = $request->file('gambar');
@@ -112,7 +121,12 @@ class KategoriController extends Controller
             unset($validated['gambar']);
         }
 
-        Kategori::create($validated);
+        unset($validated['outlet_ids']);
+        $kategori = Kategori::create($validated);
+
+        if (! empty($outletIds)) {
+            $kategori->outlets()->attach($outletIds);
+        }
 
         return redirect()->back()->with('success', 'Kategori berhasil ditambahkan');
     }
@@ -123,6 +137,25 @@ class KategoriController extends Controller
     public function show(Kategori $kategori)
     {
         //
+    }
+
+    /**
+     * Save the selected categories for a given outlet.
+     */
+    public function save(Request $request)
+    {
+        $validated = $request->validate([
+            'outlet_id' => 'required|integer|exists:outlets,id',
+            'kategori_ids' => 'nullable|array',
+            'kategori_ids.*' => 'integer|exists:kategoris,id',
+        ]);
+
+        $outlet = Outlet::findOrFail($validated['outlet_id']);
+        $this->authorize('create', [Kategori::class, $outlet]);
+
+        $outlet->kategori()->sync($validated['kategori_ids'] ?? []);
+
+        return redirect()->back()->with('success', 'Kategori outlet berhasil disimpan');
     }
 
     /**
@@ -141,17 +174,22 @@ class KategoriController extends Controller
         // Validasi dulu (wajib)
         $validated = $request->validate([
             'id_user' => 'required|numeric',
-            'id_outlet' => 'nullable|integer|exists:outlets,id',
+            'outlet_ids' => 'required|array|min:1',
+            'outlet_ids.*' => 'integer|exists:outlets,id',
             'gambar' => 'nullable|image|mimes:jpeg,png,jpg,webp,avif|max:200',
             'kategori' => 'required|string|max:255',
 
         ]);
 
-        $validated['id_outlet'] = $validated['id_outlet'] ?? session('selected_outlet_id');
-
-        $outlet = $validated['id_outlet'] ? Outlet::find($validated['id_outlet']) : $kategori->outlet;
-        abort_unless($outlet, 403, 'Silakan pilih outlet terlebih dahulu.');
         $this->authorize('update', $kategori);
+
+        $outletIds = array_values(array_unique($validated['outlet_ids']));
+        $outlets = Outlet::whereIn('id', $outletIds)->get();
+        abort_unless($outlets->count() === count($outletIds), 403, 'Outlet tidak ditemukan.');
+
+        foreach ($outlets as $outlet) {
+            $this->authorize('create', [Kategori::class, $outlet]);
+        }
 
         if ($request->hasFile('gambar')) {
             // Hapus gambar lama jika ada
@@ -183,7 +221,9 @@ class KategoriController extends Controller
         }
 
         // Update data
+        unset($validated['outlet_ids']);
         $kategori->update($validated);
+        $kategori->outlets()->sync($outletIds);
 
         return redirect()
             ->back()

@@ -31,6 +31,7 @@ Route::middleware(['auth', ValidateSessionWithWorkOS::class])->group(function ()
     Route::middleware('role:owner outlet,admin outlet')->group(function () {
         Route::get('kelola_kategori', [KategoriController::class, 'index'])->name('kategori');
         Route::post('kelola_kategori', [KategoriController::class, 'store'])->name('kategori.add');
+        Route::post('kelola_kategori/save', [KategoriController::class, 'save'])->name('kategori.save');
         Route::put('kelola_kategori/{kategori}', [KategoriController::class, 'update'])->name('kategori.update');
         Route::delete('kelola_kategori/{kategori}', [KategoriController::class, 'destroy'])->name('kategori.delete');
     });

@@ -18,6 +18,8 @@ class Produk extends Model
         'gambar',
         'nama_produk',
         'keterangan',
+        'harga_beli',
+        'margin',
         'harga',
         'diskon',
         'harga_diskon',

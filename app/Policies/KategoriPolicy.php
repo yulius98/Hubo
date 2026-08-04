@@ -27,22 +27,20 @@ class KategoriPolicy
     }
 
     /**
-     * Only the owner or admin of the category's outlet may update it.
+     * Only the owner or admin of at least one of the category's outlets may update it.
      */
     public function update(User $user, Kategori $kategori): bool
     {
-        $outlet = $kategori->outlet;
-
-        return $outlet !== null && $this->create($user, $outlet);
+        return $kategori->outlets
+            ->contains(fn (Outlet $outlet) => $this->create($user, $outlet));
     }
 
     /**
-     * Only the owner or admin of the category's outlet may delete it.
+     * Only the owner or admin of at least one of the category's outlets may delete it.
      */
     public function delete(User $user, Kategori $kategori): bool
     {
-        $outlet = $kategori->outlet;
-
-        return $outlet !== null && $this->create($user, $outlet);
+        return $kategori->outlets
+            ->contains(fn (Outlet $outlet) => $this->create($user, $outlet));
     }
 }

@@ -15,6 +15,12 @@ export type OutletOption = {
     nama_outlet: string;
 };
 
+export type PendingRequestListItem = {
+    id: number;
+    staff_name: string;
+    outlet_name: string;
+};
+
 declare module '@inertiajs/core' {
     interface PageProps extends InertiaPageProps {
         auth: Auth;
@@ -22,5 +28,7 @@ declare module '@inertiajs/core' {
         canSelectAll: boolean;
         selectedOutletId: number | null;
         sidebarOpen?: boolean;
+        pendingRequestCount?: number;
+        pendingRequestList?: PendingRequestListItem[];
     }
 }

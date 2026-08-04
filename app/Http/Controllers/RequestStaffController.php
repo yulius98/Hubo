@@ -35,6 +35,20 @@ class RequestStaffController extends Controller
         $adminRoleId = Role::where('role', 'admin outlet')->value('id');
         $kasirRoleId = Role::where('role', 'kasir')->value('id');
 
+        $pendingRequests = collect();
+
+        if (in_array('owner outlet', $userRoles)) {
+            $pendingRequests = RequestRole::with([
+                'staff:id,name',
+                'outlet:id,nama_outlet',
+                'role:id,role',
+            ])
+                ->where('owner_id', $user->id)
+                ->where('status', 'pending')
+                ->latest()
+                ->get();
+        }
+
         return Inertia::render('akun_users/request_menjadi_staff', [
             'outlets' => $outlet,
             'jmlOutlet' => $jmlOutlet,
@@ -43,6 +57,7 @@ class RequestStaffController extends Controller
             'userRoles' => $userRoles,
             'adminRoleId' => $adminRoleId,
             'kasirRoleId' => $kasirRoleId,
+            'pendingRequests' => $pendingRequests,
         ]);
     }
 

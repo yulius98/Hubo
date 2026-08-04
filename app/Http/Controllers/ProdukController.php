@@ -25,7 +25,7 @@ class ProdukController extends Controller
         if ($outlet_id === 'all' || (int) $outlet_id === 0) {
             $userOutletIds = Auth::user()->outlets->pluck('id');
 
-            $kategori = Kategori::whereIn('id_outlet', $userOutletIds)->get();
+            $kategori = Kategori::whereHas('outlets', fn ($q) => $q->whereIn('outlets.id', $userOutletIds))->get();
 
             $produk = Produk::with('kategori:id,kategori')
                 ->whereIn('id_outlet', $userOutletIds)
@@ -44,7 +44,7 @@ class ProdukController extends Controller
         $outlet = Outlet::findOrFail($outlet_id);
         $this->authorize('viewAny', [Produk::class, $outlet]);
 
-        $kategori = Kategori::where('id_outlet', $outlet->id)->get();
+        $kategori = Kategori::whereHas('outlets', fn ($q) => $q->where('outlets.id', $outlet->id))->get();
 
         $produk = Produk::with('kategori:id,kategori')
             ->where('id_outlet', $outlet->id)
@@ -80,10 +80,13 @@ class ProdukController extends Controller
             'gambar' => 'nullable|image|mimes:jpeg,png,jpg,webp,avif|max:200',
             'nama_produk' => 'required|string|max:255',
             'keterangan' => 'nullable|string',
+            'harga_beli' => 'required|numeric|min:0',
             'harga' => 'required|numeric',
             'diskon' => 'required|string',
             'harga_diskon' => 'nullable|numeric',
         ]);
+
+        $validated['margin'] = (float) $validated['harga'] - (float) $validated['harga_beli'];
 
         $outlet = Outlet::findOrFail($validated['id_outlet']);
         $this->authorize('create', [Produk::class, $outlet]);
@@ -154,10 +157,13 @@ class ProdukController extends Controller
             'gambar' => 'nullable|image|mimes:jpeg,png,jpg,webp,avif|max:200',
             'nama_produk' => 'required|string|max:255',
             'keterangan' => 'nullable|string',
+            'harga_beli' => 'required|numeric|min:0',
             'harga' => 'required|numeric',
             'diskon' => 'required|string',
             'harga_diskon' => 'nullable|numeric',
         ]);
+
+        $validated['margin'] = (float) $validated['harga'] - (float) $validated['harga_beli'];
 
         $this->authorize('update', $produk);
 

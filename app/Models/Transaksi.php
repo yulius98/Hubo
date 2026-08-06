@@ -19,6 +19,7 @@ class Transaksi extends Model
         'id_produk',
         'jenis_transaksi',
         'jumlah_produk',
+        'keterangan',
     ];
 
     public function user()

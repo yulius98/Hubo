@@ -7,12 +7,21 @@ import {
     Home,
     LayoutGrid,
     List,
+    Package,
     ReceiptText,
     Store,
     UserCircle,
 } from 'lucide-react';
+import { useState } from 'react';
 import { NavMain, type NavSection } from '@/components/nav-main';
 import { NavUser } from '@/components/nav-user';
+import {
+    Dialog,
+    DialogContent,
+    DialogDescription,
+    DialogHeader,
+    DialogTitle,
+} from '@/components/ui/dialog';
 import {
     Sidebar,
     SidebarContent,
@@ -30,6 +39,7 @@ import {
     dashboard,
     homepage,
     kategori,
+    kelola_stok,
     myoutlet,
     myprofile,
     produk,
@@ -64,6 +74,12 @@ const mainNavItems: NavItem[] = [
     },
 
     {
+        title: 'Kelola Stok',
+        href: kelola_stok(),
+        icon: Package,
+    },
+
+    {
         title: 'Buka Outlet',
         href: myoutlet(),
         icon: Store,
@@ -87,6 +103,7 @@ const menuUtamaTitles = ['Home', 'Profile', 'Dashboard', 'Buka Outlet'];
 const manajemenTitles = [
     'Kelola Kategori',
     'Kelola Produk',
+    'Kelola Stok',
     'Request Menjadi Karyawan',
     'Buka Layanan Kasir',
 ];
@@ -100,23 +117,53 @@ export function AppSidebar({
     const { isMobile, setOpenMobile } = useSidebar();
 
     // Check user roles
-    const userRoles = (auth.user?.role ?? []).map((r: any) => r.role);
+    const userRoles = (auth.user?.role ?? []).map(
+        (r: { role: string }) => r.role,
+    );
     const hasOwnerRole = userRoles.includes('owner outlet');
     const hasAdminRole = userRoles.includes('admin outlet');
     const hasKasirRole = userRoles.includes('kasir');
 
     const { sidebarOutlets, canSelectAll, selectedOutletId } = usePage().props;
     const hasOutletFilter = sidebarOutlets.length > 0;
+    const [outletDialogOpen, setOutletDialogOpen] = useState(false);
 
     const handleOutletChange = (outletId: number | null) => {
-        if (window.location.pathname.startsWith('/produk/')) {
-            router.visit(produk(outletId ?? 0), { preserveScroll: true });
-        } else {
-            router.post('/select-outlet', { outlet_id: outletId }, {
+        const onProductPage = window.location.pathname.startsWith('/produk/');
+
+        router.post(
+            '/select-outlet',
+            { outlet_id: outletId },
+            {
                 preserveScroll: true,
                 preserveState: true,
-            });
-        }
+                onSuccess: () => {
+                    if (onProductPage) {
+                        if (outletId) {
+                            router.visit(produk(outletId), {
+                                preserveScroll: true,
+                            });
+                        } else {
+                            router.visit(dashboard());
+                        }
+                    }
+                },
+            },
+        );
+    };
+
+    const selectOutletAndOpenProduk = (outletId: number) => {
+        setOutletDialogOpen(false);
+
+        router.post(
+            '/select-outlet',
+            { outlet_id: outletId },
+            {
+                preserveScroll: true,
+                preserveState: true,
+                onSuccess: () => router.visit(produk(outletId)),
+            },
+        );
     };
 
     // Filter nav items based on role
@@ -127,14 +174,19 @@ export function AppSidebar({
                 'Profile',
                 'Dashboard',
                 'Kelola Kategori',
+                'Kelola Stok',
                 'Buka Outlet',
                 'Request Menjadi Karyawan',
                 'Buka Layanan Kasir',
             ].includes(item.title);
         } else if (hasAdminRole) {
-            return ['Home', 'Profile', 'Dashboard', 'Kelola Kategori'].includes(
-                item.title,
-            );
+            return [
+                'Home',
+                'Profile',
+                'Dashboard',
+                'Kelola Kategori',
+                'Kelola Stok',
+            ].includes(item.title);
         } else if (hasKasirRole) {
             return [
                 'Home',
@@ -161,6 +213,7 @@ export function AppSidebar({
             title: 'Kelola Produk',
             href: produk(selectedOutletId ?? 0),
             icon: Boxes,
+            isActive: window.location.pathname.startsWith('/produk/'),
         });
     }
 
@@ -206,9 +259,11 @@ export function AppSidebar({
                                 value={selectedOutletId ?? ''}
                                 onChange={(e) => {
                                     const val = e.target.value;
-                                    handleOutletChange(val ? Number(val) : null);
+                                    handleOutletChange(
+                                        val ? Number(val) : null,
+                                    );
                                 }}
-                                className="h-9 w-full cursor-pointer appearance-none rounded-lg border border-sidebar-border/60 bg-sidebar-accent/40 pr-8 pl-9 text-[13px] font-medium text-sidebar-foreground outline-none transition focus:border-sidebar-ring/70 focus:ring-2 focus:ring-sidebar-ring/20"
+                                className="h-9 w-full cursor-pointer appearance-none rounded-lg border border-sidebar-border/60 bg-sidebar-accent/40 pr-8 pl-9 text-[13px] font-medium text-sidebar-foreground transition outline-none focus:border-sidebar-ring/70 focus:ring-2 focus:ring-sidebar-ring/20"
                             >
                                 {canSelectAll && (
                                     <option value="">All Outlet</option>
@@ -235,6 +290,15 @@ export function AppSidebar({
                         if (item.title === 'Dashboard') {
                             onNavigate?.('dashboard');
                         }
+                        if (
+                            item.title === 'Kelola Produk' &&
+                            !selectedOutletId
+                        ) {
+                            setOutletDialogOpen(true);
+                            return false;
+                        }
+
+                        return true;
                     }}
                 />
             </SidebarContent>
@@ -247,6 +311,44 @@ export function AppSidebar({
                 </div>
                 <NavUser />
             </SidebarFooter>
+
+            <Dialog open={outletDialogOpen} onOpenChange={setOutletDialogOpen}>
+                <DialogContent className="sm:max-w-md">
+                    <DialogHeader>
+                        <DialogTitle>Pilih Outlet Terlebih Dahulu</DialogTitle>
+                        <DialogDescription>
+                            Untuk membuka halaman Kelola Produk, silakan pilih
+                            outlet aktif di bawah ini terlebih dahulu.
+                        </DialogDescription>
+                    </DialogHeader>
+                    <div className="grid gap-2">
+                        {sidebarOutlets.length === 0 ? (
+                            <p className="text-sm text-muted-foreground">
+                                Anda belum memiliki outlet.
+                            </p>
+                        ) : (
+                            sidebarOutlets.map(
+                                (outlet: {
+                                    id: number;
+                                    nama_outlet: string;
+                                }) => (
+                                    <button
+                                        key={outlet.id}
+                                        type="button"
+                                        onClick={() =>
+                                            selectOutletAndOpenProduk(outlet.id)
+                                        }
+                                        className="flex items-center gap-3 rounded-lg border border-sidebar-border/60 bg-card px-4 py-2.5 text-left text-sm font-medium text-foreground transition-colors hover:bg-accent hover:text-accent-foreground"
+                                    >
+                                        <Store className="size-4 shrink-0 text-muted-foreground" />
+                                        {outlet.nama_outlet}
+                                    </button>
+                                ),
+                            )
+                        )}
+                    </div>
+                </DialogContent>
+            </Dialog>
         </Sidebar>
     );
 }

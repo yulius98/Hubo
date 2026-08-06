@@ -9,6 +9,7 @@ use App\Http\Controllers\OutletController;
 use App\Http\Controllers\ProdukController;
 use App\Http\Controllers\RequestRoleController;
 use App\Http\Controllers\RequestStaffController;
+use App\Http\Controllers\StokController;
 use App\Http\Controllers\WelcomeController;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
@@ -34,6 +35,10 @@ Route::middleware(['auth', ValidateSessionWithWorkOS::class])->group(function ()
         Route::post('kelola_kategori/save', [KategoriController::class, 'save'])->name('kategori.save');
         Route::put('kelola_kategori/{kategori}', [KategoriController::class, 'update'])->name('kategori.update');
         Route::delete('kelola_kategori/{kategori}', [KategoriController::class, 'destroy'])->name('kategori.delete');
+
+        Route::get('kelola_stok', [StokController::class, 'index'])->name('kelola_stok');
+        Route::post('kelola_stok', [StokController::class, 'store'])->name('kelola_stok.add');
+        Route::delete('kelola_stok/{transaksi}', [StokController::class, 'destroy'])->name('kelola_stok.delete');
     });
 
     Route::get('kelola_produk', [KelolaProdukController::class, 'index'])->name('kelola_produk');

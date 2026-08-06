@@ -3,7 +3,6 @@
 namespace App\Http\Middleware;
 
 use App\Models\RequestRole;
-use App\Models\Role;
 use Illuminate\Http\Request;
 use Inertia\Middleware;
 
@@ -46,8 +45,6 @@ class HandleInertiaRequests extends Middleware
         if ($user) {
             $user->load('role');
             $roleNames = $user->role->pluck('role')->toArray();
-            $ownerRoleId = Role::where('role', 'owner outlet')->value('id');
-            $adminRoleId = Role::where('role', 'admin outlet')->value('id');
 
             if (in_array('owner outlet', $roleNames)) {
                 $pendingRequestList = RequestRole::with(['staff:id,name', 'outlet:id,nama_outlet'])
@@ -66,14 +63,13 @@ class HandleInertiaRequests extends Middleware
                 $pendingRequestCount = count($pendingRequestList);
             }
 
+            $outlets = $user->outlets()->orderBy('outlets.nama_outlet')->get(['outlets.id', 'outlets.nama_outlet']);
+
             if (in_array('owner outlet', $roleNames)) {
-                $outlets = $user->outlets()->wherePivot('role_id', $ownerRoleId)->get(['outlets.id', 'outlets.nama_outlet']);
                 $canSelectAll = true;
             } elseif (in_array('admin outlet', $roleNames)) {
-                $outlets = $user->outlets()->wherePivot('role_id', $adminRoleId)->get(['outlets.id', 'outlets.nama_outlet']);
                 $canSelectAll = false;
             } else {
-                $outlets = $user->outlets()->get(['outlets.id', 'outlets.nama_outlet']);
                 $canSelectAll = $outlets->count() > 1;
             }
         }

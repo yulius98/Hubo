@@ -17,7 +17,7 @@ export type NavSection = {
 
 type NavMainProps = {
     sections?: NavSection[];
-    onItemClick?: (item: NavItem) => void;
+    onItemClick?: (item: NavItem) => void | boolean;
 };
 
 export function NavMain({ sections = [], onItemClick }: NavMainProps) {
@@ -32,7 +32,8 @@ export function NavMain({ sections = [], onItemClick }: NavMainProps) {
                     </SidebarGroupLabel>
                     <SidebarMenu className="gap-1 px-1">
                         {section.items.map((item) => {
-                            const active = isCurrentUrl(item.href);
+                            const active =
+                                item.isActive ?? isCurrentUrl(item.href);
 
                             return (
                                 <SidebarMenuItem key={item.title}>
@@ -50,7 +51,13 @@ export function NavMain({ sections = [], onItemClick }: NavMainProps) {
                                         <Link
                                             href={item.href}
                                             prefetch
-                                            onClick={() => onItemClick?.(item)}
+                                            onClick={(e) => {
+                                                const result =
+                                                    onItemClick?.(item);
+                                                if (result === false) {
+                                                    e.preventDefault();
+                                                }
+                                            }}
                                             className="relative"
                                         >
                                             {active && (

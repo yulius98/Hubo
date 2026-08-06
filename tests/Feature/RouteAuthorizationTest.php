@@ -55,7 +55,9 @@ it('allows owner and admin but denies kasir when storing products', function () 
         'nama_produk' => 'Es Jeruk',
         'keterangan' => 'Segar',
         'harga_beli' => 3000,
-        'harga' => 5000,
+        'margin' => 25,
+        'ppn' => 11,
+        'tax' => 'tanpa pajak',
         'diskon' => 'no',
     ];
 
@@ -84,7 +86,9 @@ it('denies an owner from storing products in an outlet they do not own', functio
         'id_kategori' => $kategori->id,
         'nama_produk' => 'Es Jeruk B',
         'harga_beli' => 3000,
-        'harga' => 5000,
+        'margin' => 25,
+        'ppn' => 11,
+        'tax' => 'tanpa pajak',
         'diskon' => 'no',
     ])->assertForbidden();
 });
@@ -178,7 +182,7 @@ it('allows kasir and owner outlet but denies admin and plain user on cashier rou
     $this->actingAs($plainUser)->get(route('cashier'))->assertForbidden();
 });
 
-it('forces a kasir to use their own outlet on the cashier page', function () {
+it('respects the selected outlet on the cashier page for a kasir', function () {
     $outlet = createOutlet();
     $otherOutlet = createOutlet();
     $kasir = attachUserToOutlet(createUserWithGlobalRole('kasir'), $outlet, 'kasir');
@@ -189,7 +193,7 @@ it('forces a kasir to use their own outlet on the cashier page', function () {
     $this->actingAs($kasir)
         ->get(route('cashier'))
         ->assertOk()
-        ->assertInertia(fn ($page) => $page->where('outlet.id', $outlet->id));
+        ->assertInertia(fn ($page) => $page->where('outlet.id', $otherOutlet->id));
 });
 
 it('only allows a user to select an outlet they belong to', function () {

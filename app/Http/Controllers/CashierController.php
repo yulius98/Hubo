@@ -20,20 +20,22 @@ class CashierController extends Controller
         $kasirRoleId = Role::where('role', 'kasir')->value('id');
         $ownerRoleId = Role::where('role', 'owner outlet')->value('id');
 
-        $outlet = $user->outlets()
+        $selectedOutletId = (int) $request->session()->get('selected_outlet_id');
+
+        $kasirOutlets = $user->outlets()
             ->wherePivot('role_id', $kasirRoleId)
             ->select(['outlets.id', 'outlets.nama_outlet'])
-            ->first();
+            ->get();
 
-        if (! $outlet) {
-            $owned = $user->outlets()
-                ->wherePivot('role_id', $ownerRoleId)
-                ->select(['outlets.id', 'outlets.nama_outlet'])
-                ->get();
+        $ownedOutlets = $user->outlets()
+            ->wherePivot('role_id', $ownerRoleId)
+            ->select(['outlets.id', 'outlets.nama_outlet'])
+            ->get();
 
-            $selectedOutletId = (int) $request->session()->get('selected_outlet_id');
-            $outlet = $owned->firstWhere('id', $selectedOutletId) ?? $owned->first();
-        }
+        $outlet = $kasirOutlets->firstWhere('id', $selectedOutletId)
+            ?? $ownedOutlets->firstWhere('id', $selectedOutletId)
+            ?? $kasirOutlets->first()
+            ?? $ownedOutlets->first();
 
         abort_unless($outlet, 403, 'Unauthorized.');
 

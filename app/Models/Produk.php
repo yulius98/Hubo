@@ -21,6 +21,8 @@ class Produk extends Model
         'harga_beli',
         'margin',
         'harga',
+        'ppn',
+        'tax',
         'diskon',
         'harga_diskon',
         'stok',
@@ -32,6 +34,7 @@ class Produk extends Model
         return [
             'stok' => 'integer',
             'rating' => 'float',
+            'ppn' => 'float',
         ];
     }
 

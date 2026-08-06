@@ -43,19 +43,17 @@ export default function KelolaKategoriPage() {
     const [error, setError] = useState('');
     const [showForm, setShowForm] = useState(false);
     const [preview, setPreview] = useState<string | null>(null);
-    const {
-        kategoris,
-        jmlKategori,
-        id_user,
-        selectedOutletId,
-    } = usePage<KategoriPageProps>().props;
+    const { kategoris, jmlKategori, id_user, selectedOutletId } =
+        usePage<KategoriPageProps>().props;
     const { sidebarOutlets } = usePage().props;
     const selectedOutletName = sidebarOutlets?.find(
         (outlet) => outlet.id === selectedOutletId,
     )?.nama_outlet;
 
     const [selectedIds, setSelectedIds] = useState<Set<number>>(new Set());
-    const [selectedOutletRef, setSelectedOutletRef] = useState<number | null>(null);
+    const [selectedOutletRef, setSelectedOutletRef] = useState<number | null>(
+        null,
+    );
 
     const [formData, setFormData] = useState<KategoriFormData>({
         id_user: null,
@@ -88,18 +86,24 @@ export default function KelolaKategoriPage() {
         setError('');
     }, []);
 
-    const handleImageChange = useCallback((e: any) => {
-        const file = e.target.files[0];
-        if (file) {
-            setFormData((prev) => ({ ...prev, gambar: file }));
-            setPreview(URL.createObjectURL(file));
-        }
-    }, []);
+    const handleImageChange = useCallback(
+        (e: React.ChangeEvent<HTMLInputElement>) => {
+            const file = e.target.files?.[0];
+            if (file) {
+                setFormData((prev) => ({ ...prev, gambar: file }));
+                setPreview(URL.createObjectURL(file));
+            }
+        },
+        [],
+    );
 
-    const handleChange = useCallback((e: any) => {
-        const { name, value } = e.target;
-        setFormData((prev) => ({ ...prev, [name]: value }));
-    }, []);
+    const handleChange = useCallback(
+        (e: React.ChangeEvent<HTMLInputElement>) => {
+            const { name, value } = e.target;
+            setFormData((prev) => ({ ...prev, [name]: value }));
+        },
+        [],
+    );
 
     const toggleSelect = useCallback((id: number) => {
         setSelectedIds((prev) => {
@@ -115,7 +119,7 @@ export default function KelolaKategoriPage() {
 
     // TAMBAH KATEGORI
     const handleCreate = useCallback(
-        async (e: any) => {
+        async (e: React.FormEvent<HTMLFormElement>) => {
             e.preventDefault();
             try {
                 const dataToSend = {
@@ -144,7 +148,7 @@ export default function KelolaKategoriPage() {
 
     // SIMPAN KATEGORI YANG DIPILIH UNTUK OUTLET
     const handleSave = useCallback(
-        (e: any) => {
+        (e: React.MouseEvent<HTMLButtonElement>) => {
             e.preventDefault();
             if (!selectedOutletId) {
                 setError('Silakan pilih outlet terlebih dahulu.');
@@ -202,8 +206,8 @@ export default function KelolaKategoriPage() {
 
                 {/* Card: Daftar Kategori */}
                 <div className="overflow-hidden rounded-2xl border border-gray-200 bg-white shadow-sm dark:border-gray-700 dark:bg-gray-800">
-                    <div className="flex flex-wrap items-center justify-between gap-2 border-b border-gray-200 px-6 py-4 dark:border-gray-700">
-                        <h2 className="text-lg font-semibold text-gray-800 dark:text-gray-100">
+                    <div className="flex flex-wrap items-center justify-between gap-2 border-b border-gray-200 px-5 py-3.5 dark:border-gray-700">
+                        <h2 className="text-base font-semibold text-gray-800 dark:text-gray-100">
                             Daftar Kategori
                         </h2>
                         <span className="text-sm text-gray-500 dark:text-gray-400">
@@ -216,111 +220,75 @@ export default function KelolaKategoriPage() {
                     </div>
 
                     {!selectedOutletId && (
-                        <div className="border-b border-amber-200 bg-amber-50 px-6 py-3 text-sm text-amber-700 dark:border-amber-800 dark:bg-amber-900/20 dark:text-amber-300">
+                        <div className="border-b border-amber-200 bg-amber-50 px-5 py-2.5 text-sm text-amber-700 dark:border-amber-800 dark:bg-amber-900/20 dark:text-amber-300">
                             Silakan pilih outlet terlebih dahulu di sidebar
                             untuk menyimpan kategori.
                         </div>
                     )}
 
-                    <div className="overflow-x-auto">
-                        <table className="w-full" id="tabel_produk">
-                            <thead>
-                                <tr className="bg-gray-100 dark:bg-gray-700/50">
-                                    <th className="w-20 px-6 py-4 text-left text-xs font-semibold tracking-wider text-gray-600 uppercase dark:text-gray-300">
-                                        No
-                                    </th>
-                                    <th className="px-6 py-4 text-left text-xs font-semibold tracking-wider text-gray-600 uppercase dark:text-gray-300">
-                                        Avatar Kategori
-                                    </th>
-                                    <th className="px-6 py-4 text-left text-xs font-semibold tracking-wider text-gray-600 uppercase dark:text-gray-300">
-                                        Kategori
-                                    </th>
-                                    <th className="w-48 px-6 py-4 text-center text-xs font-semibold tracking-wider text-gray-600 uppercase dark:text-gray-300">
-                                        Aksi
-                                    </th>
-                                </tr>
-                            </thead>
-                            <tbody className="divide-y divide-gray-200 dark:divide-gray-700">
-                                {kategoris.length === 0 ? (
-                                    <tr>
-                                        <td
-                                            colSpan={4}
-                                            className="px-6 py-12 text-center text-sm text-gray-500 dark:text-gray-400"
+                    {kategoris.length === 0 ? (
+                        <div className="px-5 py-10 text-center text-sm text-gray-500 dark:text-gray-400">
+                            Belum ada data kategori. Klik &quot;Tambah
+                            Kategori&quot; untuk menambah.
+                        </div>
+                    ) : (
+                        <div className="grid gap-3 p-4 sm:grid-cols-2 sm:p-5">
+                            {kategoris.map((item) => (
+                                <div
+                                    key={item.id}
+                                    className="flex items-center gap-3 rounded-xl border border-gray-200 bg-white p-3.5 transition-colors hover:bg-gray-50 dark:border-gray-700 dark:bg-gray-800 dark:hover:bg-gray-700/40"
+                                >
+                                    {item.gambar ? (
+                                        <img
+                                            src={`/${item.gambar}`}
+                                            alt={item.kategori}
+                                            className="h-12 w-12 shrink-0 rounded-lg border border-gray-200 object-cover dark:border-gray-700"
+                                        />
+                                    ) : (
+                                        <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-lg border border-dashed border-gray-300 bg-gray-50 dark:border-gray-600 dark:bg-gray-700/40">
+                                            <span className="text-[10px] text-gray-400">
+                                                No Image
+                                            </span>
+                                        </div>
+                                    )}
+                                    <span
+                                        className="min-w-0 flex-1 truncate text-sm font-medium text-gray-900 dark:text-gray-100"
+                                        title={item.kategori}
+                                    >
+                                        {item.kategori}
+                                    </span>
+                                    {selectedIds.has(item.id) ? (
+                                        <button
+                                            type="button"
+                                            onClick={() =>
+                                                toggleSelect(item.id)
+                                            }
+                                            className="inline-flex shrink-0 items-center gap-1.5 rounded-lg bg-green-50 px-3 py-1.5 text-sm font-medium text-green-700 transition-colors hover:bg-green-100 dark:bg-green-900/30 dark:text-green-300 dark:hover:bg-green-900/50"
+                                            title="Batalkan pilihan"
                                         >
-                                            Belum ada data kategori. Klik
-                                            &quot;Tambah Kategori&quot; untuk
-                                            menambah.
-                                        </td>
-                                    </tr>
-                                ) : (
-                                    kategoris.map((item, index) => (
-                                        <tr
-                                            key={item.id}
-                                            className="bg-white transition-colors hover:bg-gray-50 dark:bg-gray-800 dark:hover:bg-gray-700/50"
+                                            <CheckIcon className="h-4 w-4" />
+                                            Terpilih
+                                        </button>
+                                    ) : (
+                                        <button
+                                            type="button"
+                                            onClick={() =>
+                                                toggleSelect(item.id)
+                                            }
+                                            className="inline-flex shrink-0 items-center gap-1.5 rounded-lg bg-blue-50 px-3 py-1.5 text-sm font-medium text-blue-700 transition-colors hover:bg-blue-100 dark:bg-blue-900/30 dark:text-blue-300 dark:hover:bg-blue-900/50"
+                                            title="Pilih kategori"
                                         >
-                                            <td className="px-6 py-4 text-sm text-gray-600 tabular-nums dark:text-gray-400">
-                                                {index + 1}
-                                            </td>
-                                            <td className="px-6 py-4 text-sm font-medium text-gray-900 dark:text-gray-100">
-                                                {item.gambar ? (
-                                                    <img
-                                                        src={`/${item.gambar}`}
-                                                        alt={item.kategori}
-                                                        className="h-20 w-20 rounded-lg object-cover"
-                                                    />
-                                                ) : (
-                                                    <div className="flex h-20 w-20 items-center justify-center rounded-lg bg-gray-200 dark:bg-gray-700">
-                                                        <span className="text-xs text-gray-400">
-                                                            No Image
-                                                        </span>
-                                                    </div>
-                                                )}
-                                            </td>
-                                            <td className="px-6 py-4 text-sm font-medium text-gray-900 dark:text-gray-100">
-                                                {item.kategori}
-                                            </td>
-                                            <td className="px-6 py-4 text-right">
-                                                <div className="flex justify-center gap-2">
-                                                    {selectedIds.has(item.id) ? (
-                                                        <button
-                                                            type="button"
-                                                            onClick={() =>
-                                                                toggleSelect(
-                                                                    item.id,
-                                                                )
-                                                            }
-                                                            className="inline-flex items-center gap-1.5 rounded-lg bg-green-50 px-3 py-1.5 text-sm font-medium text-green-700 transition-colors hover:bg-green-100 dark:bg-green-900/30 dark:text-green-300 dark:hover:bg-green-900/50"
-                                                            title="Batalkan pilihan"
-                                                        >
-                                                            <CheckIcon className="h-4 w-4" />
-                                                            Terpilih
-                                                        </button>
-                                                    ) : (
-                                                        <button
-                                                            type="button"
-                                                            onClick={() =>
-                                                                toggleSelect(
-                                                                    item.id,
-                                                                )
-                                                            }
-                                                            className="inline-flex items-center gap-1.5 rounded-lg bg-blue-50 px-3 py-1.5 text-sm font-medium text-blue-700 transition-colors hover:bg-blue-100 dark:bg-blue-900/30 dark:text-blue-300 dark:hover:bg-blue-900/50"
-                                                            title="Pilih kategori"
-                                                        >
-                                                            <EyeIcon className="h-4 w-4" />
-                                                            Pilih
-                                                        </button>
-                                                    )}
-                                                </div>
-                                            </td>
-                                        </tr>
-                                    ))
-                                )}
-                            </tbody>
-                        </table>
-                    </div>
+                                            <EyeIcon className="h-4 w-4" />
+                                            Pilih
+                                        </button>
+                                    )}
+                                </div>
+                            ))}
+                        </div>
+                    )}
 
                     {/* Footer: Simpan Kategori */}
-                    <div className="flex flex-wrap items-center justify-between gap-4 border-t border-gray-200 px-6 py-4 dark:border-gray-700">
+                    <div className="flex flex-wrap items-center justify-between gap-4 border-t border-gray-200 px-5 py-3.5 dark:border-gray-700">
                         <span className="text-sm text-gray-500 dark:text-gray-400">
                             {selectedIds.size} kategori dipilih
                             {selectedOutletName
@@ -340,18 +308,21 @@ export default function KelolaKategoriPage() {
                 </div>
 
                 {/* Card: Tambah Kategori */}
-                <div className="mb-8 mt-8 overflow-hidden rounded-2xl border border-gray-200 bg-white shadow-sm dark:border-gray-700 dark:bg-gray-800">
-                    <div className="flex flex-wrap items-center justify-between gap-3 border-b border-gray-200 px-6 py-4 dark:border-gray-700">
-                        <h2 className="text-lg font-semibold text-gray-800 dark:text-gray-100">
+                <div className="mt-6 mb-8 overflow-hidden rounded-2xl border border-gray-200 bg-white shadow-sm dark:border-gray-700 dark:bg-gray-800">
+                    <div className="flex flex-wrap items-center justify-between gap-3 border-b border-gray-200 px-5 py-3.5 dark:border-gray-700">
+                        <h2 className="text-base font-semibold text-gray-800 dark:text-gray-100">
                             Tambah Kategori Baru
                         </h2>
                         <button
                             type="button"
                             onClick={() => {
-                                setShowForm(!showForm);
-                                resetForm();
+                                if (showForm) {
+                                    resetForm();
+                                } else {
+                                    setShowForm(true);
+                                }
                             }}
-                            className="inline-flex items-center gap-2 rounded-xl bg-blue-600 px-4 py-2.5 font-medium text-white transition-colors hover:bg-blue-700 focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 dark:focus:ring-offset-gray-800"
+                            className="inline-flex items-center gap-2 rounded-lg bg-blue-600 px-3.5 py-2 text-sm font-medium text-white transition-colors hover:bg-blue-700 focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 dark:focus:ring-offset-gray-800"
                         >
                             {showForm ? (
                                 <>
@@ -388,7 +359,7 @@ export default function KelolaKategoriPage() {
                                             <img
                                                 src={preview}
                                                 alt="Preview"
-                                                className="h-48 w-48 object-cover"
+                                                className="h-24 w-24 rounded-lg object-cover"
                                             />
                                         </div>
                                     )}

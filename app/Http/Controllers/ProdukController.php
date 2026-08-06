@@ -9,6 +9,7 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\File;
 use Illuminate\Support\Str;
+use Illuminate\Validation\Rule;
 use Inertia\Inertia;
 use Intervention\Image\Drivers\Gd\Driver;
 use Intervention\Image\ImageManager;
@@ -16,6 +17,24 @@ use Intervention\Image\ImageManager;
 class ProdukController extends Controller
 {
     private const PRODUK_IMAGE_PATH = 'app/public/produks/';
+
+    /**
+     * Calculate the selling price from the purchase price, margin percentage and tax.
+     */
+    private function calculateSellingPrice(
+        float $hargaBeli,
+        float $margin,
+        string $tax,
+        float $ppn,
+    ): float {
+        $harga = $hargaBeli * (1 + ($margin / 100));
+
+        if ($tax === 'include tax') {
+            $harga *= 1 + ($ppn / 100);
+        }
+
+        return round($harga, 2);
+    }
 
     /**
      * Display a listing of the resource.
@@ -78,15 +97,28 @@ class ProdukController extends Controller
             'id_outlet' => 'required|numeric',
             'id_kategori' => 'required|numeric',
             'gambar' => 'nullable|image|mimes:jpeg,png,jpg,webp,avif|max:200',
-            'nama_produk' => 'required|string|max:255',
+            'nama_produk' => [
+                'required',
+                'string',
+                'max:255',
+                Rule::unique('produks', 'nama_produk')
+                    ->where('id_outlet', $request->input('id_outlet')),
+            ],
             'keterangan' => 'nullable|string',
             'harga_beli' => 'required|numeric|min:0',
-            'harga' => 'required|numeric',
-            'diskon' => 'required|string',
-            'harga_diskon' => 'nullable|numeric',
+            'margin' => 'required|numeric|min:0',
+            'ppn' => 'required|numeric|in:10,11',
+            'tax' => 'required|string|in:include tax,exclude tax,tanpa pajak',
+            'diskon' => 'required|string|in:yes,no',
+            'harga_diskon' => 'nullable|numeric|min:0',
         ]);
 
-        $validated['margin'] = (float) $validated['harga'] - (float) $validated['harga_beli'];
+        $validated['harga'] = $this->calculateSellingPrice(
+            (float) $validated['harga_beli'],
+            (float) $validated['margin'],
+            $validated['tax'],
+            (float) $validated['ppn'],
+        );
 
         $outlet = Outlet::findOrFail($validated['id_outlet']);
         $this->authorize('create', [Produk::class, $outlet]);
@@ -155,15 +187,29 @@ class ProdukController extends Controller
             'id_outlet' => 'required|numeric',
             'id_kategori' => 'required|numeric',
             'gambar' => 'nullable|image|mimes:jpeg,png,jpg,webp,avif|max:200',
-            'nama_produk' => 'required|string|max:255',
+            'nama_produk' => [
+                'required',
+                'string',
+                'max:255',
+                Rule::unique('produks', 'nama_produk')
+                    ->where('id_outlet', $request->input('id_outlet'))
+                    ->ignore($produk->id),
+            ],
             'keterangan' => 'nullable|string',
             'harga_beli' => 'required|numeric|min:0',
-            'harga' => 'required|numeric',
-            'diskon' => 'required|string',
-            'harga_diskon' => 'nullable|numeric',
+            'margin' => 'required|numeric|min:0',
+            'ppn' => 'required|numeric|in:10,11',
+            'tax' => 'required|string|in:include tax,exclude tax,tanpa pajak',
+            'diskon' => 'required|string|in:yes,no',
+            'harga_diskon' => 'nullable|numeric|min:0',
         ]);
 
-        $validated['margin'] = (float) $validated['harga'] - (float) $validated['harga_beli'];
+        $validated['harga'] = $this->calculateSellingPrice(
+            (float) $validated['harga_beli'],
+            (float) $validated['margin'],
+            $validated['tax'],
+            (float) $validated['ppn'],
+        );
 
         $this->authorize('update', $produk);
 

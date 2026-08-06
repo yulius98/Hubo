@@ -1,2 +1,5 @@
 resources/js/components/ui/*
 resources/views/mail/*
+resources/js/ziggy.js
+resources/js/ziggy.d.ts
+resources/js/actions/**

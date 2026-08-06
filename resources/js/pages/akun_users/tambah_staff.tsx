@@ -1,4 +1,8 @@
-import { MinusCircleIcon, CheckIcon, TrashIcon } from '@heroicons/react/24/outline';
+import {
+    MinusCircleIcon,
+    CheckIcon,
+    TrashIcon,
+} from '@heroicons/react/24/outline';
 import { router, Head } from '@inertiajs/react';
 import { useState } from 'react';
 import AppLayout from '@/layouts/app-layout';
@@ -36,7 +40,11 @@ const breadcrumbs: BreadcrumbItem[] = [
     },
 ];
 
-export default function Tambah_Staf({ add_staff = [], staff = [], outlet_id }: TambahStaffProps) {
+export default function Tambah_Staf({
+    add_staff = [],
+    staff = [],
+    outlet_id,
+}: TambahStaffProps) {
     const [page] = useState(1);
     const [limit] = useState(10);
 

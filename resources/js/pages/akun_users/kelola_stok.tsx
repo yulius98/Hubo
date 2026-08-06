@@ -1,8 +1,4 @@
-import {
-    PlusIcon,
-    TrashIcon,
-    XMarkIcon,
-} from '@heroicons/react/24/outline';
+import { PlusIcon, TrashIcon, XMarkIcon } from '@heroicons/react/24/outline';
 import type { PageProps as InertiaPageProps } from '@inertiajs/core';
 import { Head, router, usePage } from '@inertiajs/react';
 import React, { useCallback, useState } from 'react';
@@ -190,7 +186,7 @@ export default function KelolaStokPage() {
     return (
         <AppLayout breadcrumbs={breadcrumbs}>
             <Head title="Kelola Stok" />
-            <main className="mx-auto max-w-8xl p-6">
+            <main className="max-w-8xl mx-auto p-6">
                 {/* Header */}
                 <div className="mb-8">
                     <h1 className="text-2xl font-bold tracking-tight text-gray-800 md:text-3xl dark:text-gray-100">
@@ -252,7 +248,8 @@ export default function KelolaStokPage() {
                                         htmlFor="id_produk"
                                         className="mb-1.5 block text-sm font-medium text-gray-700 dark:text-gray-300"
                                     >
-                                        Produk <span className="text-red-500">*</span>
+                                        Produk{' '}
+                                        <span className="text-red-500">*</span>
                                     </label>
                                     <select
                                         id="id_produk"
@@ -262,11 +259,12 @@ export default function KelolaStokPage() {
                                         required
                                         className="w-full rounded-xl border border-gray-300 bg-white px-4 py-2.5 text-gray-900 transition-colors focus:border-blue-500 focus:ring-2 focus:ring-blue-500 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-100"
                                     >
-                                        <option value="">
-                                            Pilih Produk
-                                        </option>
+                                        <option value="">Pilih Produk</option>
                                         {produks.map((item) => (
-                                            <option key={item.id} value={item.id}>
+                                            <option
+                                                key={item.id}
+                                                value={item.id}
+                                            >
                                                 {item.nama_produk}
                                                 {item.kategori
                                                     ? ` (${item.kategori.kategori})`
@@ -312,7 +310,8 @@ export default function KelolaStokPage() {
                                         htmlFor="jumlah_produk"
                                         className="mb-1.5 block text-sm font-medium text-gray-700 dark:text-gray-300"
                                     >
-                                        Jumlah <span className="text-red-500">*</span>
+                                        Jumlah{' '}
+                                        <span className="text-red-500">*</span>
                                     </label>
                                     <input
                                         type="number"
@@ -383,7 +382,7 @@ export default function KelolaStokPage() {
                             Belum ada produk untuk outlet ini.
                         </div>
                     ) : (
-                        <div className="grid gap-3 p-4 sm:grid-cols-2 lg:grid-cols-3 sm:p-5">
+                        <div className="grid gap-3 p-4 sm:grid-cols-2 sm:p-5 lg:grid-cols-3">
                             {produks.map((item) => (
                                 <div
                                     key={item.id}
@@ -405,8 +404,9 @@ export default function KelolaStokPage() {
                                             {item.nama_produk}
                                         </p>
                                         <p className="mt-0.5 text-xs text-gray-500 dark:text-gray-400">
-                                            {item.kategori?.kategori ?? 'Tanpa kategori'} ·{' '}
-                                            {formatRupiah(item.harga)}
+                                            {item.kategori?.kategori ??
+                                                'Tanpa kategori'}{' '}
+                                            · {formatRupiah(item.harga)}
                                         </p>
                                     </div>
                                     {stokBadge(item.stok)}
@@ -466,13 +466,17 @@ export default function KelolaStokPage() {
                                             className="transition-colors hover:bg-gray-50 dark:hover:bg-gray-700/40"
                                         >
                                             <td className="px-5 py-3.5 text-sm whitespace-nowrap text-gray-600 dark:text-gray-400">
-                                                {formatTanggal(item.tgl_transaksi)}
+                                                {formatTanggal(
+                                                    item.tgl_transaksi,
+                                                )}
                                             </td>
                                             <td className="px-5 py-3.5 text-sm font-medium text-gray-900 dark:text-gray-100">
-                                                {item.produk?.nama_produk ?? 'Produk terhapus'}
+                                                {item.produk?.nama_produk ??
+                                                    'Produk terhapus'}
                                             </td>
                                             <td className="px-5 py-3.5 text-center">
-                                                {item.jenis_transaksi === 'IN' ? (
+                                                {item.jenis_transaksi ===
+                                                'IN' ? (
                                                     <span className="inline-flex items-center rounded-full bg-green-100 px-2.5 py-1 text-xs font-semibold text-green-700 dark:bg-green-900/30 dark:text-green-300">
                                                         Masuk
                                                     </span>
@@ -482,7 +486,7 @@ export default function KelolaStokPage() {
                                                     </span>
                                                 )}
                                             </td>
-                                            <td className="px-5 py-3.5 text-right text-sm font-semibold tabular-nums text-gray-900 dark:text-gray-100">
+                                            <td className="px-5 py-3.5 text-right text-sm font-semibold text-gray-900 tabular-nums dark:text-gray-100">
                                                 {item.jumlah_produk}
                                             </td>
                                             <td className="max-w-[14rem] truncate px-5 py-3.5 text-sm text-gray-600 dark:text-gray-400">
@@ -494,7 +498,9 @@ export default function KelolaStokPage() {
                                             <td className="px-5 py-3.5 text-center">
                                                 <button
                                                     type="button"
-                                                    onClick={() => handleDelete(item)}
+                                                    onClick={() =>
+                                                        handleDelete(item)
+                                                    }
                                                     className="inline-flex h-8 w-8 items-center justify-center rounded-lg text-red-600 transition-colors hover:bg-red-50 dark:text-red-400 dark:hover:bg-red-900/30"
                                                     title="Batalkan mutasi"
                                                 >

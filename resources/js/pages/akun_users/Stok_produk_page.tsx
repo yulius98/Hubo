@@ -1,7 +1,4 @@
-import {
-    PlusIcon,
-    XMarkIcon,
-} from '@heroicons/react/24/outline';
+import { PlusIcon, XMarkIcon } from '@heroicons/react/24/outline';
 import type { PageProps as InertiaPageProps } from '@inertiajs/core';
 import { Head, router, usePage } from '@inertiajs/react';
 import React, { useState, useCallback } from 'react';
@@ -37,7 +34,8 @@ const breadcrumbs: BreadcrumbItem[] = [
 ];
 
 export default function Stok_produk_page() {
-    const { outlet, kategoris: rawKategoris } = usePage<StokPageProps>().props ?? {};
+    const { outlet, kategoris: rawKategoris } =
+        usePage<StokPageProps>().props ?? {};
     const kategoris = rawKategoris ?? [];
 
     const [error, setError] = useState('');
@@ -100,43 +98,59 @@ export default function Stok_produk_page() {
         setError('');
     }, []);
 
-    const handleImageChange = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
-        const file = e.target.files?.[0];
-        if (file) {
-            setFormData((prev) => ({ ...prev, gambar: file }));
-            setPreview(URL.createObjectURL(file));
-        }
-    }, []);
+    const handleImageChange = useCallback(
+        (e: React.ChangeEvent<HTMLInputElement>) => {
+            const file = e.target.files?.[0];
+            if (file) {
+                setFormData((prev) => ({ ...prev, gambar: file }));
+                setPreview(URL.createObjectURL(file));
+            }
+        },
+        [],
+    );
 
-    const handleChange = useCallback((e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>) => {
-        const { name, value } = e.target;
-        setFormData((prev) => ({ ...prev, [name]: value }));
-    }, []);
+    const handleChange = useCallback(
+        (
+            e: React.ChangeEvent<
+                HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement
+            >,
+        ) => {
+            const { name, value } = e.target;
+            setFormData((prev) => ({ ...prev, [name]: value }));
+        },
+        [],
+    );
 
-    const handleCreate = useCallback((e: React.SubmitEvent) => {
-        e.preventDefault();
-        router.post('/stok', formData, {
-            preserveScroll: true,
-            preserveState: true,
-            onSuccess: () => {
-                resetForm();
-            },
-            onError: (errors) => {
-                console.log(errors);
-            },
-        });
-    }, [formData, resetForm]);
+    const handleCreate = useCallback(
+        (e: React.SubmitEvent) => {
+            e.preventDefault();
+            router.post('/stok', formData, {
+                preserveScroll: true,
+                preserveState: true,
+                onSuccess: () => {
+                    resetForm();
+                },
+                onError: (errors) => {
+                    console.log(errors);
+                },
+            });
+        },
+        [formData, resetForm],
+    );
 
-    const handleUpdate = useCallback((e: React.SubmitEvent) => {
-        e.preventDefault();
-        router.put(`/stok/${formData.id}`, formData, {
-            preserveScroll: true,
-            preserveState: true,
-            onSuccess: () => {
-                resetForm();
-            },
-        });
-    }, [formData, resetForm]);
+    const handleUpdate = useCallback(
+        (e: React.SubmitEvent) => {
+            e.preventDefault();
+            router.put(`/stok/${formData.id}`, formData, {
+                preserveScroll: true,
+                preserveState: true,
+                onSuccess: () => {
+                    resetForm();
+                },
+            });
+        },
+        [formData, resetForm],
+    );
 
     return (
         <AppLayout breadcrumbs={breadcrumbs}>
@@ -187,7 +201,7 @@ export default function Stok_produk_page() {
                     {showForm && (
                         <form
                             onSubmit={editId ? handleUpdate : handleCreate}
-                            className="divide-y divide-gray-200 dark:divide-gray-700 p-5 sm:p-6"
+                            className="divide-y divide-gray-200 p-5 sm:p-6 dark:divide-gray-700"
                         >
                             <div className="grid gap-5 sm:grid-cols-2 sm:gap-6">
                                 <div>
@@ -207,7 +221,10 @@ export default function Stok_produk_page() {
                                     >
                                         <option value="">Pilih Kategori</option>
                                         {kategoris.map((item) => (
-                                            <option key={item.id} value={item.id}>
+                                            <option
+                                                key={item.id}
+                                                value={item.id}
+                                            >
                                                 {item.kategori}
                                             </option>
                                         ))}
@@ -274,8 +291,12 @@ export default function Stok_produk_page() {
                                         className="w-full rounded-xl border border-gray-300 bg-white px-4 py-2.5 text-gray-900 transition-colors focus:border-blue-500 focus:ring-2 focus:ring-blue-500 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-100"
                                     >
                                         <option value="">Pilih Jenis</option>
-                                        <option value="IN">Masuk (Tambah Stok)</option>
-                                        <option value="OUT">Keluar (Kurangi Stok)</option>
+                                        <option value="IN">
+                                            Masuk (Tambah Stok)
+                                        </option>
+                                        <option value="OUT">
+                                            Keluar (Kurangi Stok)
+                                        </option>
                                     </select>
                                 </div>
 

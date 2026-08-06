@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\KeranjangBelanjaKasir;
 use App\Models\Produk;
 use App\Models\Role;
 use Illuminate\Http\Request;
@@ -52,7 +53,26 @@ class CashierController extends Controller
             }], 'jumlah_produk')
             ->get();
 
-        return Inertia::render('akun_users/Cashier_page', ['outlet' => $outlet, 'produks' => $produks]);
+        $keranjang = KeranjangBelanjaKasir::query()
+            ->where('id_user', $user->id)
+            ->where('status', 'pending')
+            ->with('produk:id,nama_produk,harga')
+            ->latest()
+            ->get()
+            ->map(fn (KeranjangBelanjaKasir $item) => [
+                'id' => $item->id,
+                'produk' => $item->produk?->nama_produk ?? 'Produk dihapus',
+                'price' => (int) ($item->produk?->harga ?? 0),
+                'quantity' => (int) $item->jumlah_produk,
+            ])
+            ->values()
+            ->all();
+
+        return Inertia::render('akun_users/Cashier_page', [
+            'outlet' => $outlet,
+            'produks' => $produks,
+            'keranjang' => $keranjang,
+        ]);
     }
 
     /**

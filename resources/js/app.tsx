@@ -3,6 +3,7 @@ import { resolvePageComponent } from 'laravel-vite-plugin/inertia-helpers';
 import { StrictMode } from 'react';
 import { createRoot } from 'react-dom/client';
 import '../css/app.css';
+import GlobalPageLoading from './components/global-page-loading';
 import { initializeTheme } from './hooks/use-appearance';
 
 const appName = import.meta.env.VITE_APP_NAME || 'Laravel';
@@ -19,6 +20,7 @@ createInertiaApp({
 
         root.render(
             <StrictMode>
+                <GlobalPageLoading />
                 <App {...props} />
             </StrictMode>,
         );

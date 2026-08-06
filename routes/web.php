@@ -5,6 +5,7 @@ use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\HomepageController;
 use App\Http\Controllers\KategoriController;
 use App\Http\Controllers\KelolaProdukController;
+use App\Http\Controllers\KeranjangBelanjaKasirController;
 use App\Http\Controllers\OutletController;
 use App\Http\Controllers\ProdukController;
 use App\Http\Controllers\RequestRoleController;
@@ -62,6 +63,10 @@ Route::middleware(['auth', ValidateSessionWithWorkOS::class])->group(function ()
     Route::post('outlet/{outlet}/remove-staff', [RequestRoleController::class, 'removeStaff'])->middleware('role:owner outlet')->name('remove_staff');
 
     Route::get('cashier', [CashierController::class, 'index'])->middleware('role:kasir,owner outlet')->name('cashier');
+
+    Route::post('cashier/cart', [KeranjangBelanjaKasirController::class, 'store'])->middleware('role:kasir,owner outlet')->name('cashier.cart.add');
+    Route::post('cashier/cart/finalize', [KeranjangBelanjaKasirController::class, 'finalize'])->middleware('role:kasir,owner outlet')->name('cashier.cart.finalize');
+    Route::delete('cashier/cart/{keranjang_belanja_kasir}', [KeranjangBelanjaKasirController::class, 'destroy'])->middleware('role:kasir,owner outlet')->name('cashier.cart.delete');
 
     Route::post('select-outlet', function (Request $request) {
         $outletId = (int) $request->input('outlet_id');

@@ -15,13 +15,7 @@ import {
 import { useState } from 'react';
 import { NavMain, type NavSection } from '@/components/nav-main';
 import { NavUser } from '@/components/nav-user';
-import {
-    Dialog,
-    DialogContent,
-    DialogDescription,
-    DialogHeader,
-    DialogTitle,
-} from '@/components/ui/dialog';
+import SelectOutletDialog from '@/components/select-outlet-dialog';
 import {
     Sidebar,
     SidebarContent,
@@ -127,6 +121,10 @@ export function AppSidebar({
     const { sidebarOutlets, canSelectAll, selectedOutletId } = usePage().props;
     const hasOutletFilter = sidebarOutlets.length > 0;
     const [outletDialogOpen, setOutletDialogOpen] = useState(false);
+    const [outletRequiredMenu, setOutletRequiredMenu] = useState<{
+        menuName: string;
+        buildUrl: (outletId: number) => string;
+    } | null>(null);
 
     const handleOutletChange = (outletId: number | null) => {
         const onProductPage = window.location.pathname.startsWith('/produk/');
@@ -146,24 +144,23 @@ export function AppSidebar({
                         } else {
                             router.visit(dashboard());
                         }
+
+                        return;
                     }
+
+                    router.reload();
                 },
             },
         );
     };
 
-    const selectOutletAndOpenProduk = (outletId: number) => {
-        setOutletDialogOpen(false);
-
-        router.post(
-            '/select-outlet',
-            { outlet_id: outletId },
-            {
-                preserveScroll: true,
-                preserveState: true,
-                onSuccess: () => router.visit(produk(outletId)),
-            },
-        );
+    const outletRequiredUrls: Partial<
+        Record<string, (outletId: number) => string>
+    > = {
+        'Kelola Produk': (outletId) => produk(outletId).url,
+        'Kelola Kategori': () => kategori().url,
+        'Kelola Stok': () => kelola_stok().url,
+        'Buka Layanan Kasir': () => cashier().url,
     };
 
     // Filter nav items based on role
@@ -290,10 +287,13 @@ export function AppSidebar({
                         if (item.title === 'Dashboard') {
                             onNavigate?.('dashboard');
                         }
-                        if (
-                            item.title === 'Kelola Produk' &&
-                            !selectedOutletId
-                        ) {
+
+                        const buildUrl = outletRequiredUrls[item.title];
+                        if (buildUrl && !selectedOutletId) {
+                            setOutletRequiredMenu({
+                                menuName: item.title,
+                                buildUrl,
+                            });
                             setOutletDialogOpen(true);
                             return false;
                         }
@@ -312,43 +312,15 @@ export function AppSidebar({
                 <NavUser />
             </SidebarFooter>
 
-            <Dialog open={outletDialogOpen} onOpenChange={setOutletDialogOpen}>
-                <DialogContent className="sm:max-w-md">
-                    <DialogHeader>
-                        <DialogTitle>Pilih Outlet Terlebih Dahulu</DialogTitle>
-                        <DialogDescription>
-                            Untuk membuka halaman Kelola Produk, silakan pilih
-                            outlet aktif di bawah ini terlebih dahulu.
-                        </DialogDescription>
-                    </DialogHeader>
-                    <div className="grid gap-2">
-                        {sidebarOutlets.length === 0 ? (
-                            <p className="text-sm text-muted-foreground">
-                                Anda belum memiliki outlet.
-                            </p>
-                        ) : (
-                            sidebarOutlets.map(
-                                (outlet: {
-                                    id: number;
-                                    nama_outlet: string;
-                                }) => (
-                                    <button
-                                        key={outlet.id}
-                                        type="button"
-                                        onClick={() =>
-                                            selectOutletAndOpenProduk(outlet.id)
-                                        }
-                                        className="flex items-center gap-3 rounded-lg border border-sidebar-border/60 bg-card px-4 py-2.5 text-left text-sm font-medium text-foreground transition-colors hover:bg-accent hover:text-accent-foreground"
-                                    >
-                                        <Store className="size-4 shrink-0 text-muted-foreground" />
-                                        {outlet.nama_outlet}
-                                    </button>
-                                ),
-                            )
-                        )}
-                    </div>
-                </DialogContent>
-            </Dialog>
+            {outletRequiredMenu && (
+                <SelectOutletDialog
+                    open={outletDialogOpen}
+                    onOpenChange={setOutletDialogOpen}
+                    outlets={sidebarOutlets}
+                    menuName={outletRequiredMenu.menuName}
+                    buildUrl={outletRequiredMenu.buildUrl}
+                />
+            )}
         </Sidebar>
     );
 }

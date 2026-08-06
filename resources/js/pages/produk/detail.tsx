@@ -1,10 +1,10 @@
 import { router, usePage } from '@inertiajs/react';
 import { motion } from 'framer-motion';
-import { ArrowLeft, ShoppingCart, LogIn, Star } from 'lucide-react';
+import { ArrowLeft, ShoppingCart, LogIn, Star, Sun, Moon } from 'lucide-react';
 import { useMemo, useState } from 'react';
+import LoadingOverlay from '@/components/loading-overlay';
 import { t } from '@/i18n';
 import { homepage, login } from '@/routes';
-import LoadingOverlay from '@/components/loading-overlay';
 
 interface Product {
     id: number;
@@ -38,7 +38,7 @@ export default function ProductDetail(props: Readonly<Props>) {
             darkMode
                 ? 'bg-linear-to-br from-blue-950 via-blue-900 to-black text-white'
                 : 'bg-linear-to-br from-blue-50 via-white to-blue-100 text-blue-950',
-        [darkMode]
+        [darkMode],
     );
 
     const cardClass = useMemo(
@@ -46,7 +46,7 @@ export default function ProductDetail(props: Readonly<Props>) {
             darkMode
                 ? 'bg-blue-900/60 backdrop-blur-xl border border-blue-700/40 text-white'
                 : 'bg-white/80 backdrop-blur-xl border border-blue-200 text-blue-950',
-        [darkMode]
+        [darkMode],
     );
 
     const formatRupiah = (value: number) =>
@@ -67,7 +67,6 @@ export default function ProductDetail(props: Readonly<Props>) {
         if (!user) {
             setLoading(true);
             router.visit(login());
-            return;
         }
     };
 
@@ -78,23 +77,37 @@ export default function ProductDetail(props: Readonly<Props>) {
 
         for (let i = 1; i <= 5; i++) {
             if (i <= fullStars) {
-                stars.push(<Star key={i} className="fill-yellow-400 text-yellow-400" size={18} />);
+                stars.push(
+                    <Star
+                        key={i}
+                        className="fill-yellow-400 text-yellow-400"
+                        size={18}
+                    />,
+                );
             } else if (i === fullStars + 1 && hasHalf) {
                 stars.push(
                     <span key={i} className="relative">
                         <Star className="text-yellow-400/30" size={18} />
-                        <Star className="absolute inset-0 fill-yellow-400 text-yellow-400" size={18} style={{ clipPath: 'inset(0 50% 0 0)' }} />
-                    </span>
+                        <Star
+                            className="absolute inset-0 fill-yellow-400 text-yellow-400"
+                            size={18}
+                            style={{ clipPath: 'inset(0 50% 0 0)' }}
+                        />
+                    </span>,
                 );
             } else {
-                stars.push(<Star key={i} className="text-yellow-400/30" size={18} />);
+                stars.push(
+                    <Star key={i} className="text-yellow-400/30" size={18} />,
+                );
             }
         }
         return stars;
     };
 
     return (
-        <div className={`${themeClass} min-h-screen transition-colors duration-300`}>
+        <div
+            className={`${themeClass} min-h-screen transition-colors duration-300`}
+        >
             <div className="mx-auto flex min-h-screen max-w-7xl flex-col lg:flex-row">
                 {/* Left Column - Image */}
                 <div className="relative flex min-h-[50vh] w-full items-center justify-center overflow-hidden lg:min-h-screen lg:w-1/2">
@@ -122,6 +135,16 @@ export default function ProductDetail(props: Readonly<Props>) {
                         >
                             <ArrowLeft size={18} />
                             {t('produk.back', locale)}
+                        </motion.button>
+
+                        <motion.button
+                            whileHover={{ scale: 1.05 }}
+                            whileTap={{ scale: 0.95 }}
+                            onClick={() => setDarkMode((prev) => !prev)}
+                            className="rounded-full p-2 ..."
+                            aria-label="Toggle dark mode"
+                        >
+                            {darkMode ? <Sun size={18} /> : <Moon size={18} />}
                         </motion.button>
 
                         {user ? (
@@ -158,7 +181,11 @@ export default function ProductDetail(props: Readonly<Props>) {
                     <motion.div
                         initial={{ opacity: 0, x: 40 }}
                         animate={{ opacity: 1, x: 0 }}
-                        transition={{ duration: 0.6, delay: 0.2, ease: 'easeOut' }}
+                        transition={{
+                            duration: 0.6,
+                            delay: 0.2,
+                            ease: 'easeOut',
+                        }}
                         className={`w-full max-w-lg space-y-6 rounded-2xl p-8 ${cardClass}`}
                     >
                         {/* Product Name */}
@@ -199,7 +226,8 @@ export default function ProductDetail(props: Readonly<Props>) {
                             </span>
                             {product.stok > 0 ? (
                                 <span className="rounded-full bg-emerald-500/20 px-3 py-1 text-sm font-semibold text-emerald-400">
-                                    {t('produk.stock_available', locale)} ({product.stok})
+                                    {t('produk.stock_available', locale)} (
+                                    {product.stok})
                                 </span>
                             ) : (
                                 <span className="rounded-full bg-red-500/20 px-3 py-1 text-sm font-semibold text-red-400">

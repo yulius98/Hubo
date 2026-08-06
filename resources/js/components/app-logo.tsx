@@ -6,7 +6,7 @@ export default function AppLogo({
 }: Readonly<{ subtitleClassName?: string }>) {
     return (
         <>
-            <div className="relative flex size-9 shrink-0 items-center justify-center overflow-hidden rounded-xl bg-gradient-to-br from-indigo-500 via-blue-600 to-cyan-500 shadow-lg shadow-indigo-500/30 ring-1 ring-white/25">
+            <div className="relative flex size-9 shrink-0 items-center justify-center overflow-hidden rounded-xl bg-gradient-to-br from-indigo-500 via-blue-600 to-cyan-500 shadow-lg ring-1 shadow-indigo-500/30 ring-white/25">
                 <AppLogoIcon className="size-5 fill-current text-white" />
                 <div className="absolute inset-0 rounded-xl bg-gradient-to-t from-black/25 to-transparent" />
             </div>

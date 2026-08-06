@@ -192,7 +192,8 @@ export default function Dashboard({
                                                 {item.outlet} · {item.kategori}
                                             </div>
                                             <div className="text-gray-600 dark:text-gray-400">
-                                                {item.user} · {item.jumlah_produk} unit ·{' '}
+                                                {item.user} ·{' '}
+                                                {item.jumlah_produk} unit ·{' '}
                                                 {item.tgl_transaksi}
                                             </div>
                                         </div>
@@ -205,17 +206,23 @@ export default function Dashboard({
                                     <table className="min-w-full divide-y divide-gray-200 dark:divide-gray-700">
                                         <thead className="bg-gray-50 dark:bg-gray-800/50">
                                             <tr>
-                                                {['Produk', 'Outlet', 'Kategori', 'User', 'Jenis', 'Jumlah', 'Waktu'].map(
-                                                    (header) => (
-                                                        <th
-                                                            key={header}
-                                                            scope="col"
-                                                            className="px-6 py-4 text-left text-xs font-semibold tracking-wider text-gray-500 uppercase dark:text-gray-400"
-                                                        >
-                                                            {header}
-                                                        </th>
-                                                    ),
-                                                )}
+                                                {[
+                                                    'Produk',
+                                                    'Outlet',
+                                                    'Kategori',
+                                                    'User',
+                                                    'Jenis',
+                                                    'Jumlah',
+                                                    'Waktu',
+                                                ].map((header) => (
+                                                    <th
+                                                        key={header}
+                                                        scope="col"
+                                                        className="px-6 py-4 text-left text-xs font-semibold tracking-wider text-gray-500 uppercase dark:text-gray-400"
+                                                    >
+                                                        {header}
+                                                    </th>
+                                                ))}
                                             </tr>
                                         </thead>
                                         <tbody className="divide-y divide-gray-200 bg-white dark:divide-gray-700 dark:bg-gray-800">
@@ -240,7 +247,9 @@ export default function Dashboard({
                                                         <span
                                                             className={`inline-flex rounded-full px-3 py-1 text-xs font-medium ${getJenisStyles(item.jenis_transaksi)}`}
                                                         >
-                                                            {item.jenis_transaksi}
+                                                            {
+                                                                item.jenis_transaksi
+                                                            }
                                                         </span>
                                                     </td>
                                                     <td className="px-6 py-4 text-sm whitespace-nowrap text-gray-500 dark:text-gray-400">

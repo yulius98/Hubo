@@ -2,9 +2,9 @@ import { PlusIcon } from '@heroicons/react/24/outline';
 import type { PageProps as InertiaPageProps } from '@inertiajs/core';
 import { router, Head, usePage } from '@inertiajs/react';
 import React, { useState } from 'react';
-import AppLayout from '@/layouts/app-layout'
-import { kelola_produk as kelolaProdukRoute } from '@/routes'
-import type { BreadcrumbItem } from '@/types'
+import AppLayout from '@/layouts/app-layout';
+import { kelola_produk as kelolaProdukRoute } from '@/routes';
+import type { BreadcrumbItem } from '@/types';
 
 const breadcrumbs: BreadcrumbItem[] = [
     {
@@ -34,7 +34,7 @@ export default function Kelola_Produk() {
     const { outlets: rawOutlets, jmlOutlet } = usePage<OutletPageProps>().props;
     const outlets = rawOutlets ?? [];
 
-    const handleTambahProduk = async (id: any) => {
+    const handleTambahProduk = async (id: number) => {
         router.get(`/produk/${id}`);
     };
 

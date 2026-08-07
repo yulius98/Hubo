@@ -74,6 +74,12 @@ services:
       retries: 10
     networks: [hubo]
 
+  cloudflared:
+    image: cloudflare/cloudflared:latest
+    restart: unless-stopped
+    command: tunnel run --token ${CLOUDFLARE_TUNNEL_TOKEN}
+    networks: [hubo]
+
 volumes:
   hubo_pgdata:
 

@@ -4,7 +4,9 @@ const id: Record<string, string> = {
     'nav.produk': 'Produk',
     'nav.login': 'Login',
     'nav.profil': 'Profil',
-    'nav.logout': 'Logout',
+    'nav.my_profile': 'Profile Saya',
+    'nav.my_orders': 'Pesanan Saya',
+    'nav.logout': 'Keluar',
     'nav.hi': 'Hai, {name}!',
 
     'search.placeholder': 'Cari produk...',
@@ -24,6 +26,10 @@ const id: Record<string, string> = {
     'produk.stock_empty': 'Habis',
 
     'footer.text': '© {year} HUBO. Premium Shopping Experience.',
+
+    'pesanan.title': 'Pesanan Saya',
+    'pesanan.subtitle': 'Halaman pesanan sedang dalam pengembangan. Silakan kembali lagi nanti.',
+    'pesanan.back': 'Kembali ke Home',
 
     'locale.id': 'Indonesia',
     'locale.en': 'Inggris',

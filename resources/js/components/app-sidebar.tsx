@@ -11,6 +11,7 @@ import {
     ReceiptText,
     Store,
     UserCircle,
+    UserCog,
 } from 'lucide-react';
 import { useState } from 'react';
 import { NavMain, type NavSection } from '@/components/nav-main';
@@ -33,6 +34,7 @@ import {
     dashboard,
     homepage,
     kategori,
+    kelola_karyawan,
     kelola_stok,
     myoutlet,
     myprofile,
@@ -80,6 +82,12 @@ const mainNavItems: NavItem[] = [
     },
 
     {
+        title: 'Kelola Karyawan',
+        href: kelola_karyawan(),
+        icon: UserCog,
+    },
+
+    {
         title: 'Request Menjadi Karyawan',
         href: req_staff(),
         icon: Briefcase,
@@ -98,6 +106,7 @@ const manajemenTitles = [
     'Kelola Kategori',
     'Kelola Produk',
     'Kelola Stok',
+    'Kelola Karyawan',
     'Request Menjadi Karyawan',
     'Buka Layanan Kasir',
 ];
@@ -157,9 +166,11 @@ export function AppSidebar({
     const outletRequiredUrls: Partial<
         Record<string, (outletId: number) => string>
     > = {
+        Dashboard: () => dashboard().url,
         'Kelola Produk': (outletId) => produk(outletId).url,
         'Kelola Kategori': () => kategori().url,
         'Kelola Stok': () => kelola_stok().url,
+        'Kelola Karyawan': () => kelola_karyawan().url,
         'Buka Layanan Kasir': () => cashier().url,
     };
 
@@ -172,6 +183,7 @@ export function AppSidebar({
                 'Dashboard',
                 'Kelola Kategori',
                 'Kelola Stok',
+                'Kelola Karyawan',
                 'Buka Outlet',
                 'Request Menjadi Karyawan',
                 'Buka Layanan Kasir',

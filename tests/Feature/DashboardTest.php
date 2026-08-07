@@ -7,7 +7,7 @@ use App\Models\Transaksi;
 use App\Models\User;
 use Inertia\Testing\AssertableInertia as Assert;
 
-function createTransaksi(User $user, Outlet $outlet, string $jenis = 'IN', int $jumlah = 1): Transaksi
+function createDashboardProduk(User $user, Outlet $outlet, array $overrides = []): Produk
 {
     $kategori = Kategori::create([
         'id_user' => $user->id,
@@ -15,104 +15,47 @@ function createTransaksi(User $user, Outlet $outlet, string $jenis = 'IN', int $
     ]);
     $kategori->outlets()->attach($outlet->id);
 
-    $produk = Produk::create([
+    return Produk::create(array_merge([
         'id_outlet' => $outlet->id,
         'id_kategori' => $kategori->id,
         'nama_produk' => 'Produk '.fake()->unique()->word(),
         'harga_beli' => 8000,
         'margin' => 2000,
         'harga' => 10000,
-    ]);
+    ], $overrides));
+}
 
-    return Transaksi::create([
+function createDashboardTransaksi(User $user, Outlet $outlet, Produk $produk, array $overrides = []): Transaksi
+{
+    return Transaksi::create(array_merge([
         'tgl_transaksi' => now(),
         'id_user' => $user->id,
         'id_outlet' => $outlet->id,
-        'id_kategori' => $kategori->id,
+        'id_kategori' => $produk->id_kategori,
         'id_produk' => $produk->id,
-        'jenis_transaksi' => $jenis,
-        'jumlah_produk' => $jumlah,
-    ]);
+        'jenis_transaksi' => 'IN',
+        'jumlah_produk' => 1,
+    ], $overrides));
 }
 
-it('renders the dashboard component', function () {
+it('renders an empty state when no outlet is selected', function () {
     $owner = attachUserToOutlet(createUserWithGlobalRole('owner outlet'), createOutlet(), 'owner outlet');
 
     $this->actingAs($owner)
         ->get(route('dashboard'))
         ->assertOk()
-        ->assertInertia(fn (Assert $page) => $page->component('akun_users/dashboard'));
-});
-
-it('owner only sees transactions from their own outlets', function () {
-    $outletA = createOutlet(['nama_outlet' => 'Outlet A']);
-    $outletB = createOutlet(['nama_outlet' => 'Outlet B']);
-    $ownerA = attachUserToOutlet(createUserWithGlobalRole('owner outlet'), $outletA, 'owner outlet');
-    $ownerB = attachUserToOutlet(createUserWithGlobalRole('owner outlet'), $outletB, 'owner outlet');
-
-    createTransaksi($ownerA, $outletA);
-    createTransaksi($ownerB, $outletB);
-
-    $this->actingAs($ownerA)
-        ->get(route('dashboard'))
-        ->assertOk()
         ->assertInertia(fn (Assert $page) => $page
-            ->where('stats.totalTransaksi', 1)
-            ->where('outletLabel', 'Outlet A')
+            ->component('akun_users/dashboard')
+            ->where('outlet', null)
+            ->where('role', null)
+            ->where('emptyState.title', 'Pilih Outlet Terlebih Dahulu')
         );
 });
 
-it('owner with multiple outlets sees aggregate and per-outlet breakdown', function () {
-    $outletA = createOutlet(['nama_outlet' => 'Outlet A']);
-    $outletB = createOutlet(['nama_outlet' => 'Outlet B']);
-    $owner = createUserWithGlobalRole('owner outlet');
-    attachUserToOutlet($owner, $outletA, 'owner outlet');
-    attachUserToOutlet($owner, $outletB, 'owner outlet');
-
-    createTransaksi($owner, $outletA);
-    createTransaksi($owner, $outletB);
-
-    $this->actingAs($owner)
-        ->get(route('dashboard'))
-        ->assertOk()
-        ->assertInertia(fn (Assert $page) => $page
-            ->where('stats.totalTransaksi', 2)
-            ->where('outletLabel', 'Semua Outlet')
-            ->where('selectedOutletId', null)
-            ->where('perOutlet', fn ($value) => count($value) === 2)
-        );
-});
-
-it('owner can filter dashboard to a selected outlet', function () {
-    $outletA = createOutlet(['nama_outlet' => 'Outlet A']);
-    $outletB = createOutlet(['nama_outlet' => 'Outlet B']);
-    $owner = createUserWithGlobalRole('owner outlet');
-    attachUserToOutlet($owner, $outletA, 'owner outlet');
-    attachUserToOutlet($owner, $outletB, 'owner outlet');
-
-    createTransaksi($owner, $outletA);
-    createTransaksi($owner, $outletB);
-
-    session(['selected_outlet_id' => $outletA->id]);
-
-    $this->actingAs($owner)
-        ->get(route('dashboard'))
-        ->assertOk()
-        ->assertInertia(fn (Assert $page) => $page
-            ->where('stats.totalTransaksi', 1)
-            ->where('outletLabel', 'Outlet A')
-            ->where('selectedOutletId', $outletA->id)
-        );
-});
-
-it('owner cannot see transactions from an outlet they do not own', function () {
-    $ownedOutlet = createOutlet(['nama_outlet' => 'Outlet Milik Saya']);
-    $otherOutlet = createOutlet(['nama_outlet' => 'Outlet Orang Lain']);
+it('renders an empty state when the selected outlet is not accessible', function () {
+    $ownedOutlet = createOutlet();
+    $otherOutlet = createOutlet();
     $owner = attachUserToOutlet(createUserWithGlobalRole('owner outlet'), $ownedOutlet, 'owner outlet');
-    $otherOwner = attachUserToOutlet(createUserWithGlobalRole('owner outlet'), $otherOutlet, 'owner outlet');
-
-    createTransaksi($owner, $ownedOutlet);
-    createTransaksi($otherOwner, $otherOutlet);
 
     session(['selected_outlet_id' => $otherOutlet->id]);
 
@@ -120,65 +63,162 @@ it('owner cannot see transactions from an outlet they do not own', function () {
         ->get(route('dashboard'))
         ->assertOk()
         ->assertInertia(fn (Assert $page) => $page
-            ->where('stats.totalTransaksi', 1)
-            ->where('outletLabel', 'Outlet Milik Saya')
+            ->where('outlet', null)
+            ->where('emptyState.title', 'Pilih Outlet Terlebih Dahulu')
         );
 });
 
-it('admin only sees transactions from assigned outlets', function () {
-    $ownedOutlet = createOutlet(['nama_outlet' => 'Outlet Admin']);
-    $otherOutlet = createOutlet(['nama_outlet' => 'Outlet Lain']);
-    $owner = attachUserToOutlet(createUserWithGlobalRole('owner outlet'), $ownedOutlet, 'owner outlet');
-    $otherOwner = attachUserToOutlet(createUserWithGlobalRole('owner outlet'), $otherOutlet, 'owner outlet');
+it('shows transactions, products sold and omset stats to the owner', function () {
+    $outlet = createOutlet();
+    $owner = attachUserToOutlet(createUserWithGlobalRole('owner outlet'), $outlet, 'owner outlet');
+    $produk = createDashboardProduk($owner, $outlet, ['harga' => 10000]);
 
-    $admin = attachUserToOutlet(createUserWithGlobalRole('admin outlet'), $ownedOutlet, 'admin outlet');
+    createDashboardTransaksi($owner, $outlet, $produk, ['jenis_transaksi' => 'OUT', 'jumlah_produk' => 2]);
+    createDashboardTransaksi($owner, $outlet, $produk, ['jenis_transaksi' => 'IN', 'jumlah_produk' => 5]);
 
-    createTransaksi($owner, $ownedOutlet);
-    createTransaksi($otherOwner, $otherOutlet);
+    session(['selected_outlet_id' => $outlet->id]);
+
+    $this->actingAs($owner)
+        ->get(route('dashboard'))
+        ->assertOk()
+        ->assertInertia(fn (Assert $page) => $page
+            ->where('role', 'owner outlet')
+            ->where('periode', 'harian')
+            ->where('statistik.transaksi.total', 2)
+            ->where('statistik.produk_terjual.total', 2)
+            ->where('statistik.omset.total', 20000)
+        );
+});
+
+it('filters the owner stats by the requested month', function () {
+    $outlet = createOutlet();
+    $owner = attachUserToOutlet(createUserWithGlobalRole('owner outlet'), $outlet, 'owner outlet');
+    $produk = createDashboardProduk($owner, $outlet, ['harga' => 10000]);
+
+    createDashboardTransaksi($owner, $outlet, $produk, [
+        'tgl_transaksi' => '2026-07-05 10:00:00',
+        'jenis_transaksi' => 'OUT',
+        'jumlah_produk' => 1,
+    ]);
+    createDashboardTransaksi($owner, $outlet, $produk, [
+        'tgl_transaksi' => '2026-07-20 14:00:00',
+        'jenis_transaksi' => 'OUT',
+        'jumlah_produk' => 3,
+    ]);
+    createDashboardTransaksi($owner, $outlet, $produk, [
+        'tgl_transaksi' => '2026-06-15 10:00:00',
+        'jenis_transaksi' => 'OUT',
+        'jumlah_produk' => 9,
+    ]);
+
+    session(['selected_outlet_id' => $outlet->id]);
+
+    $this->actingAs($owner)
+        ->get(route('dashboard', ['periode' => 'bulanan', 'tanggal' => '2026-07']))
+        ->assertOk()
+        ->assertInertia(fn (Assert $page) => $page
+            ->where('periode', 'bulanan')
+            ->where('statistik.transaksi.total', 2)
+            ->where('statistik.produk_terjual.total', 4)
+            ->where('statistik.omset.total', 40000)
+            ->where('statistik.produk_terjual.data.4', 1)
+            ->where('statistik.produk_terjual.data.19', 3)
+            ->where('statistik.produk_terjual.data.5', 0)
+        );
+});
+
+it('shows employee data, product rankings and recent transactions to the owner', function () {
+    $outlet = createOutlet();
+    $owner = attachUserToOutlet(createUserWithGlobalRole('owner outlet'), $outlet, 'owner outlet');
+    attachUserToOutlet(User::factory()->create(['name' => 'Sari Admin']), $outlet, 'admin outlet');
+    attachUserToOutlet(User::factory()->create(['name' => 'Budi Kasir']), $outlet, 'kasir');
+
+    $produkLaku = createDashboardProduk($owner, $outlet, ['nama_produk' => 'Kopi Susu']);
+    $produkSedang = createDashboardProduk($owner, $outlet, ['nama_produk' => 'Es Teh']);
+    $produkSepi = createDashboardProduk($owner, $outlet, ['nama_produk' => 'Roti Bakar']);
+
+    createDashboardTransaksi($owner, $outlet, $produkLaku, ['jenis_transaksi' => 'OUT', 'jumlah_produk' => 10]);
+    createDashboardTransaksi($owner, $outlet, $produkLaku, ['jenis_transaksi' => 'OUT', 'jumlah_produk' => 10]);
+    createDashboardTransaksi($owner, $outlet, $produkSedang, ['jenis_transaksi' => 'OUT', 'jumlah_produk' => 3]);
+    createDashboardTransaksi($owner, $outlet, $produkSepi, ['jenis_transaksi' => 'OUT', 'jumlah_produk' => 1]);
+
+    session(['selected_outlet_id' => $outlet->id]);
+
+    $this->actingAs($owner)
+        ->get(route('dashboard'))
+        ->assertOk()
+        ->assertInertia(fn (Assert $page) => $page
+            ->has('karyawan', 3)
+            ->where('karyawan.0.role', 'owner outlet')
+            ->where('karyawan.1.role', 'admin outlet')
+            ->where('topProduk.0.nama_produk', 'Kopi Susu')
+            ->where('topProduk.0.total_terjual', 20)
+            ->where('topProduk.1.nama_produk', 'Es Teh')
+            ->where('kurangLaku.0.nama_produk', 'Roti Bakar')
+            ->where('kurangLaku.0.total_terjual', 1)
+            ->has('recentTransaksis', 4)
+        );
+});
+
+it('shows transaction and product stats and recent transactions to the admin', function () {
+    $outlet = createOutlet();
+    $owner = attachUserToOutlet(createUserWithGlobalRole('owner outlet'), $outlet, 'owner outlet');
+    $admin = attachUserToOutlet(createUserWithGlobalRole('admin outlet'), $outlet, 'admin outlet');
+    $produk = createDashboardProduk($owner, $outlet, ['harga' => 10000]);
+
+    createDashboardTransaksi($owner, $outlet, $produk, ['jenis_transaksi' => 'OUT', 'jumlah_produk' => 2]);
+
+    session(['selected_outlet_id' => $outlet->id]);
 
     $this->actingAs($admin)
         ->get(route('dashboard'))
         ->assertOk()
         ->assertInertia(fn (Assert $page) => $page
-            ->where('stats.totalTransaksi', 1)
-            ->where('outletLabel', 'Outlet Admin')
+            ->where('role', 'admin outlet')
+            ->where('statistik.transaksi.total', 1)
+            ->where('statistik.produk_terjual.total', 2)
+            ->where('karyawan', [])
+            ->where('topProduk', [])
+            ->where('kurangLaku', [])
+            ->has('recentTransaksis', 1)
         );
 });
 
-it('kasir only sees transactions from their own outlet', function () {
-    $outletKasir = createOutlet(['nama_outlet' => 'Outlet Kasir']);
-    $outletLain = createOutlet(['nama_outlet' => 'Outlet Lain']);
-    $owner = attachUserToOutlet(createUserWithGlobalRole('owner outlet'), $outletKasir, 'owner outlet');
-    $ownerLain = attachUserToOutlet(createUserWithGlobalRole('owner outlet'), $outletLain, 'owner outlet');
+it('limits the kasir to their own transactions', function () {
+    $outlet = createOutlet();
+    $owner = attachUserToOutlet(createUserWithGlobalRole('owner outlet'), $outlet, 'owner outlet');
+    $kasir = attachUserToOutlet(createUserWithGlobalRole('kasir'), $outlet, 'kasir');
+    $produk = createDashboardProduk($owner, $outlet, ['harga' => 10000]);
 
-    $kasir = attachUserToOutlet(createUserWithGlobalRole('kasir'), $outletKasir, 'kasir');
+    createDashboardTransaksi($owner, $outlet, $produk, ['jenis_transaksi' => 'OUT', 'jumlah_produk' => 5]);
+    createDashboardTransaksi($kasir, $outlet, $produk, ['jenis_transaksi' => 'OUT', 'jumlah_produk' => 2]);
 
-    createTransaksi($owner, $outletKasir, 'OUT', 3);
-    createTransaksi($ownerLain, $outletLain);
+    session(['selected_outlet_id' => $outlet->id]);
 
     $this->actingAs($kasir)
         ->get(route('dashboard'))
         ->assertOk()
         ->assertInertia(fn (Assert $page) => $page
-            ->where('stats.totalTransaksi', 1)
-            ->where('stats.totalOut', 1)
-            ->where('stats.jumlahOut', 3)
-            ->where('outletLabel', 'Outlet Kasir')
+            ->where('role', 'kasir')
+            ->where('statistik.transaksi.total', 1)
+            ->where('statistik.produk_terjual.total', 2)
+            ->where('statistik.omset.total', 20000)
+            ->where('recentTransaksis', [])
+            ->where('karyawan', [])
         );
 });
 
-it('plain user without outlet sees zero stats', function () {
-    $outlet = createOutlet(['nama_outlet' => 'Outlet Lain']);
-    $owner = attachUserToOutlet(createUserWithGlobalRole('owner outlet'), $outlet, 'owner outlet');
-    createTransaksi($owner, $outlet);
+it('renders an empty state for a role without dashboard access', function () {
+    $outlet = createOutlet();
+    $user = attachUserToOutlet(User::factory()->create(), $outlet, 'user');
 
-    $user = User::factory()->create();
+    session(['selected_outlet_id' => $outlet->id]);
 
     $this->actingAs($user)
         ->get(route('dashboard'))
         ->assertOk()
         ->assertInertia(fn (Assert $page) => $page
-            ->where('stats.totalTransaksi', 0)
-            ->where('recentTransaksis', [])
+            ->where('outlet', null)
+            ->where('emptyState.title', 'Akses Dashboard Ditolak')
         );
 });

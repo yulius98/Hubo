@@ -5,7 +5,6 @@ namespace App\Http\Controllers;
 use App\Models\Kategori;
 use App\Models\Produk;
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\Auth;
 use Inertia\Inertia;
 
 class HomepageController extends Controller
@@ -15,11 +14,10 @@ class HomepageController extends Controller
      */
     public function index()
     {
-        $user = Auth::user();
         $kategoris = Kategori::all();
         $products = Produk::all();
 
-        return Inertia::render('homepage', ['products' => $products, 'kategoris' => $kategoris, 'user' => $user]);
+        return Inertia::render('welcome', ['products' => $products, 'kategoris' => $kategoris]);
     }
 
     /**

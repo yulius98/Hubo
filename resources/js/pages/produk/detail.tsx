@@ -3,6 +3,8 @@ import { motion } from 'framer-motion';
 import { ArrowLeft, ShoppingCart, LogIn, Star, Sun, Moon } from 'lucide-react';
 import { useMemo, useState } from 'react';
 import LoadingOverlay from '@/components/loading-overlay';
+import StoreNavbar from '@/components/store-navbar';
+import { useAppearance } from '@/hooks/use-appearance';
 import { t } from '@/i18n';
 import { homepage, login } from '@/routes';
 
@@ -30,23 +32,24 @@ interface Props {
 export default function ProductDetail(props: Readonly<Props>) {
     const { product, user } = props;
     const { locale } = usePage().props as unknown as { locale: string };
+    const { resolvedAppearance, updateAppearance } = useAppearance();
+    const isDark = resolvedAppearance === 'dark';
     const [loading, setLoading] = useState(false);
-    const [darkMode, setDarkMode] = useState(false);
 
     const themeClass = useMemo(
         () =>
-            darkMode
+            isDark
                 ? 'bg-linear-to-br from-blue-950 via-blue-900 to-black text-white'
                 : 'bg-linear-to-br from-blue-50 via-white to-blue-100 text-blue-950',
-        [darkMode],
+        [isDark],
     );
 
     const cardClass = useMemo(
         () =>
-            darkMode
+            isDark
                 ? 'bg-blue-900/60 backdrop-blur-xl border border-blue-700/40 text-white'
                 : 'bg-white/80 backdrop-blur-xl border border-blue-200 text-blue-950',
-        [darkMode],
+        [isDark],
     );
 
     const formatRupiah = (value: number) =>
@@ -108,6 +111,8 @@ export default function ProductDetail(props: Readonly<Props>) {
         <div
             className={`${themeClass} min-h-screen transition-colors duration-300`}
         >
+            <StoreNavbar showSections={false} />
+
             <div className="mx-auto flex min-h-screen max-w-7xl flex-col lg:flex-row">
                 {/* Left Column - Image */}
                 <div className="relative flex min-h-[50vh] w-full items-center justify-center overflow-hidden lg:min-h-screen lg:w-1/2">
@@ -140,11 +145,13 @@ export default function ProductDetail(props: Readonly<Props>) {
                         <motion.button
                             whileHover={{ scale: 1.05 }}
                             whileTap={{ scale: 0.95 }}
-                            onClick={() => setDarkMode((prev) => !prev)}
+                            onClick={() =>
+                                updateAppearance(isDark ? 'light' : 'dark')
+                            }
                             className="rounded-full p-2 ..."
                             aria-label="Toggle dark mode"
                         >
-                            {darkMode ? <Sun size={18} /> : <Moon size={18} />}
+                            {isDark ? <Sun size={18} /> : <Moon size={18} />}
                         </motion.button>
 
                         {user ? (

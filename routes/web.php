@@ -3,6 +3,7 @@
 use App\Http\Controllers\CashierController;
 use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\HomepageController;
+use App\Http\Controllers\KaryawanController;
 use App\Http\Controllers\KategoriController;
 use App\Http\Controllers\KelolaProdukController;
 use App\Http\Controllers\KeranjangBelanjaKasirController;
@@ -27,6 +28,10 @@ Route::middleware(['auth', ValidateSessionWithWorkOS::class])->group(function ()
     Route::get('myprofile', function () {
         return Inertia::render('akun_users/profile_user_page');
     })->name('myprofile');
+
+    Route::get('pesanan-saya', function () {
+        return Inertia::render('pesanan_saya');
+    })->name('pesanan_saya');
 
     Route::get('dashboard', [DashboardController::class, 'index'])->name('dashboard');
 
@@ -56,6 +61,9 @@ Route::middleware(['auth', ValidateSessionWithWorkOS::class])->group(function ()
 
     Route::get('req_staff', [RequestStaffController::class, 'index'])->name('req_staff');
     Route::post('req_staff', [RequestStaffController::class, 'store'])->name('req_staff.add');
+
+    Route::get('kelola_karyawan', [KaryawanController::class, 'index'])->middleware('role:owner outlet')->name('kelola_karyawan');
+    Route::put('kelola_karyawan/{outlet}/role/{user}', [KaryawanController::class, 'updateRole'])->middleware('role:owner outlet')->name('kelola_karyawan.update_role');
 
     Route::get('add_staff/{outlet_id}', [RequestRoleController::class, 'index'])->middleware('role:owner outlet')->name('add_staff');
     Route::post('add_staff/{id}/terima', [RequestRoleController::class, 'terima'])->middleware('role:owner outlet')->name('terima_staff');

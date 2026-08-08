@@ -235,7 +235,7 @@ class ProdukController extends Controller
             }
 
             $image->save($destinationPath.basename($filename));
-            $validated['gambar'] = 'storage/outlets/'.$filename;
+            $validated['gambar'] = 'storage/produks/'.$filename;
         } else {
             // Jika tidak ada file baru, hapus dari validated agar tidak overwrite
             unset($validated['gambar']);

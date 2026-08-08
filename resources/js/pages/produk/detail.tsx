@@ -123,8 +123,9 @@ export default function ProductDetail(props: Readonly<Props>) {
                         animate={{ opacity: 1, scale: 1 }}
                         transition={{ duration: 0.6, ease: 'easeOut' }}
                         src={
-                            product.gambar ||
-                            `https://source.unsplash.com/1200x1200/?product&sig=${product.id}`
+                            product.gambar
+                                ? `/${product.gambar}`
+                                : `https://source.unsplash.com/1200x1200/?product&sig=${product.id}`
                         }
                         alt={product.nama_produk}
                         className="h-full w-full object-cover"

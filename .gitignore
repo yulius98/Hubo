@@ -29,3 +29,4 @@ yarn-error.log
 docker-compose.yml
 Dockerfile
 /docker/
+build.log

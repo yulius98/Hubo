@@ -2,6 +2,7 @@
 
 namespace App\Http\Middleware;
 
+use App\Models\KeranjangBelanjaUser;
 use App\Models\RequestRole;
 use Illuminate\Http\Request;
 use Inertia\Middleware;
@@ -41,6 +42,7 @@ class HandleInertiaRequests extends Middleware
         $canSelectAll = false;
         $pendingRequestCount = 0;
         $pendingRequestList = [];
+        $cartCount = 0;
 
         if ($user) {
             $user->load('role');
@@ -62,6 +64,11 @@ class HandleInertiaRequests extends Middleware
 
                 $pendingRequestCount = count($pendingRequestList);
             }
+
+            $cartCount = (int) KeranjangBelanjaUser::query()
+                ->where('id_user', $user->id)
+                ->where('status', 'pending')
+                ->sum('jumlah_produk');
 
             $outlets = $user->outlets()->orderBy('outlets.nama_outlet')->get(['outlets.id', 'outlets.nama_outlet']);
 
@@ -87,6 +94,11 @@ class HandleInertiaRequests extends Middleware
             'selectedOutletId' => $request->session()->get('selected_outlet_id'),
             'pendingRequestCount' => $pendingRequestCount,
             'pendingRequestList' => $pendingRequestList,
+            'cartCount' => $cartCount,
+            'flash' => [
+                'success' => $request->session()->get('success'),
+                'error' => $request->session()->get('error'),
+            ],
             'locale' => $request->session()->get('locale', 'id'),
         ];
     }

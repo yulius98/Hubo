@@ -11,6 +11,7 @@ import {
     ChevronDown,
     UserCircle,
     PackageSearch,
+    ShoppingCart,
     Languages,
 } from 'lucide-react';
 import { useCallback, useState } from 'react';
@@ -41,9 +42,11 @@ export default function StoreNavbar({
     activeSection,
     onSectionClick,
 }: Readonly<Props>) {
-    const { auth, locale } = usePage().props as unknown as {
+    const { auth, locale, cartCount, flash } = usePage().props as unknown as {
         auth: { user: User | null };
         locale: string;
+        cartCount: number;
+        flash?: { success?: string; error?: string };
     };
     const user = auth?.user ?? null;
     const { resolvedAppearance, updateAppearance } = useAppearance();
@@ -192,6 +195,21 @@ export default function StoreNavbar({
                                         </div>
                                     </DropdownMenuLabel>
                                     <DropdownMenuSeparator />
+                                    {(flash?.success || cartCount > 0) && (
+                                        <div className="mx-1 mb-1 flex items-center gap-2 rounded-lg border border-cyan-400/30 bg-cyan-400/10 px-3 py-2 text-xs font-medium text-cyan-700 dark:text-cyan-300">
+                                            <ShoppingCart size={14} className="shrink-0" />
+                                            {flash?.success
+                                                ? t('cart.added', locale)
+                                                : t('cart.in_cart', locale, {
+                                                      count: cartCount,
+                                                  })}
+                                            {cartCount > 0 && (
+                                                <span className="ml-auto inline-flex h-5 min-w-5 items-center justify-center rounded-full bg-cyan-500 px-1.5 text-[10px] font-bold text-white">
+                                                    {cartCount}
+                                                </span>
+                                            )}
+                                        </div>
+                                    )}
                                     <DropdownMenuItem
                                         onClick={handleProfilClick}
                                         className="cursor-pointer"
@@ -208,6 +226,11 @@ export default function StoreNavbar({
                                             size={18}
                                         />
                                         {t('nav.my_orders', locale)}
+                                        {cartCount > 0 && (
+                                            <span className="ml-auto inline-flex h-5 min-w-5 items-center justify-center rounded-full bg-cyan-500 px-1.5 text-[10px] font-bold text-white">
+                                                {cartCount}
+                                            </span>
+                                        )}
                                     </DropdownMenuItem>
                                     <DropdownMenuSeparator />
                                     <DropdownMenuItem asChild>

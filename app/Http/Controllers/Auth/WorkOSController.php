@@ -19,6 +19,10 @@ class WorkOSController extends Controller
 
     public function authenticate(AuthKitAuthenticationRequest $request)
     {
+        if ($request->query('error')) {
+            return redirect()->route('welcome');
+        }
+
         try {
             $request->authenticate(
                 createUsing: function ($user) {

@@ -162,7 +162,7 @@ class ProdukController extends Controller
      */
     public function show(Produk $produk)
     {
-        $produk->load('kategori:id,kategori');
+        $produk->load(['kategori:id,kategori', 'outlet:id,nama_outlet,alamat_outlet,kota']);
 
         return Inertia::render('produk/detail', [
             'product' => $produk,

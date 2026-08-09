@@ -30,5 +30,7 @@ declare module '@inertiajs/core' {
         sidebarOpen?: boolean;
         pendingRequestCount?: number;
         pendingRequestList?: PendingRequestListItem[];
+        cartCount?: number;
+        flash?: { success?: string; error?: string };
     }
 }

@@ -19,6 +19,11 @@ class RequestStaffController extends Controller
     public function index()
     {
         $user = Auth::user();
+
+        if ($user->isSuperAdmin()) {
+            abort(403, 'Unauthorized.');
+        }
+
         $outlet = Outlet::with('owner')->get();
         $jmlOutlet = $outlet->count();
         $statusreq = RequestRole::with([
@@ -74,6 +79,12 @@ class RequestStaffController extends Controller
      */
     public function store(Request $request)
     {
+        $user = Auth::user();
+
+        if ($user->isSuperAdmin()) {
+            abort(403, 'Unauthorized.');
+        }
+
         $ownerRoleId = Role::where('role', 'owner outlet')->value('id');
         $adminRoleId = Role::where('role', 'admin outlet')->value('id');
         $kasirRoleId = Role::where('role', 'kasir')->value('id');
@@ -86,7 +97,6 @@ class RequestStaffController extends Controller
             'status' => 'required|string',
         ]);
 
-        $user = Auth::user();
         $roleId = (int) $validated['role_id'];
 
         $outlet = Outlet::with('owner')->find($validated['outlet_id']);

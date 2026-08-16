@@ -4,11 +4,14 @@ import {
     Briefcase,
     Building2,
     ChevronDown,
+    CreditCard,
+    Gem,
     Home,
     LayoutGrid,
     List,
     Package,
     ReceiptText,
+    ShieldCheck,
     Store,
     UserCircle,
     UserCog,
@@ -38,9 +41,11 @@ import {
     kelola_stok,
     myoutlet,
     myprofile,
+    paket,
     produk,
     req_staff,
 } from '@/routes';
+import admin from '@/routes/admin';
 import type { NavItem } from '@/types';
 import AppLogo from './app-logo';
 
@@ -98,6 +103,12 @@ const mainNavItems: NavItem[] = [
         href: cashier(),
         icon: ReceiptText,
     },
+
+    {
+        title: 'Paket Saya',
+        href: paket(),
+        icon: Gem,
+    },
 ];
 
 const menuUtamaTitles = ['Home', 'Profile', 'Dashboard', 'Buka Outlet'];
@@ -109,6 +120,7 @@ const manajemenTitles = [
     'Kelola Karyawan',
     'Request Menjadi Karyawan',
     'Buka Layanan Kasir',
+    'Paket Saya',
 ];
 
 export function AppSidebar({
@@ -126,6 +138,9 @@ export function AppSidebar({
     const hasOwnerRole = userRoles.includes('owner outlet');
     const hasAdminRole = userRoles.includes('admin outlet');
     const hasKasirRole = userRoles.includes('kasir');
+
+    const { isSuperAdmin } = usePage().props;
+    const { plan, usage } = usePage().props;
 
     const { sidebarOutlets, canSelectAll, selectedOutletId } = usePage().props;
     const hasOutletFilter = sidebarOutlets.length > 0;
@@ -187,6 +202,7 @@ export function AppSidebar({
                 'Buka Outlet',
                 'Request Menjadi Karyawan',
                 'Buka Layanan Kasir',
+                'Paket Saya',
             ].includes(item.title);
         } else if (hasAdminRole) {
             return [
@@ -205,6 +221,10 @@ export function AppSidebar({
                 'Request Menjadi Karyawan',
                 'Buka Layanan Kasir',
             ].includes(item.title);
+        } else if (isSuperAdmin) {
+            return ['Home', 'Profile', 'Dashboard', 'Buka Outlet'].includes(
+                item.title,
+            );
         } else {
             return [
                 'Home',
@@ -226,6 +246,24 @@ export function AppSidebar({
         });
     }
 
+    const adminNavItems: NavItem[] = [
+        {
+            title: 'Dashboard Admin',
+            href: admin.dashboard(),
+            icon: ShieldCheck,
+        },
+        {
+            title: 'Kelola Tenant',
+            href: admin.tenants(),
+            icon: Building2,
+        },
+        {
+            title: 'Kelola Paket',
+            href: admin.paket(),
+            icon: CreditCard,
+        },
+    ];
+
     const sections: NavSection[] = [
         {
             label: 'Menu Utama',
@@ -238,6 +276,10 @@ export function AppSidebar({
             items: filteredNavItems.filter((item) =>
                 manajemenTitles.includes(item.title),
             ),
+        },
+        {
+            label: 'Admin Pusat',
+            items: isSuperAdmin ? adminNavItems : [],
         },
     ].filter((section) => section.items.length > 0);
 
@@ -316,6 +358,23 @@ export function AppSidebar({
             </SidebarContent>
 
             <SidebarFooter>
+                {plan && usage && (
+                    <div className="px-3 pb-1 group-data-[collapsible=icon]:hidden">
+                        <div className="flex items-center gap-2.5 rounded-lg border border-sidebar-border/60 bg-sidebar-accent/40 px-3 py-2.5">
+                            <CreditCard className="size-4 shrink-0 text-sidebar-foreground/50" />
+                            <div className="min-w-0">
+                                <p className="truncate text-[13px] font-semibold text-sidebar-foreground">
+                                    {plan.name}
+                                </p>
+                                <p className="truncate text-[11px] text-sidebar-foreground/55">
+                                    {plan.max_outlets
+                                        ? `${usage.outlets}/${plan.max_outlets} outlet`
+                                        : `${usage.outlets} outlet`}
+                                </p>
+                            </div>
+                        </div>
+                    </div>
+                )}
                 <div className="px-6 pb-1 group-data-[collapsible=icon]:hidden">
                     <span className="text-[10px] font-medium tracking-[0.2em] text-sidebar-foreground/35 uppercase">
                         HUBO v1.0.0

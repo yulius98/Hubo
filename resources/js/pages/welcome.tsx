@@ -26,6 +26,8 @@ interface Props {
     kategoris: Kategori[];
 }
 
+const PLACEHOLDER_IMAGE = '/images/placeholder-produk.svg';
+
 const HeroCarousel = memo(function HeroCarousel({
     products,
     index,
@@ -65,8 +67,9 @@ const HeroCarousel = memo(function HeroCarousel({
                         >
                             <img
                                 src={
-                                    product.gambar ||
-                                    `https://source.unsplash.com/1200x1200/?product&sig=${product.id}`
+                                    product.gambar
+                                        ? `/${product.gambar}`
+                                        : PLACEHOLDER_IMAGE
                                 }
                                 alt={product.nama_produk}
                                 className="h-full w-full object-cover"
@@ -163,8 +166,9 @@ const KategoriSection = memo(function KategoriSection({
                             <div className="relative">
                                 <img
                                     src={
-                                        kategori.gambar ||
-                                        `https://source.unsplash.com/1200x1200/?${kategori.kategori}&sig=${kategori.id}`
+                                        kategori.gambar
+                                            ? `/${kategori.gambar}`
+                                            : PLACEHOLDER_IMAGE
                                     }
                                     alt={kategori.kategori}
                                     className="h-40 w-full object-cover sm:h-44 md:h-52"
@@ -238,8 +242,9 @@ const ProdukSection = memo(function ProdukSection({
                             <div className="relative">
                                 <img
                                     src={
-                                        product.gambar ||
-                                        `https://source.unsplash.com/1200x1200/?product&sig=${product.id}`
+                                        product.gambar
+                                            ? `/${product.gambar}`
+                                            : PLACEHOLDER_IMAGE
                                     }
                                     alt={product.nama_produk}
                                     className="h-40 w-full object-cover sm:h-44 md:h-52"

@@ -4,6 +4,8 @@ namespace App\Http\Controllers;
 
 use App\Models\Outlet;
 use App\Models\Role;
+use App\Services\SubscriptionService;
+use App\Services\TenantService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\File;
@@ -17,6 +19,11 @@ class OutletController extends Controller
     private const STORAGE_OUTLET_PATH = 'app/public/outlets';
 
     private const PUBLIC_OUTLET_PATH = 'storage/outlets';
+
+    public function __construct(
+        protected TenantService $tenants,
+        protected SubscriptionService $subscriptions,
+    ) {}
 
     /**
      * Display a listing of the resource.
@@ -81,8 +88,11 @@ class OutletController extends Controller
             unset($validated['gambar']);
         }
 
-        $outlet = Outlet::create($validated);
         $user = Auth::user();
+        $company = $this->tenants->ensureCompanyForUser($user, $validated['nama_outlet']);
+        $this->subscriptions->assertCanCreate($company, SubscriptionService::RESOURCE_OUTLETS);
+
+        $outlet = Outlet::create(array_merge($validated, ['company_id' => $company->id]));
         $ownerRoleId = Role::where('role', 'owner outlet')->value('id');
         $user->outlets()->attach($outlet->id, [
             'role_id' => $ownerRoleId,

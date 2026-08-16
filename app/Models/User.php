@@ -4,6 +4,7 @@ namespace App\Models;
 
 use Database\Factories\UserFactory;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
+use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\SoftDeletes;
 use Illuminate\Foundation\Auth\User as Authenticatable;
@@ -28,6 +29,7 @@ class User extends Authenticatable
         'id_role',
         'avatar',
         'workos_id',
+        'company_id',
     ];
 
     /**
@@ -56,6 +58,11 @@ class User extends Authenticatable
     public function kategori(): HasMany
     {
         return $this->hasMany(Kategori::class, 'id_user');
+    }
+
+    public function company(): BelongsTo
+    {
+        return $this->belongsTo(Company::class, 'company_id');
     }
 
     public function produk(): HasMany
@@ -121,6 +128,11 @@ class User extends Authenticatable
     public function hasRole(string $role): bool
     {
         return $this->role()->where('role', $role)->exists();
+    }
+
+    public function isSuperAdmin(): bool
+    {
+        return $this->hasRole('super admin');
     }
 
     public function hasOutletRole(Outlet $outlet, string $role): bool

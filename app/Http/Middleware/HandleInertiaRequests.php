@@ -4,11 +4,18 @@ namespace App\Http\Middleware;
 
 use App\Models\KeranjangBelanjaUser;
 use App\Models\RequestRole;
+use App\Services\SubscriptionService;
+use App\Services\TenantService;
 use Illuminate\Http\Request;
 use Inertia\Middleware;
 
 class HandleInertiaRequests extends Middleware
 {
+    public function __construct(
+        protected TenantService $tenants,
+        protected SubscriptionService $subscriptions,
+    ) {}
+
     /**
      * The root template that's loaded on the first page visit.
      *
@@ -43,10 +50,38 @@ class HandleInertiaRequests extends Middleware
         $pendingRequestCount = 0;
         $pendingRequestList = [];
         $cartCount = 0;
+        $isSuperAdmin = false;
+        $tenant = null;
+        $plan = null;
+        $usage = null;
 
         if ($user) {
             $user->load('role');
             $roleNames = $user->role->pluck('role')->toArray();
+
+            $isSuperAdmin = in_array('super admin', $roleNames, true);
+
+            $company = $this->tenants->resolveForUser($user);
+
+            if ($company !== null) {
+                $activePlan = $this->subscriptions->plan($company);
+
+                $tenant = $company->only('id', 'name', 'slug', 'status');
+
+                if ($activePlan !== null) {
+                    $plan = [
+                        'id' => $activePlan->id,
+                        'name' => $activePlan->name,
+                        'slug' => $activePlan->slug,
+                        'max_outlets' => $activePlan->max_outlets,
+                        'max_products' => $activePlan->max_products,
+                        'max_staff' => $activePlan->max_staff,
+                        'features' => $activePlan->featureKeys(),
+                    ];
+
+                    $usage = $this->subscriptions->usage($company);
+                }
+            }
 
             if (in_array('owner outlet', $roleNames)) {
                 $pendingRequestList = RequestRole::with(['staff:id,name', 'outlet:id,nama_outlet'])
@@ -95,6 +130,10 @@ class HandleInertiaRequests extends Middleware
             'pendingRequestCount' => $pendingRequestCount,
             'pendingRequestList' => $pendingRequestList,
             'cartCount' => $cartCount,
+            'isSuperAdmin' => $isSuperAdmin,
+            'tenant' => $tenant,
+            'plan' => $plan,
+            'usage' => $usage,
             'flash' => [
                 'success' => $request->session()->get('success'),
                 'error' => $request->session()->get('error'),

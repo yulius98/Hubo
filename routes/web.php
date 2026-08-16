@@ -9,6 +9,7 @@ use App\Http\Controllers\KelolaProdukController;
 use App\Http\Controllers\KeranjangBelanjaKasirController;
 use App\Http\Controllers\KeranjangBelanjaUserController;
 use App\Http\Controllers\OutletController;
+use App\Http\Controllers\PaketController;
 use App\Http\Controllers\ProdukController;
 use App\Http\Controllers\RequestRoleController;
 use App\Http\Controllers\RequestStaffController;
@@ -33,6 +34,11 @@ Route::middleware(['auth', ValidateSessionWithWorkOS::class])->group(function ()
     Route::get('pesanan-saya', [KeranjangBelanjaUserController::class, 'index'])->name('pesanan_saya');
 
     Route::get('dashboard', [DashboardController::class, 'index'])->name('dashboard');
+
+    Route::middleware('role:owner outlet')->group(function () {
+        Route::get('paket', [PaketController::class, 'index'])->name('paket');
+        Route::post('paket/ganti', [PaketController::class, 'changePlan'])->name('paket.ganti');
+    });
 
     Route::middleware('role:owner outlet,admin outlet')->group(function () {
         Route::get('kelola_kategori', [KategoriController::class, 'index'])->name('kategori');
@@ -111,3 +117,4 @@ Route::post('set-locale', function (Request $request) {
 
 require __DIR__.'/settings.php';
 require __DIR__.'/auth.php';
+require __DIR__.'/admin.php';

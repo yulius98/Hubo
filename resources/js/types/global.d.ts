@@ -21,6 +21,29 @@ export type PendingRequestListItem = {
     outlet_name: string;
 };
 
+export type TenantShared = {
+    id: number;
+    name: string;
+    slug: string;
+    status: string;
+};
+
+export type PlanShared = {
+    id: number;
+    name: string;
+    slug: string;
+    max_outlets: number | null;
+    max_products: number | null;
+    max_staff: number | null;
+    features: string[];
+};
+
+export type UsageShared = {
+    outlets: number;
+    products: number;
+    staff: number;
+};
+
 declare module '@inertiajs/core' {
     interface PageProps extends InertiaPageProps {
         auth: Auth;
@@ -31,6 +54,10 @@ declare module '@inertiajs/core' {
         pendingRequestCount?: number;
         pendingRequestList?: PendingRequestListItem[];
         cartCount?: number;
+        isSuperAdmin?: boolean;
+        tenant?: TenantShared | null;
+        plan?: PlanShared | null;
+        usage?: UsageShared | null;
         flash?: { success?: string; error?: string };
     }
 }

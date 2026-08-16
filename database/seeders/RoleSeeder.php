@@ -17,6 +17,7 @@ class RoleSeeder extends Seeder
             'owner outlet',
             'admin outlet',
             'kasir',
+            'super admin',
         ];
 
         foreach ($roles as $role) {

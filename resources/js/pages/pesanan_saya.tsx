@@ -182,8 +182,9 @@ export default function PesananSaya(props: Readonly<Props>) {
                                 >
                                     <img
                                         src={
-                                            item.gambar ||
-                                            `https://source.unsplash.com/300x300/?product&sig=${item.id_produk}`
+                                            item.gambar
+                                                ? `/${item.gambar}`
+                                                : '/images/placeholder-produk.svg'
                                         }
                                         alt={item.nama_produk}
                                         className="h-24 w-24 shrink-0 rounded-xl object-cover"

@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Models\Kategori;
 use App\Models\Outlet;
 use App\Models\Produk;
+use App\Services\SubscriptionService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\File;
@@ -17,6 +18,8 @@ use Intervention\Image\ImageManager;
 class ProdukController extends Controller
 {
     private const PRODUK_IMAGE_PATH = 'app/public/produks/';
+
+    public function __construct(protected SubscriptionService $subscriptions) {}
 
     /**
      * Calculate the selling price from the purchase price, margin percentage and tax.
@@ -122,6 +125,10 @@ class ProdukController extends Controller
 
         $outlet = Outlet::findOrFail($validated['id_outlet']);
         $this->authorize('create', [Produk::class, $outlet]);
+
+        if ($outlet->company !== null) {
+            $this->subscriptions->assertCanCreate($outlet->company, SubscriptionService::RESOURCE_PRODUCTS);
+        }
 
         if ($request->hasFile('gambar')) {
             $file = $request->file('gambar');

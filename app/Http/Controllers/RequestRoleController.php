@@ -6,11 +6,14 @@ use App\Models\Outlet;
 use App\Models\RequestRole;
 use App\Models\Role;
 use App\Models\User;
+use App\Services\SubscriptionService;
 use Illuminate\Http\Request;
 use Inertia\Inertia;
 
 class RequestRoleController extends Controller
 {
+    public function __construct(protected SubscriptionService $subscriptions) {}
+
     /**
      * Display a listing of the resource.
      */
@@ -47,6 +50,13 @@ class RequestRoleController extends Controller
 
         if ($data_staf->status !== 'pending') {
             return redirect()->back()->with('error', 'Request sudah diproses.');
+        }
+
+        if ($data_staf->outlet->company !== null) {
+            $this->subscriptions->assertCanCreate(
+                $data_staf->outlet->company,
+                SubscriptionService::RESOURCE_STAFF
+            );
         }
 
         $user = User::findOrFail($data_staf->user_id);

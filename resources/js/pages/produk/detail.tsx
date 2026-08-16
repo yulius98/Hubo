@@ -175,7 +175,7 @@ export default function ProductDetail(props: Readonly<Props>) {
                         src={
                             product.gambar
                                 ? `/${product.gambar}`
-                                : `https://source.unsplash.com/1200x1200/?product&sig=${product.id}`
+                                : '/images/placeholder-produk.svg'
                         }
                         alt={product.nama_produk}
                         className="h-full w-full object-cover"

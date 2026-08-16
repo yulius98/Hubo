@@ -1,8 +1,10 @@
 <?php
 
+use App\Models\Company;
 use App\Models\Outlet;
 use App\Models\Role;
 use App\Models\User;
+use Database\Seeders\PlanSeeder;
 use Database\Seeders\RoleSeeder;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Tests\TestCase;
@@ -58,6 +60,11 @@ function seedRoles(): void
     app(RoleSeeder::class)->run();
 }
 
+function seedPlans(): void
+{
+    app(PlanSeeder::class)->run();
+}
+
 function roleId(string $roleName): int
 {
     seedRoles();
@@ -75,7 +82,10 @@ function createUserWithGlobalRole(string $roleName): User
 
 function createOutlet(array $attributes = []): Outlet
 {
+    $company = Company::factory()->create();
+
     return Outlet::create(array_merge([
+        'company_id' => $company->id,
         'nama_outlet' => 'Outlet '.fake()->unique()->word(),
         'alamat_outlet' => 'Jalan Mawar No. 1',
         'kota' => 'Jakarta',

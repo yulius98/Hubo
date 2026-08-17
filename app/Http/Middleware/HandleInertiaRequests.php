@@ -137,6 +137,7 @@ class HandleInertiaRequests extends Middleware
             'flash' => [
                 'success' => $request->session()->get('success'),
                 'error' => $request->session()->get('error'),
+                'payment_url' => $request->session()->get('payment_url'),
             ],
             'locale' => $request->session()->get('locale', 'id'),
         ];

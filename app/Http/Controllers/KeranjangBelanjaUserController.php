@@ -54,21 +54,18 @@ class KeranjangBelanjaUserController extends Controller
      */
     public function store(Request $request, Produk $produk)
     {
-        $rules = ['jumlah_produk' => 'required|integer|min:1'];
-
-        if ($produk->stok > 0) {
-            $rules['jumlah_produk'] .= '|max:'.$produk->stok;
-        }
-
-        $validated = $request->validate($rules);
-
-        $user = $request->user();
-
         if ($produk->stok <= 0) {
             throw ValidationException::withMessages([
                 'produk' => 'Stok produk kosong.',
             ]);
         }
+
+        $validated = $request->validate([
+            'jumlah_produk' => 'required|integer|min:1',
+        ]);
+
+        $user = $request->user();
+        $addQty = (int) $validated['jumlah_produk'];
 
         $existing = KeranjangBelanjaUser::query()
             ->where('id_user', $user->id)
@@ -76,14 +73,23 @@ class KeranjangBelanjaUserController extends Controller
             ->where('status', 'pending')
             ->first();
 
+        $currentQty = $existing ? (int) $existing->jumlah_produk : 0;
+        $newTotal = $currentQty + $addQty;
+
+        if ($newTotal > $produk->stok) {
+            throw ValidationException::withMessages([
+                'jumlah_produk' => "Jumlah melebihi stok yang tersedia. Stok tersisa {$produk->stok}, Anda sudah memiliki {$currentQty} di keranjang.",
+            ]);
+        }
+
         if ($existing) {
-            $existing->increment('jumlah_produk', (int) $validated['jumlah_produk']);
+            $existing->increment('jumlah_produk', $addQty);
         } else {
             KeranjangBelanjaUser::create([
                 'id_user' => $user->id,
                 'id_kategori' => $produk->id_kategori,
                 'id_produk' => $produk->id,
-                'jumlah_produk' => (int) $validated['jumlah_produk'],
+                'jumlah_produk' => $addQty,
                 'status' => 'pending',
             ]);
         }
@@ -108,22 +114,6 @@ class KeranjangBelanjaUserController extends Controller
      */
     public function checkout(Request $request)
     {
-        $user = $request->user();
-
-        $pendingCount = KeranjangBelanjaUser::query()
-            ->where('id_user', $user->id)
-            ->where('status', 'pending')
-            ->count();
-
-        if ($pendingCount === 0) {
-            return redirect()->back()->with('error', 'Keranjang belanja kosong');
-        }
-
-        KeranjangBelanjaUser::query()
-            ->where('id_user', $user->id)
-            ->where('status', 'pending')
-            ->update(['status' => 'done']);
-
-        return redirect()->back()->with('success', 'Check out berhasil diproses');
+        return redirect()->route('checkout');
     }
 }

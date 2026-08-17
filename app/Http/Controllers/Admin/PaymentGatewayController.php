@@ -52,7 +52,7 @@ class PaymentGatewayController extends Controller
             'gateway' => ['required', 'string', Rule::in([PaymentGatewayConfig::XENDIT, PaymentGatewayConfig::MIDTRANS])],
             'config' => ['required', 'array'],
             'config.mode' => ['required', Rule::in(['sandbox', 'production'])],
-            'config.webhook_url' => ['nullable', 'url', 'max:500'],
+            'config.webhook_url' => ['nullable', 'string', 'max:500'],
         ];
 
         if ($gateway === PaymentGatewayConfig::MIDTRANS) {
@@ -60,9 +60,7 @@ class PaymentGatewayController extends Controller
         }
 
         foreach ($secretFields as $field) {
-            $rules["config.{$field}"] = filled($existing[$field] ?? null)
-                ? ['nullable', 'string', 'max:500']
-                : ['required', 'string', 'max:500'];
+            $rules["config.{$field}"] = ['nullable', 'string', 'max:500'];
         }
 
         $validated = Validator::make($request->all(), $rules)->validate();

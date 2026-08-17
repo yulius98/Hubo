@@ -218,7 +218,7 @@ it('forbids deleting another user cart item', function () {
     expect(KeranjangBelanjaUser::find($cartItem->id))->not->toBeNull();
 });
 
-it('checks out all pending cart items', function () {
+it('redirects to checkout page from the old checkout route', function () {
     $outlet = createOutlet();
     $user = User::factory()->create();
     $produkA = createUserCartProduk($outlet, $user, 'Produk A');
@@ -229,18 +229,13 @@ it('checks out all pending cart items', function () {
 
     $this->actingAs($user)
         ->post(route('pesanan_saya.checkout'))
-        ->assertRedirect()
-        ->assertSessionHas('success');
-
-    expect(KeranjangBelanjaUser::where('id_user', $user->id)->where('status', 'pending')->count())->toBe(0);
-    expect(KeranjangBelanjaUser::where('id_user', $user->id)->where('status', 'done')->count())->toBe(2);
+        ->assertRedirect(route('checkout'));
 });
 
-it('rejects checkout when the cart is empty', function () {
+it('redirects to checkout page from old checkout when cart is empty', function () {
     $user = User::factory()->create();
 
     $this->actingAs($user)
         ->post(route('pesanan_saya.checkout'))
-        ->assertRedirect()
-        ->assertSessionHas('error');
+        ->assertRedirect(route('checkout'));
 });

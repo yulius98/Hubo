@@ -2,6 +2,7 @@
 
 use App\Http\Controllers\Admin\DashboardController;
 use App\Http\Controllers\Admin\PaketController;
+use App\Http\Controllers\Admin\PaymentGatewayController;
 use App\Http\Controllers\Admin\TenantController;
 use Illuminate\Support\Facades\Route;
 use Laravel\WorkOS\Http\Middleware\ValidateSessionWithWorkOS;
@@ -24,4 +25,7 @@ Route::middleware([
     Route::put('paket/{plan}', [PaketController::class, 'update'])->name('paket.update');
     Route::delete('paket/{plan}', [PaketController::class, 'destroy'])->name('paket.destroy');
     Route::post('paket/{plan}/toggle', [PaketController::class, 'toggleActive'])->name('paket.toggle');
+
+    Route::get('payment-gateway', [PaymentGatewayController::class, 'index'])->name('payment-gateway');
+    Route::put('payment-gateway', [PaymentGatewayController::class, 'update'])->name('payment-gateway.update');
 });

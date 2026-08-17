@@ -4,8 +4,10 @@ import {
     Briefcase,
     Building2,
     ChevronDown,
+    ClipboardList,
     CreditCard,
     Gem,
+    Globe,
     Home,
     LayoutGrid,
     List,
@@ -41,6 +43,7 @@ import {
     kelola_stok,
     myoutlet,
     myprofile,
+    orders,
     paket,
     produk,
     req_staff,
@@ -105,6 +108,12 @@ const mainNavItems: NavItem[] = [
     },
 
     {
+        title: 'Riwayat Pesanan',
+        href: orders(),
+        icon: ClipboardList,
+    },
+
+    {
         title: 'Paket Saya',
         href: paket(),
         icon: Gem,
@@ -120,6 +129,7 @@ const manajemenTitles = [
     'Kelola Karyawan',
     'Request Menjadi Karyawan',
     'Buka Layanan Kasir',
+    'Riwayat Pesanan',
     'Paket Saya',
 ];
 
@@ -261,6 +271,11 @@ export function AppSidebar({
             title: 'Kelola Paket',
             href: admin.paket(),
             icon: CreditCard,
+        },
+        {
+            title: 'Payment Gateway',
+            href: admin.paymentGateway(),
+            icon: Globe,
         },
     ];
 

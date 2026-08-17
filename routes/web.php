@@ -1,19 +1,23 @@
 <?php
 
 use App\Http\Controllers\CashierController;
+use App\Http\Controllers\CheckoutController;
 use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\HomepageController;
+use App\Http\Controllers\InvoiceController;
 use App\Http\Controllers\KaryawanController;
 use App\Http\Controllers\KategoriController;
 use App\Http\Controllers\KelolaProdukController;
 use App\Http\Controllers\KeranjangBelanjaKasirController;
 use App\Http\Controllers\KeranjangBelanjaUserController;
+use App\Http\Controllers\OrderController;
 use App\Http\Controllers\OutletController;
 use App\Http\Controllers\PaketController;
 use App\Http\Controllers\ProdukController;
 use App\Http\Controllers\RequestRoleController;
 use App\Http\Controllers\RequestStaffController;
 use App\Http\Controllers\StokController;
+use App\Http\Controllers\WebhookController;
 use App\Http\Controllers\WelcomeController;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
@@ -30,8 +34,6 @@ Route::middleware(['auth', ValidateSessionWithWorkOS::class])->group(function ()
     Route::get('myprofile', function () {
         return Inertia::render('akun_users/profile_user_page');
     })->name('myprofile');
-
-    Route::get('pesanan-saya', [KeranjangBelanjaUserController::class, 'index'])->name('pesanan_saya');
 
     Route::get('dashboard', [DashboardController::class, 'index'])->name('dashboard');
 
@@ -83,7 +85,17 @@ Route::middleware(['auth', ValidateSessionWithWorkOS::class])->group(function ()
 
     Route::post('produk/{produk}/keranjang-belanja', [KeranjangBelanjaUserController::class, 'store'])->name('cart.add');
 
+    Route::get('checkout', [CheckoutController::class, 'index'])->name('checkout');
+    Route::post('checkout', [CheckoutController::class, 'store'])->name('checkout.store');
+
     Route::post('pesanan-saya/checkout', [KeranjangBelanjaUserController::class, 'checkout'])->name('pesanan_saya.checkout');
+
+    Route::get('pesanan-saya', [KeranjangBelanjaUserController::class, 'index'])->name('pesanan_saya');
+
+    Route::get('orders', [OrderController::class, 'index'])->name('orders');
+    Route::get('orders/{order}', [OrderController::class, 'show'])->name('orders.show');
+    Route::get('orders/{order}/invoice', [InvoiceController::class, 'show'])->name('orders.invoice');
+
     Route::delete('pesanan-saya/{keranjang_belanja_user}', [KeranjangBelanjaUserController::class, 'destroy'])->name('pesanan_saya.delete');
 
     Route::post('select-outlet', function (Request $request) {
@@ -118,3 +130,6 @@ Route::post('set-locale', function (Request $request) {
 require __DIR__.'/settings.php';
 require __DIR__.'/auth.php';
 require __DIR__.'/admin.php';
+
+Route::post('api/webhooks/xendit', [WebhookController::class, 'xendit'])->name('webhooks.xendit');
+Route::post('api/webhooks/midtrans', [WebhookController::class, 'midtrans'])->name('webhooks.midtrans');

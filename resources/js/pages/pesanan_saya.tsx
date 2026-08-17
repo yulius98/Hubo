@@ -14,7 +14,7 @@ import StoreNavbar from '@/components/store-navbar';
 import { useAppearance } from '@/hooks/use-appearance';
 import { t } from '@/i18n';
 import { homepage } from '@/routes';
-import { checkout as checkoutCart, deleteMethod } from '@/routes/pesanan_saya';
+import { deleteMethod } from '@/routes/pesanan_saya';
 
 interface CartItem {
     id: number;
@@ -92,15 +92,7 @@ export default function PesananSaya(props: Readonly<Props>) {
         }
 
         setLoading(true);
-        router.post(
-            checkoutCart(),
-            {},
-            {
-                preserveScroll: true,
-                preserveState: true,
-                onFinish: () => setLoading(false),
-            },
-        );
+        router.visit('/checkout');
     };
 
     return (

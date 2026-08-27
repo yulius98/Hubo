@@ -4,11 +4,13 @@ import {
     CreditCard,
     MapPin,
     Package,
+    Search,
     ShoppingBag,
     StickyNote,
     Truck,
     Wallet,
 } from 'lucide-react';
+import { useState } from 'react';
 import AppLayout from '@/layouts/app-layout';
 import type { BreadcrumbItem } from '@/types';
 
@@ -29,6 +31,7 @@ interface CheckoutProps {
     tax: number;
     total: number;
     active_gateway: string | null;
+    shipping_configured: boolean;
     user: { name: string; email: string };
 }
 
@@ -52,6 +55,12 @@ const PAYMENT_METHODS = [
     { value: 'cod', label: 'Bayar di Tempat', icon: Truck, desc: 'Cash On Delivery' },
 ] as const;
 
+const COURIERS = [
+    { value: 'jne', label: 'JNE' },
+    { value: 'tiki', label: 'Tiki' },
+    { value: 'anteraja', label: 'AnterAja' },
+] as const;
+
 function Building2Icon({ className }: { className?: string }) {
     return (
         <svg className={className} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
@@ -72,6 +81,7 @@ export default function Checkout({
     tax,
     total,
     active_gateway,
+    shipping_configured,
     user,
 }: Readonly<CheckoutProps>) {
     const { flash } = usePage().props;
@@ -79,7 +89,73 @@ export default function Checkout({
         shipping_address: '',
         notes: '',
         payment_method: 'bank_transfer',
+        shipping_cost: 0,
+        courier: '',
     });
+
+    const [shippingOptions, setShippingOptions] = useState<Array<{ service: string; description: string; cost: number; etd: string }>>([]);
+    const [shippingLoading, setShippingLoading] = useState(false);
+    const [shippingError, setShippingError] = useState('');
+    const [selectedShipping, setSelectedShipping] = useState<{ service: string; cost: number } | null>(null);
+
+    const fetchShippingCost = async () => {
+        if (!data.courier) {
+            setShippingError('Pilih kurir terlebih dahulu.');
+            return;
+        }
+
+        setShippingLoading(true);
+        setShippingError('');
+        setShippingOptions([]);
+        setSelectedShipping(null);
+
+        try {
+            const totalWeight = cartItems.reduce((sum, item) => sum + item.jumlah * 500, 0);
+            const response = await fetch('/api/shipping/cost', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-Requested-With': 'XMLHttpRequest',
+                    'X-XSRF-TOKEN': decodeURIComponent(
+                        document.cookie.match(/XSRF-TOKEN=([^;]+)/)?.[1] ?? '',
+                    ),
+                },
+                body: JSON.stringify({
+                    destination_city_id: '152',
+                    weight: totalWeight,
+                    courier: data.courier,
+                }),
+            });
+
+            const result = await response.json();
+
+            if (!response.ok) {
+                setShippingError(result.error || 'Gagal menghitung ongkir.');
+            } else {
+                setShippingOptions(
+                    (result.costs || []).map((c: { service: string; description: string; cost: Array<{ value: number; etd: string }> }) => ({
+                        service: c.service,
+                        description: c.description,
+                        cost: c.cost[0]?.value ?? 0,
+                        etd: c.cost[0]?.etd ?? '-',
+                    })),
+                );
+            }
+        } catch {
+            setShippingError('Gagal menghubungi server.');
+        } finally {
+            setShippingLoading(false);
+        }
+    };
+
+    const selectShipping = (service: string, cost: number) => {
+        setSelectedShipping({ service, cost });
+        setData('shipping_cost', cost);
+        setData('courier', service);
+    };
+
+    const shippingCost = selectedShipping?.cost ?? 0;
+    const orderTotal = total + shippingCost;
 
     const submit = () => {
         post('/checkout');
@@ -132,6 +208,103 @@ export default function Checkout({
                                 <p className="mt-1 text-xs text-red-500">{errors.shipping_address}</p>
                             )}
                         </div>
+
+                        {shipping_configured && (
+                            <div className="rounded-2xl border border-gray-200 bg-white p-5 shadow-sm dark:border-gray-700 dark:bg-gray-800">
+                                <h2 className="mb-4 flex items-center gap-2 text-base font-semibold text-gray-800 dark:text-gray-100">
+                                    <Truck className="h-5 w-5 text-indigo-500" />
+                                    Pengiriman
+                                </h2>
+                                <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
+                                    <div className="sm:col-span-2">
+                                        <label className="mb-1 block text-sm font-medium text-gray-700 dark:text-gray-300">
+                                            Kurir
+                                        </label>
+                                        <select
+                                            value={data.courier}
+                                            onChange={(e) => {
+                                                setData('courier', e.target.value);
+                                                setSelectedShipping(null);
+                                                setShippingOptions([]);
+                                            }}
+                                            className={inputClass}
+                                        >
+                                            <option value="">Pilih kurir</option>
+                                            {COURIERS.map((c) => (
+                                                <option key={c.value} value={c.value}>{c.label}</option>
+                                            ))}
+                                        </select>
+                                    </div>
+                                    <div className="flex items-end">
+                                        <button
+                                            type="button"
+                                            onClick={fetchShippingCost}
+                                            disabled={shippingLoading || !data.courier}
+                                            className="inline-flex h-10 items-center gap-2 rounded-xl border border-gray-200 bg-white px-4 text-sm font-medium text-gray-700 shadow-sm transition hover:bg-gray-50 disabled:cursor-not-allowed disabled:opacity-50 dark:border-gray-700 dark:bg-gray-800 dark:text-gray-300 dark:hover:bg-gray-700"
+                                        >
+                                            <Search className="h-4 w-4" />
+                                            {shippingLoading ? 'Menghitung...' : 'Hitung Ongkir'}
+                                        </button>
+                                    </div>
+                                </div>
+
+                                {shippingError && (
+                                    <p className="mt-3 text-sm text-red-500">{shippingError}</p>
+                                )}
+
+                                {shippingOptions.length > 0 && (
+                                    <div className="mt-4 space-y-2">
+                                        {shippingOptions.map((opt) => (
+                                            <label
+                                                key={opt.service}
+                                                className={`flex cursor-pointer items-center justify-between rounded-xl border-2 p-3 transition ${
+                                                    selectedShipping?.service === opt.service
+                                                        ? 'border-indigo-500 bg-indigo-50 dark:border-indigo-400 dark:bg-indigo-900/30'
+                                                        : 'border-gray-200 hover:border-gray-300 dark:border-gray-700 dark:hover:border-gray-600'
+                                                }`}
+                                            >
+                                                <div className="flex items-center gap-3">
+                                                    <input
+                                                        type="radio"
+                                                        name="shipping_option"
+                                                        checked={selectedShipping?.service === opt.service}
+                                                        onChange={() => selectShipping(opt.service, opt.cost)}
+                                                        className="sr-only"
+                                                    />
+                                                    <div>
+                                                        <p className="text-sm font-medium text-gray-900 dark:text-gray-100">
+                                                            {opt.service} - {opt.description}
+                                                        </p>
+                                                        <p className="text-xs text-gray-500 dark:text-gray-400">
+                                                            Estimasi: {opt.etd} hari
+                                                        </p>
+                                                    </div>
+                                                </div>
+                                                <p className="text-sm font-semibold text-gray-900 dark:text-gray-100">
+                                                    {formatRupiah(opt.cost)}
+                                                </p>
+                                            </label>
+                                        ))}
+                                    </div>
+                                )}
+                            </div>
+                        )}
+
+                        {!shipping_configured && (
+                            <div className="rounded-2xl border border-amber-200 bg-amber-50 p-5 shadow-sm dark:border-amber-800/60 dark:bg-amber-900/20">
+                                <div className="flex items-start gap-3">
+                                    <Truck className="mt-0.5 h-5 w-5 shrink-0 text-amber-600 dark:text-amber-400" />
+                                    <div>
+                                        <p className="text-sm font-medium text-amber-800 dark:text-amber-300">
+                                            Pengiriman belum dikonfigurasi
+                                        </p>
+                                        <p className="mt-1 text-sm text-amber-700 dark:text-amber-400">
+                                            Hubungi admin untuk mengatur API pengiriman. Saat ini pesanan hanya dapat menggunakan COD.
+                                        </p>
+                                    </div>
+                                </div>
+                            </div>
+                        )}
 
                         <div className="rounded-2xl border border-gray-200 bg-white p-5 shadow-sm dark:border-gray-700 dark:bg-gray-800">
                             <h2 className="mb-4 flex items-center gap-2 text-base font-semibold text-gray-800 dark:text-gray-100">
@@ -236,9 +409,15 @@ export default function Checkout({
                                     <span>PPN (11%)</span>
                                     <span>{formatRupiah(tax)}</span>
                                 </div>
+                                {shippingCost > 0 && (
+                                    <div className="flex justify-between text-sm text-gray-600 dark:text-gray-400">
+                                        <span>Ongkir ({selectedShipping?.service})</span>
+                                        <span>{formatRupiah(shippingCost)}</span>
+                                    </div>
+                                )}
                                 <div className="flex justify-between border-t border-gray-200 pt-2 text-base font-bold text-gray-900 dark:border-gray-700 dark:text-gray-100">
                                     <span>Total</span>
-                                    <span>{formatRupiah(total)}</span>
+                                    <span>{formatRupiah(orderTotal)}</span>
                                 </div>
                             </div>
 

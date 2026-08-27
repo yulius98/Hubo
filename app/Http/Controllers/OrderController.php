@@ -28,11 +28,40 @@ class OrderController extends Controller
     /**
      * Display the specified order detail.
      */
+    public function returnCreate(Request $request, Order $order): Response
+    {
+        abort_if($order->user_id !== $request->user()->id, 403);
+
+        abort_unless(in_array($order->status, ['shipped', 'completed']), 403);
+
+        $order->load('items.produk');
+
+        return Inertia::render('orders/return-create', [
+            'order' => [
+                'id' => $order->id,
+                'order_number' => $order->order_number,
+                'status' => $order->status,
+                'total' => $order->total,
+                'items' => $order->items->map(fn ($item) => [
+                    'id' => $item->id,
+                    'product_name' => $item->product_name,
+                    'price' => $item->price,
+                    'quantity' => $item->quantity,
+                    'subtotal' => $item->subtotal,
+                    'gambar' => $item->produk?->gambar,
+                ]),
+            ],
+        ]);
+    }
+
+    /**
+     * Display the specified order detail.
+     */
     public function show(Request $request, Order $order): Response
     {
         abort_if($order->user_id !== $request->user()->id, 403);
 
-        $order->load(['items.produk', 'payment']);
+        $order->load(['items.produk', 'payment', 'returns']);
 
         return Inertia::render('orders/show', [
             'order' => [
@@ -49,6 +78,9 @@ class OrderController extends Controller
                 'payment_method' => $order->payment_method,
                 'shipping_address' => $order->shipping_address,
                 'notes' => $order->notes,
+                'courier' => $order->courier,
+                'tracking_number' => $order->tracking_number,
+                'shipped_at' => $order->shipped_at?->toISOString(),
                 'paid_at' => $order->paid_at?->toISOString(),
                 'completed_at' => $order->completed_at?->toISOString(),
                 'created_at' => $order->created_at->toISOString(),
@@ -67,6 +99,11 @@ class OrderController extends Controller
                     'amount' => $order->payment->amount,
                     'paid_at' => $order->payment->paid_at?->toISOString(),
                 ] : null,
+                'returns' => $order->returns->map(fn ($return) => [
+                    'id' => $return->id,
+                    'return_number' => $return->return_number,
+                    'status' => $return->status,
+                ]),
             ],
         ]);
     }

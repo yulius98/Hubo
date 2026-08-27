@@ -39,7 +39,9 @@ class Payment extends Model
     public static function generatePaymentNumber(): string
     {
         $date = now()->format('Ymd');
-        $lastPayment = static::where('payment_number', 'like', "PAY-{$date}-%")
+        $prefix = "PAY-{$date}-";
+
+        $lastPayment = static::where('payment_number', 'like', "{$prefix}%")
             ->orderByDesc('payment_number')
             ->value('payment_number');
 
@@ -49,6 +51,13 @@ class Payment extends Model
             $sequence = 1;
         }
 
-        return sprintf('PAY-%s-%04d', $date, $sequence);
+        $paymentNumber = sprintf('PAY-%s-%04d', $date, $sequence);
+
+        if (static::where('payment_number', $paymentNumber)->exists()) {
+            $sequence++;
+            $paymentNumber = sprintf('PAY-%s-%04d', $date, $sequence);
+        }
+
+        return $paymentNumber;
     }
 }

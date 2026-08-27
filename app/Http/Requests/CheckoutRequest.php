@@ -17,6 +17,8 @@ class CheckoutRequest extends FormRequest
             'shipping_address' => ['required', 'string', 'max:1000'],
             'notes' => ['nullable', 'string', 'max:500'],
             'payment_method' => ['required', 'string', 'in:bank_transfer,ewallet,va,card,cod'],
+            'shipping_cost' => ['nullable', 'numeric', 'min:0'],
+            'courier' => ['nullable', 'string', 'max:50'],
         ];
     }
 

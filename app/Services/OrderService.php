@@ -22,8 +22,10 @@ class OrderService
         ?string $shippingAddress = null,
         ?string $notes = null,
         ?string $paymentMethod = null,
+        float $shippingCost = 0,
+        ?string $courier = null,
     ): Order {
-        return DB::transaction(function () use ($userId, $shippingAddress, $notes, $paymentMethod) {
+        return DB::transaction(function () use ($userId, $shippingAddress, $notes, $paymentMethod, $shippingCost, $courier) {
             $cartItems = KeranjangBelanjaUser::query()
                 ->where('id_user', $userId)
                 ->where('status', 'pending')
@@ -77,7 +79,7 @@ class OrderService
             }
 
             $tax = $subtotal * 0.11;
-            $total = $subtotal + $tax;
+            $total = $subtotal + $tax + $shippingCost;
 
             $order = Order::create([
                 'order_number' => Order::generateOrderNumber(),
@@ -85,9 +87,11 @@ class OrderService
                 'outlet_id' => $outletId,
                 'status' => 'awaiting_payment',
                 'subtotal' => $subtotal,
+                'shipping_cost' => $shippingCost,
                 'tax' => $tax,
                 'total' => $total,
                 'payment_method' => $paymentMethod,
+                'courier' => $courier,
                 'shipping_address' => $shippingAddress,
                 'notes' => $notes,
             ]);
@@ -146,6 +150,8 @@ class OrderService
 
         if ($newStatus === 'paid') {
             $updates['paid_at'] = now();
+        } elseif ($newStatus === 'shipped') {
+            $updates['shipped_at'] = now();
         } elseif ($newStatus === 'completed') {
             $updates['completed_at'] = now();
         } elseif ($newStatus === 'cancelled') {

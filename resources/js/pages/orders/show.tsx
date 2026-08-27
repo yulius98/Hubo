@@ -6,6 +6,7 @@ import {
     CreditCard,
     FileText,
     Package,
+    RotateCcw,
     Truck,
     XCircle,
 } from 'lucide-react';
@@ -43,11 +44,15 @@ interface OrderDetail {
     payment_method: string;
     shipping_address: string;
     notes: string | null;
+    courier: string | null;
+    tracking_number: string | null;
+    shipped_at: string | null;
     paid_at: string | null;
     completed_at: string | null;
     created_at: string;
     items: OrderItem[];
     payment: Payment | null;
+    returns?: Array<{ id: number; return_number: string; status: string }>;
 }
 
 interface OrderShowProps {
@@ -124,6 +129,44 @@ const statusSteps = [
 const getStepIndex = (status: string): number => {
     const idx = statusSteps.findIndex((s) => s.key === status);
     return idx >= 0 ? idx : 0;
+};
+
+const paymentStatusBadgeClass = (status: string): string => {
+    switch (status) {
+        case 'success':
+            return 'bg-emerald-100 text-emerald-800 dark:bg-emerald-900/40 dark:text-emerald-300';
+        case 'processing':
+            return 'bg-blue-100 text-blue-800 dark:bg-blue-900/40 dark:text-blue-300';
+        case 'pending':
+            return 'bg-amber-100 text-amber-800 dark:bg-amber-900/40 dark:text-amber-300';
+        case 'failed':
+            return 'bg-red-100 text-red-800 dark:bg-red-900/40 dark:text-red-300';
+        case 'expired':
+            return 'bg-gray-100 text-gray-700 dark:bg-gray-800 dark:text-gray-300';
+        case 'refunded':
+            return 'bg-purple-100 text-purple-800 dark:bg-purple-900/40 dark:text-purple-300';
+        default:
+            return 'bg-gray-100 text-gray-700 dark:bg-gray-800 dark:text-gray-300';
+    }
+};
+
+const paymentStatusLabel = (status: string): string => {
+    switch (status) {
+        case 'success':
+            return 'Berhasil';
+        case 'processing':
+            return 'Diproses';
+        case 'pending':
+            return 'Menunggu';
+        case 'failed':
+            return 'Gagal';
+        case 'expired':
+            return 'Kedaluwarsa';
+        case 'refunded':
+            return 'Dikembalikan';
+        default:
+            return status;
+    }
 };
 
 const paymentMethodLabel = (method: string): string => {
@@ -316,6 +359,59 @@ export default function OrderShow({ order }: Readonly<OrderShowProps>) {
                                 </p>
                             </div>
                         )}
+
+                        {['shipped', 'completed'].includes(order.status) && (
+                            !order.returns?.some((r) => ['pending', 'approved'].includes(r.status))
+                        ) && (
+                            <div className="rounded-2xl border border-gray-200 bg-white p-5 shadow-sm dark:border-gray-700 dark:bg-gray-800">
+                                <h2 className="mb-2 flex items-center gap-2 text-sm font-semibold text-gray-800 dark:text-gray-100">
+                                    <RotateCcw className="h-5 w-5 text-indigo-500" />
+                                    Retur
+                                </h2>
+                                <p className="mb-3 text-sm text-gray-600 dark:text-gray-400">
+                                    Pesanan ini dapat dikembalikan jika ada masalah dengan produk.
+                                </p>
+                                <Link
+                                    href={`/orders/${order.id}/return-create`}
+                                    className="inline-flex items-center gap-2 rounded-xl border border-gray-200 bg-white px-4 py-2 text-sm font-medium text-gray-700 shadow-sm transition hover:bg-gray-50 dark:border-gray-700 dark:bg-gray-800 dark:text-gray-300 dark:hover:bg-gray-700"
+                                >
+                                    <RotateCcw className="h-4 w-4" />
+                                    Ajukan Retur
+                                </Link>
+                            </div>
+                        )}
+
+                        {order.returns && order.returns.length > 0 && (
+                            <div className="rounded-2xl border border-gray-200 bg-white p-5 shadow-sm dark:border-gray-700 dark:bg-gray-800">
+                                <h2 className="mb-3 text-sm font-semibold text-gray-800 dark:text-gray-100">
+                                    Riwayat Retur
+                                </h2>
+                                <div className="space-y-2">
+                                    {order.returns.map((ret) => (
+                                        <Link
+                                            key={ret.id}
+                                            href={`/returns/${ret.id}`}
+                                            className="flex items-center justify-between rounded-xl border border-gray-200 p-3 transition hover:bg-gray-50 dark:border-gray-700 dark:hover:bg-gray-700/30"
+                                        >
+                                            <span className="text-sm font-medium text-gray-900 dark:text-gray-100">
+                                                {ret.return_number}
+                                            </span>
+                                            <span className={`inline-flex rounded-full px-2.5 py-0.5 text-xs font-semibold ${
+                                                ret.status === 'pending'
+                                                    ? 'bg-amber-100 text-amber-800 dark:bg-amber-900/40 dark:text-amber-300'
+                                                    : ret.status === 'approved'
+                                                        ? 'bg-emerald-100 text-emerald-800 dark:bg-emerald-900/40 dark:text-emerald-300'
+                                                        : ret.status === 'rejected'
+                                                            ? 'bg-red-100 text-red-800 dark:bg-red-900/40 dark:text-red-300'
+                                                            : 'bg-blue-100 text-blue-800 dark:bg-blue-900/40 dark:text-blue-300'
+                                            }`}>
+                                                {ret.status === 'pending' ? 'Menunggu' : ret.status === 'approved' ? 'Disetujui' : ret.status === 'rejected' ? 'Ditolak' : 'Selesai'}
+                                            </span>
+                                        </Link>
+                                    ))}
+                                </div>
+                            </div>
+                        )}
                     </div>
 
                     <div className="space-y-6 lg:col-span-1">
@@ -372,6 +468,36 @@ export default function OrderShow({ order }: Readonly<OrderShowProps>) {
                                         {order.shipping_address}
                                     </p>
                                 </div>
+                                {order.courier && (
+                                    <div>
+                                        <p className="text-xs font-medium text-gray-500 dark:text-gray-400">
+                                            Kurir
+                                        </p>
+                                        <p className="text-gray-900 dark:text-gray-100">
+                                            {order.courier.toUpperCase()}
+                                        </p>
+                                    </div>
+                                )}
+                                {order.tracking_number && (
+                                    <div>
+                                        <p className="text-xs font-medium text-gray-500 dark:text-gray-400">
+                                            Nomor Resi
+                                        </p>
+                                        <p className="font-mono text-gray-900 dark:text-gray-100">
+                                            {order.tracking_number}
+                                        </p>
+                                    </div>
+                                )}
+                                {order.shipped_at && (
+                                    <div>
+                                        <p className="text-xs font-medium text-gray-500 dark:text-gray-400">
+                                            Dikirim pada
+                                        </p>
+                                        <p className="text-gray-900 dark:text-gray-100">
+                                            {formatTanggal(order.shipped_at)}
+                                        </p>
+                                    </div>
+                                )}
                             </div>
                         </div>
 
@@ -396,8 +522,8 @@ export default function OrderShow({ order }: Readonly<OrderShowProps>) {
                                     </div>
                                     <div>
                                         <p className="text-xs text-gray-500 dark:text-gray-400">Status</p>
-                                        <span className="inline-flex rounded-full bg-emerald-100 px-2 py-0.5 text-xs font-medium text-emerald-800 dark:bg-emerald-900/40 dark:text-emerald-300">
-                                            {order.payment.status}
+                                        <span className={`inline-flex rounded-full px-2 py-0.5 text-xs font-medium ${paymentStatusBadgeClass(order.payment.status)}`}>
+                                            {paymentStatusLabel(order.payment.status)}
                                         </span>
                                     </div>
                                     {order.payment.paid_at && (

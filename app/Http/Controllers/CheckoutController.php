@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Http\Requests\CheckoutRequest;
 use App\Models\KeranjangBelanjaUser;
+use App\Models\ShippingConfig;
 use App\Services\OrderService;
 use App\Services\PaymentGatewayProcessor;
 use App\Services\PaymentGatewayService;
@@ -59,6 +60,7 @@ class CheckoutController extends Controller
         $total = $subtotal + $tax;
 
         $activeGateway = $this->gateways->activeGateway();
+        $shippingConfigured = ShippingConfig::isConfigured();
 
         return Inertia::render('checkout', [
             'cartItems' => $cartItems,
@@ -66,6 +68,7 @@ class CheckoutController extends Controller
             'tax' => $tax,
             'total' => $total,
             'active_gateway' => $activeGateway,
+            'shipping_configured' => $shippingConfigured,
             'user' => [
                 'name' => $user->name,
                 'email' => $user->email,
@@ -85,6 +88,8 @@ class CheckoutController extends Controller
             shippingAddress: $validated['shipping_address'],
             notes: $validated['notes'] ?? null,
             paymentMethod: $validated['payment_method'],
+            shippingCost: (float) ($validated['shipping_cost'] ?? 0),
+            courier: $validated['courier'] ?? null,
         );
 
         $paymentUrl = null;
@@ -94,8 +99,8 @@ class CheckoutController extends Controller
                 $payment = $this->processor->createPayment($order);
                 $paymentUrl = $this->processor->getPaymentUrl($payment);
             } catch (\Exception $e) {
-                return redirect()->back()
-                    ->with('error', 'Gagal memproses pembayaran: '.$e->getMessage());
+                return redirect()->route('orders.show', $order->id)
+                    ->with('error', 'Pesanan berhasil dibuat, tetapi gagal memproses pembayaran: '.$e->getMessage());
             }
         }
 

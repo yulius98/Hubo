@@ -16,6 +16,8 @@ use App\Http\Controllers\PaketController;
 use App\Http\Controllers\ProdukController;
 use App\Http\Controllers\RequestRoleController;
 use App\Http\Controllers\RequestStaffController;
+use App\Http\Controllers\ReturnController;
+use App\Http\Controllers\ShippingController;
 use App\Http\Controllers\StokController;
 use App\Http\Controllers\WebhookController;
 use App\Http\Controllers\WelcomeController;
@@ -87,6 +89,7 @@ Route::middleware(['auth', ValidateSessionWithWorkOS::class])->group(function ()
 
     Route::get('checkout', [CheckoutController::class, 'index'])->name('checkout');
     Route::post('checkout', [CheckoutController::class, 'store'])->name('checkout.store');
+    Route::post('api/shipping/cost', [ShippingController::class, 'calculateCost'])->name('api.shipping.cost');
 
     Route::post('pesanan-saya/checkout', [KeranjangBelanjaUserController::class, 'checkout'])->name('pesanan_saya.checkout');
 
@@ -95,6 +98,14 @@ Route::middleware(['auth', ValidateSessionWithWorkOS::class])->group(function ()
     Route::get('orders', [OrderController::class, 'index'])->name('orders');
     Route::get('orders/{order}', [OrderController::class, 'show'])->name('orders.show');
     Route::get('orders/{order}/invoice', [InvoiceController::class, 'show'])->name('orders.invoice');
+    Route::get('orders/{order}/return-create', [OrderController::class, 'returnCreate'])->name('orders.return-create');
+
+    Route::get('returns', [ReturnController::class, 'index'])->name('returns');
+    Route::post('returns', [ReturnController::class, 'store'])->name('returns.store');
+    Route::get('returns/{return}', [ReturnController::class, 'show'])->name('returns.show');
+    Route::post('returns/{return}/approve', [ReturnController::class, 'approve'])->name('returns.approve');
+    Route::post('returns/{return}/reject', [ReturnController::class, 'reject'])->name('returns.reject');
+    Route::post('returns/{return}/complete', [ReturnController::class, 'complete'])->name('returns.complete');
 
     Route::delete('pesanan-saya/{keranjang_belanja_user}', [KeranjangBelanjaUserController::class, 'destroy'])->name('pesanan_saya.delete');
 

@@ -1,8 +1,14 @@
 <?php
 
 use App\Http\Controllers\Admin\DashboardController;
+use App\Http\Controllers\Admin\ExpenseController;
 use App\Http\Controllers\Admin\PaketController;
 use App\Http\Controllers\Admin\PaymentGatewayController;
+use App\Http\Controllers\Admin\PurchaseOrderController;
+use App\Http\Controllers\Admin\ReportController;
+use App\Http\Controllers\Admin\ReturnController;
+use App\Http\Controllers\Admin\ShippingSettingsController;
+use App\Http\Controllers\Admin\SupplierController;
 use App\Http\Controllers\Admin\TenantController;
 use Illuminate\Support\Facades\Route;
 use Laravel\WorkOS\Http\Middleware\ValidateSessionWithWorkOS;
@@ -28,4 +34,31 @@ Route::middleware([
 
     Route::get('payment-gateway', [PaymentGatewayController::class, 'index'])->name('payment-gateway');
     Route::put('payment-gateway', [PaymentGatewayController::class, 'update'])->name('payment-gateway.update');
+
+    Route::get('shipping-settings', [ShippingSettingsController::class, 'index'])->name('shipping-settings');
+    Route::put('shipping-settings', [ShippingSettingsController::class, 'update'])->name('shipping-settings.update');
+
+    Route::get('suppliers', [SupplierController::class, 'index'])->name('suppliers');
+    Route::post('suppliers', [SupplierController::class, 'store'])->name('suppliers.store');
+    Route::put('suppliers/{supplier}', [SupplierController::class, 'update'])->name('suppliers.update');
+    Route::delete('suppliers/{supplier}', [SupplierController::class, 'destroy'])->name('suppliers.destroy');
+
+    Route::get('purchase-orders', [PurchaseOrderController::class, 'index'])->name('purchase-orders');
+    Route::get('purchase-orders/{purchaseOrder}', [PurchaseOrderController::class, 'show'])->name('purchase-orders.show');
+    Route::post('purchase-orders', [PurchaseOrderController::class, 'store'])->name('purchase-orders.store');
+    Route::put('purchase-orders/{purchaseOrder}', [PurchaseOrderController::class, 'update'])->name('purchase-orders.update');
+    Route::post('purchase-orders/{purchaseOrder}/receive', [PurchaseOrderController::class, 'receive'])->name('purchase-orders.receive');
+    Route::delete('purchase-orders/{purchaseOrder}', [PurchaseOrderController::class, 'destroy'])->name('purchase-orders.destroy');
+
+    Route::get('expenses', [ExpenseController::class, 'index'])->name('expenses');
+    Route::post('expenses', [ExpenseController::class, 'store'])->name('expenses.store');
+    Route::put('expenses/{expense}', [ExpenseController::class, 'update'])->name('expenses.update');
+    Route::delete('expenses/{expense}', [ExpenseController::class, 'destroy'])->name('expenses.destroy');
+
+    Route::get('reports', [ReportController::class, 'index'])->name('reports');
+    Route::get('reports/export', [ReportController::class, 'exportCsv'])->name('reports.export');
+    Route::get('reports/export-excel', [ReportController::class, 'exportExcel'])->name('reports.export-excel');
+    Route::get('reports/export-pdf', [ReportController::class, 'exportPdf'])->name('reports.export-pdf');
+
+    Route::get('returns', [ReturnController::class, 'index'])->name('returns');
 });

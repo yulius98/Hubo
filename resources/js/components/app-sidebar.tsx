@@ -1,5 +1,6 @@
 import { router, usePage } from '@inertiajs/react';
 import {
+    BarChart3,
     Boxes,
     Briefcase,
     Building2,
@@ -12,9 +13,12 @@ import {
     LayoutGrid,
     List,
     Package,
+    PackagePlus,
     ReceiptText,
+    RotateCcw,
     ShieldCheck,
     Store,
+    Truck,
     UserCircle,
     UserCog,
 } from 'lucide-react';
@@ -276,6 +280,36 @@ export function AppSidebar({
             title: 'Payment Gateway',
             href: admin.paymentGateway(),
             icon: Globe,
+        },
+        {
+            title: 'Shipping API',
+            href: admin.shippingSettings(),
+            icon: Truck,
+        },
+        {
+            title: 'Supplier',
+            href: admin.suppliers(),
+            icon: Store,
+        },
+        {
+            title: 'Purchase Order',
+            href: admin.purchaseOrders(),
+            icon: PackagePlus,
+        },
+        {
+            title: 'Biaya Operasional',
+            href: admin.expenses(),
+            icon: ReceiptText,
+        },
+        {
+            title: 'Laporan Keuangan',
+            href: admin.reports(),
+            icon: BarChart3,
+        },
+        {
+            title: 'Retur',
+            href: '/admin/returns',
+            icon: RotateCcw,
         },
     ];
 

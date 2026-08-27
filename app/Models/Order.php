@@ -24,11 +24,14 @@ class Order extends Model
         'tax',
         'total',
         'payment_method',
+        'courier',
+        'tracking_number',
         'shipping_address',
         'notes',
         'paid_at',
         'completed_at',
         'cancelled_at',
+        'shipped_at',
     ];
 
     protected function casts(): array
@@ -42,6 +45,7 @@ class Order extends Model
             'paid_at' => 'datetime',
             'completed_at' => 'datetime',
             'cancelled_at' => 'datetime',
+            'shipped_at' => 'datetime',
         ];
     }
 
@@ -63,6 +67,11 @@ class Order extends Model
     public function payment(): HasOne
     {
         return $this->hasOne(Payment::class);
+    }
+
+    public function returns(): HasMany
+    {
+        return $this->hasMany(OrderReturn::class);
     }
 
     public function scopeForUser($query, int $userId)
@@ -108,7 +117,9 @@ class Order extends Model
     public static function generateOrderNumber(): string
     {
         $date = now()->format('Ymd');
-        $lastOrder = static::where('order_number', 'like', "ORD-{$date}-%")
+        $prefix = "ORD-{$date}-";
+
+        $lastOrder = static::where('order_number', 'like', "{$prefix}%")
             ->orderByDesc('order_number')
             ->value('order_number');
 
@@ -118,6 +129,13 @@ class Order extends Model
             $sequence = 1;
         }
 
-        return sprintf('ORD-%s-%04d', $date, $sequence);
+        $orderNumber = sprintf('ORD-%s-%04d', $date, $sequence);
+
+        if (static::where('order_number', $orderNumber)->exists()) {
+            $sequence++;
+            $orderNumber = sprintf('ORD-%s-%04d', $date, $sequence);
+        }
+
+        return $orderNumber;
     }
 }

@@ -20,7 +20,17 @@ class Transaksi extends Model
         'jenis_transaksi',
         'jumlah_produk',
         'keterangan',
+        'harga_beli',
+        'harga_jual',
     ];
+
+    protected function casts(): array
+    {
+        return [
+            'harga_beli' => 'decimal:2',
+            'harga_jual' => 'decimal:2',
+        ];
+    }
 
     public function user()
     {

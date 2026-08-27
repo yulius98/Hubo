@@ -225,6 +225,12 @@ class PaymentGatewayProcessor
      */
     private function markPaid(Payment $payment, array $response): void
     {
+        if ($payment->status === 'success') {
+            Log::info("Payment {$payment->payment_number} already marked as paid, skipping.");
+
+            return;
+        }
+
         $payment->update([
             'status' => 'success',
             'gateway_response' => array_merge(
@@ -238,6 +244,7 @@ class PaymentGatewayProcessor
         $orderService->transitionStatus($payment->order, 'paid');
 
         try {
+            $payment->order->loadMissing('items');
             Mail::to($payment->order->user->email)
                 ->send(new OrderPaidMail($payment->order));
         } catch (\Exception $e) {
@@ -250,6 +257,12 @@ class PaymentGatewayProcessor
      */
     private function markExpired(Payment $payment): void
     {
+        if ($payment->status === 'expired' || $payment->status === 'success') {
+            Log::info("Payment {$payment->payment_number} already in terminal state ({$payment->status}), skipping.");
+
+            return;
+        }
+
         $payment->update(['status' => 'expired']);
 
         $orderService = app(OrderService::class);

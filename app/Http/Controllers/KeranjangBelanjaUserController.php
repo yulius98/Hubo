@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Models\KeranjangBelanjaUser;
+use App\Models\ProductVariant;
 use App\Models\Produk;
 use Illuminate\Http\Request;
 use Illuminate\Validation\ValidationException;
@@ -20,20 +21,24 @@ class KeranjangBelanjaUserController extends Controller
         $cartItems = KeranjangBelanjaUser::query()
             ->where('id_user', $user->id)
             ->where('status', 'pending')
-            ->with('produk:id,nama_produk,gambar,harga,harga_diskon,stok')
+            ->with('produk:id,nama_produk,gambar,harga,harga_diskon,stok', 'variant:id,produk_id,nama,sku,harga,stok')
             ->latest()
             ->get()
             ->map(function (KeranjangBelanjaUser $item) {
-                $harga = $item->produk?->harga_diskon ?? $item->produk?->harga ?? 0;
+                $harga = (float) ($item->variant?->harga ?? $item->produk?->harga_diskon ?? $item->produk?->harga ?? 0);
+                $stok = (int) ($item->variant?->stok ?? $item->produk?->stok ?? 0);
 
                 return [
                     'id' => $item->id,
                     'id_produk' => $item->id_produk,
-                    'nama_produk' => $item->produk?->nama_produk ?? 'Produk dihapus',
+                    'variant_id' => $item->variant_id,
+                    'nama_produk' => $item->variant?->nama
+                        ? $item->produk?->nama_produk.' - '.$item->variant->nama
+                        : ($item->produk?->nama_produk ?? 'Produk dihapus'),
                     'gambar' => $item->produk?->gambar,
                     'harga' => (int) ($item->produk?->harga ?? 0),
                     'harga_diskon' => $item->produk?->harga_diskon,
-                    'stok' => (int) ($item->produk?->stok ?? 0),
+                    'stok' => $stok,
                     'jumlah' => (int) $item->jumlah_produk,
                     'subtotal' => (int) ($harga * $item->jumlah_produk),
                 ];
@@ -54,31 +59,52 @@ class KeranjangBelanjaUserController extends Controller
      */
     public function store(Request $request, Produk $produk)
     {
-        if ($produk->stok <= 0) {
+        $validated = $request->validate([
+            'jumlah_produk' => 'required|integer|min:1',
+            'variant_id' => ['nullable', 'integer', 'exists:product_variants,id'],
+        ]);
+
+        $user = $request->user();
+        $addQty = (int) $validated['jumlah_produk'];
+        $variantId = isset($validated['variant_id']) ? (int) $validated['variant_id'] : null;
+
+        $variant = null;
+
+        if ($variantId !== null) {
+            $variant = ProductVariant::query()
+                ->where('id', $variantId)
+                ->where('produk_id', $produk->id)
+                ->where('is_active', true)
+                ->first();
+
+            if ($variant === null) {
+                throw ValidationException::withMessages([
+                    'variant_id' => 'Varian yang dipilih tidak valid.',
+                ]);
+            }
+        }
+
+        $stock = $variant?->stok ?? $produk->stok;
+
+        if ($stock <= 0) {
             throw ValidationException::withMessages([
                 'produk' => 'Stok produk kosong.',
             ]);
         }
 
-        $validated = $request->validate([
-            'jumlah_produk' => 'required|integer|min:1',
-        ]);
-
-        $user = $request->user();
-        $addQty = (int) $validated['jumlah_produk'];
-
         $existing = KeranjangBelanjaUser::query()
             ->where('id_user', $user->id)
             ->where('id_produk', $produk->id)
+            ->where('variant_id', $variantId)
             ->where('status', 'pending')
             ->first();
 
         $currentQty = $existing ? (int) $existing->jumlah_produk : 0;
         $newTotal = $currentQty + $addQty;
 
-        if ($newTotal > $produk->stok) {
+        if ($newTotal > $stock) {
             throw ValidationException::withMessages([
-                'jumlah_produk' => "Jumlah melebihi stok yang tersedia. Stok tersisa {$produk->stok}, Anda sudah memiliki {$currentQty} di keranjang.",
+                'jumlah_produk' => "Jumlah melebihi stok yang tersedia. Stok tersisa {$stock}, Anda sudah memiliki {$currentQty} di keranjang.",
             ]);
         }
 
@@ -89,6 +115,7 @@ class KeranjangBelanjaUserController extends Controller
                 'id_user' => $user->id,
                 'id_kategori' => $produk->id_kategori,
                 'id_produk' => $produk->id,
+                'variant_id' => $variantId,
                 'jumlah_produk' => $addQty,
                 'status' => 'pending',
             ]);

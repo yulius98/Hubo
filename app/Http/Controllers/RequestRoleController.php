@@ -6,6 +6,7 @@ use App\Models\Outlet;
 use App\Models\RequestRole;
 use App\Models\Role;
 use App\Models\User;
+use App\Notifications\StaffRequestNotification;
 use App\Services\SubscriptionService;
 use Illuminate\Http\Request;
 use Inertia\Inertia;
@@ -75,6 +76,8 @@ class RequestRoleController extends Controller
 
         $user->role()->syncWithoutDetaching([$data_staf->role_id]);
 
+        $user->notify(new StaffRequestNotification($data_staf->outlet, 'accepted'));
+
         return redirect()->back()->with('success', 'Request berhasil dikirim');
 
     }
@@ -88,6 +91,9 @@ class RequestRoleController extends Controller
             ->update([
                 'status' => 'reject',
             ]);
+
+        $user = User::find($data_staf->user_id);
+        $user?->notify(new StaffRequestNotification($data_staf->outlet, 'rejected'));
 
         return redirect()->back()->with('success', 'Request berhasil ditolak');
 

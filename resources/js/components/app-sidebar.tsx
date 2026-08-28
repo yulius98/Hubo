@@ -1,6 +1,7 @@
 import { router, usePage } from '@inertiajs/react';
 import {
     BarChart3,
+    Bell,
     Boxes,
     Briefcase,
     Building2,
@@ -18,9 +19,11 @@ import {
     RotateCcw,
     ShieldCheck,
     Store,
+    TicketPercent,
     Truck,
     UserCircle,
     UserCog,
+    Users,
 } from 'lucide-react';
 import { useState } from 'react';
 import { NavMain, type NavSection } from '@/components/nav-main';
@@ -40,6 +43,8 @@ import {
 } from '@/components/ui/sidebar';
 import {
     cashier,
+    coupons,
+    customers,
     dashboard,
     homepage,
     kategori,
@@ -47,6 +52,7 @@ import {
     kelola_stok,
     myoutlet,
     myprofile,
+    notifications,
     orders,
     paket,
     produk,
@@ -85,6 +91,24 @@ const mainNavItems: NavItem[] = [
         title: 'Kelola Stok',
         href: kelola_stok(),
         icon: Package,
+    },
+
+    {
+        title: 'Pelanggan',
+        href: customers(),
+        icon: Users,
+    },
+
+    {
+        title: 'Voucher',
+        href: coupons(),
+        icon: TicketPercent,
+    },
+
+    {
+        title: 'Notifikasi',
+        href: notifications(),
+        icon: Bell,
     },
 
     {
@@ -130,10 +154,13 @@ const manajemenTitles = [
     'Kelola Kategori',
     'Kelola Produk',
     'Kelola Stok',
+    'Pelanggan',
+    'Voucher',
     'Kelola Karyawan',
     'Request Menjadi Karyawan',
     'Buka Layanan Kasir',
     'Riwayat Pesanan',
+    'Notifikasi',
     'Paket Saya',
 ];
 
@@ -201,6 +228,8 @@ export function AppSidebar({
         'Kelola Stok': () => kelola_stok().url,
         'Kelola Karyawan': () => kelola_karyawan().url,
         'Buka Layanan Kasir': () => cashier().url,
+        Pelanggan: () => customers().url,
+        Voucher: () => coupons().url,
     };
 
     // Filter nav items based on role
@@ -212,10 +241,13 @@ export function AppSidebar({
                 'Dashboard',
                 'Kelola Kategori',
                 'Kelola Stok',
+                'Pelanggan',
+                'Voucher',
                 'Kelola Karyawan',
                 'Buka Outlet',
                 'Request Menjadi Karyawan',
                 'Buka Layanan Kasir',
+                'Notifikasi',
                 'Paket Saya',
             ].includes(item.title);
         } else if (hasAdminRole) {
@@ -225,6 +257,9 @@ export function AppSidebar({
                 'Dashboard',
                 'Kelola Kategori',
                 'Kelola Stok',
+                'Pelanggan',
+                'Voucher',
+                'Notifikasi',
             ].includes(item.title);
         } else if (hasKasirRole) {
             return [
@@ -258,6 +293,15 @@ export function AppSidebar({
             icon: Boxes,
             isActive: window.location.pathname.startsWith('/produk/'),
         });
+    }
+
+    const { unreadNotificationCount } = usePage().props;
+
+    const notifItem = filteredNavItems.find(
+        (item) => item.title === 'Notifikasi',
+    );
+    if (notifItem) {
+        notifItem.badge = Number(unreadNotificationCount ?? 0);
     }
 
     const adminNavItems: NavItem[] = [

@@ -17,6 +17,7 @@ class Produk extends Model
         'id_kategori',
         'gambar',
         'nama_produk',
+        'sku',
         'keterangan',
         'harga_beli',
         'margin',
@@ -26,6 +27,7 @@ class Produk extends Model
         'diskon',
         'harga_diskon',
         'stok',
+        'min_stok',
         'rating',
     ];
 
@@ -33,6 +35,7 @@ class Produk extends Model
     {
         return [
             'stok' => 'integer',
+            'min_stok' => 'integer',
             'rating' => 'float',
             'ppn' => 'float',
         ];
@@ -41,6 +44,35 @@ class Produk extends Model
     public function outlet()
     {
         return $this->belongsTo(Outlet::class, 'id_outlet');
+    }
+
+    public function variants(): HasMany
+    {
+        return $this->hasMany(ProductVariant::class, 'produk_id');
+    }
+
+    public function activeVariants(): HasMany
+    {
+        return $this->variants()->where('is_active', true);
+    }
+
+    /**
+     * Effective stock: sum of active variant stock when variants exist,
+     * otherwise the produk stock column itself.
+     */
+    public function effectiveStock(): int
+    {
+        if (! $this->relationLoaded('variants')) {
+            $this->load('variants');
+        }
+
+        $variants = $this->variants->filter(fn (ProductVariant $v) => $v->is_active);
+
+        if ($variants->isNotEmpty()) {
+            return (int) $variants->sum('stok');
+        }
+
+        return (int) $this->stok;
     }
 
     public function kategori()

@@ -67,6 +67,13 @@ export function NavMain({ sections = [], onItemClick }: NavMainProps) {
                                                 <item.icon className="size-4 shrink-0" />
                                             )}
                                             <span>{item.title}</span>
+                                            {!!item.badge && item.badge > 0 && (
+                                                <span className="ml-auto inline-flex h-5 min-w-5 items-center justify-center rounded-full bg-rose-500 px-1.5 text-[11px] font-semibold text-white tabular-nums">
+                                                    {item.badge > 99
+                                                        ? '99+'
+                                                        : item.badge}
+                                                </span>
+                                            )}
                                         </Link>
                                     </SidebarMenuButton>
                                 </SidebarMenuItem>

@@ -16,11 +16,17 @@ class Order extends Model
     protected $fillable = [
         'order_number',
         'user_id',
+        'customer_id',
         'outlet_id',
         'status',
         'subtotal',
         'shipping_cost',
         'discount',
+        'coupon_id',
+        'coupon_code',
+        'coupon_discount',
+        'points_used',
+        'points_discount',
         'tax',
         'total',
         'payment_method',
@@ -40,8 +46,11 @@ class Order extends Model
             'subtotal' => 'decimal:2',
             'shipping_cost' => 'decimal:2',
             'discount' => 'decimal:2',
+            'coupon_discount' => 'decimal:2',
+            'points_discount' => 'decimal:2',
             'tax' => 'decimal:2',
             'total' => 'decimal:2',
+            'points_used' => 'integer',
             'paid_at' => 'datetime',
             'completed_at' => 'datetime',
             'cancelled_at' => 'datetime',
@@ -52,6 +61,16 @@ class Order extends Model
     public function user(): BelongsTo
     {
         return $this->belongsTo(User::class);
+    }
+
+    public function customer(): BelongsTo
+    {
+        return $this->belongsTo(Customer::class, 'customer_id');
+    }
+
+    public function coupon(): BelongsTo
+    {
+        return $this->belongsTo(Coupon::class, 'coupon_id');
     }
 
     public function outlet(): BelongsTo

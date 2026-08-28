@@ -19,6 +19,8 @@ class CheckoutRequest extends FormRequest
             'payment_method' => ['required', 'string', 'in:bank_transfer,ewallet,va,card,cod'],
             'shipping_cost' => ['nullable', 'numeric', 'min:0'],
             'courier' => ['nullable', 'string', 'max:50'],
+            'coupon_code' => ['nullable', 'string', 'max:50'],
+            'points' => ['nullable', 'integer', 'min:0'],
         ];
     }
 

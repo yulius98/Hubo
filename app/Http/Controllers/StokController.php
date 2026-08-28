@@ -45,7 +45,10 @@ class StokController extends Controller
             ->when($outlet, fn ($query) => $query->where('id_outlet', $outlet->id))
             ->when(! $outlet, fn ($query) => $query->whereIn('id_outlet', $accessibleOutlets))
             ->orderBy('nama_produk')
-            ->get(['id', 'id_outlet', 'id_kategori', 'gambar', 'nama_produk', 'harga', 'stok']);
+            ->get(['id', 'id_outlet', 'id_kategori', 'gambar', 'nama_produk', 'harga', 'stok', 'min_stok'])
+            ->each(function (Produk $produk) {
+                $produk->setAttribute('effective_stok', $produk->effectiveStock());
+            });
 
         $riwayats = Transaksi::query()
             ->with(['produk:id,nama_produk', 'user:id,name'])

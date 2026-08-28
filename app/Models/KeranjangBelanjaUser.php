@@ -15,9 +15,15 @@ class KeranjangBelanjaUser extends Model
         'id_user',
         'id_kategori',
         'id_produk',
+        'variant_id',
         'jumlah_produk',
         'status',
     ];
+
+    public function variant()
+    {
+        return $this->belongsTo(ProductVariant::class, 'variant_id');
+    }
 
     public function user()
     {

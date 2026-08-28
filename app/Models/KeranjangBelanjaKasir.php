@@ -15,9 +15,21 @@ class KeranjangBelanjaKasir extends Model
         'id_user',
         'id_kategori',
         'id_produk',
+        'variant_id',
+        'customer_id',
         'jumlah_produk',
         'status',
     ];
+
+    public function variant()
+    {
+        return $this->belongsTo(ProductVariant::class, 'variant_id');
+    }
+
+    public function customer()
+    {
+        return $this->belongsTo(Customer::class, 'customer_id');
+    }
 
     public function user()
     {

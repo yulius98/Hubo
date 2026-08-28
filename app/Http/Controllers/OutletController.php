@@ -10,6 +10,7 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\File;
 use Illuminate\Support\Str;
+use Illuminate\Validation\Rule;
 use Inertia\Inertia;
 use Intervention\Image\Drivers\Gd\Driver;
 use Intervention\Image\ImageManager;
@@ -24,6 +25,25 @@ class OutletController extends Controller
         protected TenantService $tenants,
         protected SubscriptionService $subscriptions,
     ) {}
+
+    /**
+     * Generate a globally unique storefront slug from the outlet name.
+     */
+    private function uniqueSlug(string $name, ?int $ignoreId = null): string
+    {
+        $base = Str::slug($name) ?: 'toko';
+        $slug = $base;
+        $counter = 2;
+
+        while (Outlet::query()
+            ->where('slug', $slug)
+            ->when($ignoreId !== null, fn ($query) => $query->where('id', '!=', $ignoreId))
+            ->exists()) {
+            $slug = $base.'-'.$counter++;
+        }
+
+        return $slug;
+    }
 
     /**
      * Display a listing of the resource.
@@ -57,7 +77,14 @@ class OutletController extends Controller
             'alamat_outlet' => 'required|string',
             'kota' => 'required|string|max:255',
             'telp' => 'required|string|max:20',
+            'slug' => ['nullable', 'string', 'max:255', 'regex:/^[a-z0-9-_]+$/', Rule::unique('outlets', 'slug')],
         ]);
+
+        $user = Auth::user();
+        $company = $this->tenants->ensureCompanyForUser($user, $validated['nama_outlet']);
+        $this->subscriptions->assertCanCreate($company, SubscriptionService::RESOURCE_OUTLETS);
+
+        $validated['slug'] = $validated['slug'] ?? $this->uniqueSlug($validated['nama_outlet']);
 
         if ($request->hasFile('gambar')) {
             $file = $request->file('gambar');
@@ -132,7 +159,12 @@ class OutletController extends Controller
             'alamat_outlet' => 'required|string',
             'kota' => 'required|string|max:255',
             'telp' => 'required|string|max:20',
+            'slug' => ['nullable', 'string', 'max:255', 'regex:/^[a-z0-9-_]+$/', Rule::unique('outlets', 'slug')->ignore($outlet->id)],
         ]);
+
+        $validated['slug'] = isset($validated['slug'])
+            ? $validated['slug']
+            : ($outlet->slug ?? $this->uniqueSlug($validated['nama_outlet'], $outlet->id));
 
         if ($request->hasFile('gambar')) {
             // Hapus gambar lama jika ada

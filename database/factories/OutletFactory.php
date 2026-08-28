@@ -19,6 +19,7 @@ class OutletFactory extends Factory
     {
         return [
             'nama_outlet' => fake()->company(),
+            'slug' => fn (array $attributes) => str($attributes['nama_outlet'])->slug().'-'.fake()->unique()->numberBetween(100, 999),
             'alamat_outlet' => fake()->streetAddress(),
             'kota' => fake()->city(),
             'telp' => fake()->phoneNumber(),

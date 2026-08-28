@@ -49,7 +49,7 @@ class ProdukController extends Controller
 
             $kategori = Kategori::whereHas('outlets', fn ($q) => $q->whereIn('outlets.id', $userOutletIds))->get();
 
-            $produk = Produk::with('kategori:id,kategori')
+            $produk = Produk::with('kategori:id,kategori', 'variants')
                 ->whereIn('id_outlet', $userOutletIds)
                 ->paginate(10);
 
@@ -68,7 +68,7 @@ class ProdukController extends Controller
 
         $kategori = Kategori::whereHas('outlets', fn ($q) => $q->where('outlets.id', $outlet->id))->get();
 
-        $produk = Produk::with('kategori:id,kategori')
+        $produk = Produk::with('kategori:id,kategori', 'variants')
             ->where('id_outlet', $outlet->id)
             ->paginate(10);
 
@@ -114,6 +114,13 @@ class ProdukController extends Controller
             'tax' => 'required|string|in:include tax,exclude tax,tanpa pajak',
             'diskon' => 'required|string|in:yes,no',
             'harga_diskon' => 'nullable|numeric|min:0',
+            'sku' => ['nullable', 'string', 'max:100', Rule::unique('produks', 'sku')->where(fn ($q) => $q->whereNotNull('sku')->where('id_outlet', $request->input('id_outlet')))],
+            'min_stok' => 'nullable|integer|min:0',
+            'variants' => 'nullable|array|max:50',
+            'variants.*.nama' => 'required|string|max:255',
+            'variants.*.sku' => ['nullable', 'string', 'max:100'],
+            'variants.*.harga' => 'nullable|numeric|min:0',
+            'variants.*.stok' => 'required|integer|min:0',
         ]);
 
         $validated['harga'] = $this->calculateSellingPrice(
@@ -122,6 +129,8 @@ class ProdukController extends Controller
             $validated['tax'],
             (float) $validated['ppn'],
         );
+
+        $validated['min_stok'] = (int) ($validated['min_stok'] ?? 0);
 
         $outlet = Outlet::findOrFail($validated['id_outlet']);
         $this->authorize('create', [Produk::class, $outlet]);
@@ -159,7 +168,20 @@ class ProdukController extends Controller
             unset($validated['gambar']);
         }
 
-        Produk::create($validated);
+        $variants = $validated['variants'] ?? [];
+        unset($validated['variants']);
+
+        $produk = Produk::create($validated);
+
+        foreach ($variants as $variant) {
+            $produk->variants()->create([
+                'nama' => $variant['nama'],
+                'sku' => $variant['sku'] ?? null,
+                'harga' => $variant['harga'] ?? null,
+                'stok' => (int) $variant['stok'],
+                'is_active' => true,
+            ]);
+        }
 
         return redirect()->back()->with('success', 'Produk berhasil ditambahkan');
     }
@@ -169,7 +191,13 @@ class ProdukController extends Controller
      */
     public function show(Produk $produk)
     {
-        $produk->load(['kategori:id,kategori', 'outlet:id,nama_outlet,alamat_outlet,kota']);
+        $produk->load([
+            'kategori:id,kategori',
+            'outlet:id,nama_outlet,alamat_outlet,kota',
+            'variants',
+        ]);
+
+        $produk->setAttribute('effective_stok', $produk->effectiveStock());
 
         return Inertia::render('produk/detail', [
             'product' => $produk,
@@ -209,6 +237,13 @@ class ProdukController extends Controller
             'tax' => 'required|string|in:include tax,exclude tax,tanpa pajak',
             'diskon' => 'required|string|in:yes,no',
             'harga_diskon' => 'nullable|numeric|min:0',
+            'sku' => ['nullable', 'string', 'max:100', Rule::unique('produks', 'sku')->where(fn ($q) => $q->whereNotNull('sku')->where('id_outlet', $request->input('id_outlet')))->ignore($produk->id)],
+            'min_stok' => 'nullable|integer|min:0',
+            'variants' => 'nullable|array|max:50',
+            'variants.*.nama' => 'required|string|max:255',
+            'variants.*.sku' => ['nullable', 'string', 'max:100'],
+            'variants.*.harga' => 'nullable|numeric|min:0',
+            'variants.*.stok' => 'required|integer|min:0',
         ]);
 
         $validated['harga'] = $this->calculateSellingPrice(
@@ -217,6 +252,8 @@ class ProdukController extends Controller
             $validated['tax'],
             (float) $validated['ppn'],
         );
+
+        $validated['min_stok'] = (int) ($validated['min_stok'] ?? 0);
 
         $this->authorize('update', $produk);
 
@@ -250,6 +287,18 @@ class ProdukController extends Controller
 
         // Update data
         $produk->update($validated);
+
+        $variants = $request->input('variants', []);
+
+        foreach ($variants as $variant) {
+            $produk->variants()->create([
+                'nama' => $variant['nama'],
+                'sku' => $variant['sku'] ?? null,
+                'harga' => $variant['harga'] ?? null,
+                'stok' => (int) $variant['stok'],
+                'is_active' => true,
+            ]);
+        }
 
         return redirect()
             ->back()

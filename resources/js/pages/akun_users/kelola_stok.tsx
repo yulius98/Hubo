@@ -1,7 +1,12 @@
-import { PlusIcon, TrashIcon, XMarkIcon } from '@heroicons/react/24/outline';
+import {
+    ExclamationTriangleIcon,
+    PlusIcon,
+    TrashIcon,
+    XMarkIcon,
+} from '@heroicons/react/24/outline';
 import type { PageProps as InertiaPageProps } from '@inertiajs/core';
 import { Head, router, usePage } from '@inertiajs/react';
-import React, { useCallback, useState } from 'react';
+import React, { useCallback, useMemo, useState } from 'react';
 import AppLayout from '@/layouts/app-layout';
 import { kelola_stok as kelolaStokRoute } from '@/routes';
 import type { BreadcrumbItem } from '@/types';
@@ -18,6 +23,8 @@ interface ProdukStok {
     nama_produk: string;
     harga: number;
     stok: number;
+    min_stok: number;
+    effective_stok?: number;
     kategori?: { id: number; kategori: string } | null;
 }
 
@@ -183,6 +190,18 @@ export default function KelolaStokPage() {
         );
     };
 
+    const lowStockItems = useMemo(
+        () =>
+            produks.filter((item) => {
+                const effective = item.effective_stok ?? item.stok;
+                return (
+                    effective <= 0 ||
+                    (item.min_stok > 0 && effective <= item.min_stok)
+                );
+            }),
+        [produks],
+    );
+
     return (
         <AppLayout breadcrumbs={breadcrumbs}>
             <Head title="Kelola Stok" />
@@ -213,6 +232,49 @@ export default function KelolaStokPage() {
                     <div className="mb-6 rounded-xl border border-amber-200 bg-amber-50 px-5 py-2.5 text-sm text-amber-700 dark:border-amber-800 dark:bg-amber-900/20 dark:text-amber-300">
                         Menampilkan stok dari semua outlet Anda. Pilih outlet di
                         sidebar untuk melihat stok per outlet.
+                    </div>
+                )}
+
+                {/* Card: Peringatan Stok Menipis */}
+                {lowStockItems.length > 0 && (
+                    <div className="mb-6 overflow-hidden rounded-2xl border border-rose-200 bg-rose-50/60 shadow-sm dark:border-rose-800/60 dark:bg-rose-900/20">
+                        <div className="flex flex-wrap items-center justify-between gap-3 border-b border-rose-200 px-5 py-3.5 dark:border-rose-800/60">
+                            <h2 className="flex items-center gap-2 text-base font-semibold text-rose-800 dark:text-rose-200">
+                                <ExclamationTriangleIcon className="h-5 w-5" />
+                                Peringatan Stok Menipis
+                            </h2>
+                            <span className="text-sm text-rose-700 dark:text-rose-300">
+                                {lowStockItems.length} produk perlu
+                                restock
+                            </span>
+                        </div>
+                        <div className="grid gap-3 p-4 sm:grid-cols-2 sm:p-5 lg:grid-cols-3">
+                            {lowStockItems.map((item) => {
+                                const effective =
+                                    item.effective_stok ?? item.stok;
+                                return (
+                                    <div
+                                        key={item.id}
+                                        className="flex items-center gap-3 rounded-xl border border-rose-200 bg-white p-3.5 dark:border-rose-800/60 dark:bg-gray-800"
+                                    >
+                                        <div className="min-w-0 flex-1">
+                                            <p className="truncate text-sm font-medium text-gray-900 dark:text-gray-100">
+                                                {item.nama_produk}
+                                            </p>
+                                            <p className="mt-0.5 text-xs text-gray-500 dark:text-gray-400">
+                                                {item.kategori?.kategori ??
+                                                    'Tanpa kategori'}{' '}
+                                                · Min. stok:{' '}
+                                                <span className="font-semibold">
+                                                    {item.min_stok}
+                                                </span>
+                                            </p>
+                                        </div>
+                                        {stokBadge(effective)}
+                                    </div>
+                                );
+                            })}
+                        </div>
                     </div>
                 )}
 

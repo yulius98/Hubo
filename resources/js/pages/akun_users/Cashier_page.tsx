@@ -2,6 +2,15 @@ import { router } from '@inertiajs/react';
 import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import TopBarKasir from '@/components/TopBarKasir';
 
+interface Variant {
+    id: number;
+    nama: string;
+    sku: string | null;
+    harga: number | null;
+    stok: number;
+    is_active: boolean;
+}
+
 interface Produks {
     id: number;
     id_outlet: number;
@@ -13,6 +22,8 @@ interface Produks {
     diskon: string;
     harga_diskon: number;
     stok: number;
+    effective_stok?: number;
+    variants?: Variant[];
     jumlah?: number;
 }
 
@@ -26,6 +37,19 @@ interface BelanjaItem {
     produk: string;
     price: number;
     quantity: number;
+    customer?: {
+        id: number;
+        name: string;
+        points: number;
+    } | null;
+}
+
+interface Customer {
+    id: number;
+    name: string;
+    phone: string | null;
+    email: string | null;
+    points: number;
 }
 
 interface StrukData {
@@ -47,18 +71,24 @@ interface CashierPageProps {
     outlet: Outlet;
     produks: Produks[];
     keranjang: BelanjaItem[];
+    customers: Customer[];
 }
 
 export default function CashierPage({
     outlet,
     produks,
     keranjang,
+    customers,
 }: Readonly<CashierPageProps>) {
     const [error, setError] = useState<string>('');
     const [stok, setStok] = useState<Produks[]>(() =>
         produks.map((p) => ({ ...p, jumlah: undefined })),
     );
     const [stokBelanja, setStokBelanja] = useState<BelanjaItem[]>(keranjang);
+    const [selectedVariant, setSelectedVariant] = useState<
+        Record<number, number>
+    >({});
+    const [selectedCustomer, setSelectedCustomer] = useState<number | ''>('');
     const [totalStok, setTotalStok] = useState<number>(produks.length);
     const [page, setPage] = useState<number>(1);
     const [limit, setLimit] = useState<number>(5);
@@ -121,6 +151,37 @@ export default function CashierPage({
         }).format(value);
     }, []);
 
+    const selectedVariantOf = useCallback(
+        (item: Produks) => {
+            const vid = selectedVariant[item.id];
+            return item.variants?.find((v) => v.id === vid);
+        },
+        [selectedVariant],
+    );
+
+    const displayPriceOf = useCallback(
+        (item: Produks) => {
+            const variant = selectedVariantOf(item);
+            return variant?.harga ?? item.harga_diskon ?? item.harga;
+        },
+        [selectedVariantOf],
+    );
+
+    const effectiveStockOf = useCallback(
+        (item: Produks) => item.effective_stok ?? item.stok,
+        [],
+    );
+
+    const handleVariantChange = useCallback(
+        (id_produk: number, variantId: number) => {
+            setSelectedVariant((prev) => ({
+                ...prev,
+                [id_produk]: variantId,
+            }));
+        },
+        [],
+    );
+
     const handleJumlahChange = useCallback((id: number, value: string) => {
         if (value === '') {
             setStok((prev) =>
@@ -140,7 +201,12 @@ export default function CashierPage({
     }, []);
 
     const handleAdd = useCallback(
-        (id_kategori: number, id_produk: number, jumlah?: number) => {
+        (
+            id_kategori: number,
+            id_produk: number,
+            jumlah?: number,
+            variantId?: number,
+        ) => {
             if (!jumlah || jumlah < 1) {
                 alert('Masukkan jumlah yang valid');
                 return;
@@ -152,6 +218,7 @@ export default function CashierPage({
                     id_produk,
                     id_kategori,
                     jumlah_produk: jumlah,
+                    ...(variantId ? { variant_id: variantId } : {}),
                 },
                 {
                     preserveScroll: true,
@@ -228,7 +295,10 @@ export default function CashierPage({
 
             router.post(
                 '/cashier/cart/finalize',
-                {},
+                {
+                    customer_id: selectedCustomer === '' ? null : selectedCustomer,
+                    payment_method: metodepembayaran,
+                },
                 {
                     preserveScroll: true,
                     preserveState: true,
@@ -239,7 +309,7 @@ export default function CashierPage({
         } catch {
             setError('Gagal memproses pembayaran');
         }
-    }, [stokBelanja, totalPrice, metodepembayaran, jumlahTunaiNum, kembalian]);
+    }, [stokBelanja, totalPrice, metodepembayaran, jumlahTunaiNum, kembalian, selectedCustomer]);
 
     if (prevOutletId !== outlet.id) {
         setPrevOutletId(outlet.id);
@@ -247,6 +317,8 @@ export default function CashierPage({
         setTotalStok(produks.length);
         setPage(1);
         setStokBelanja(keranjang);
+        setSelectedVariant({});
+        setSelectedCustomer('');
         setMetodePembayaran('');
         setJumlahTunai('');
         setError('');
@@ -406,6 +478,9 @@ export default function CashierPage({
                                                     <th className="px-4 py-3 text-left">
                                                         Nama Produk
                                                     </th>
+                                                    <th className="px-4 py-3 text-left">
+                                                        Varian
+                                                    </th>
                                                     <th className="px-4 py-3 text-center">
                                                         Stok
                                                     </th>
@@ -434,16 +509,65 @@ export default function CashierPage({
                                                                     1}
                                                             </td>
                                                             <td className="px-4 py-3 font-medium">
-                                                                {
-                                                                    item.nama_produk
-                                                                }
+                                                                {item.nama_produk}
+                                                            </td>
+                                                            <td className="px-4 py-3">
+                                                                {item.variants?.length
+                                                                    ? (
+                                                                        <select
+                                                                            value={
+                                                                                selectedVariant[
+                                                                                    item.id
+                                                                                ] ?? ''
+                                                                            }
+                                                                            onChange={(e) =>
+                                                                                handleVariantChange(
+                                                                                    item.id,
+                                                                                    Number(
+                                                                                        e.target
+                                                                                            .value,
+                                                                                    ),
+                                                                                )
+                                                                            }
+                                                                            className="w-full max-w-[140px] rounded border px-2 py-1 text-sm focus:ring-emerald-500"
+                                                                        >
+                                                                            <option
+                                                                                value=""
+                                                                                disabled
+                                                                            >
+                                                                                Pilih varian
+                                                                            </option>
+                                                                            {item.variants.map(
+                                                                                (v) => (
+                                                                                    <option
+                                                                                        key={
+                                                                                            v.id
+                                                                                        }
+                                                                                        value={
+                                                                                            v.id
+                                                                                        }
+                                                                                    >
+                                                                                        {v.nama}
+                                                                                    </option>
+                                                                                ),
+                                                                            )}
+                                                                        </select>
+                                                                    ) : (
+                                                                        <span className="text-xs text-slate-400">
+                                                                            -
+                                                                        </span>
+                                                                    )}
                                                             </td>
                                                             <td className="px-4 py-3 text-center">
-                                                                {item.stok}
+                                                                {effectiveStockOf(
+                                                                    item,
+                                                                )}
                                                             </td>
                                                             <td className="px-4 py-3 text-right">
                                                                 {formatRupiah(
-                                                                    item.harga,
+                                                                    displayPriceOf(
+                                                                        item,
+                                                                    ),
                                                                 )}
                                                             </td>
                                                             <td className="px-4 py-3">
@@ -451,7 +575,9 @@ export default function CashierPage({
                                                                     type="number"
                                                                     min={1}
                                                                     max={
-                                                                        item.stok
+                                                                        effectiveStockOf(
+                                                                            item,
+                                                                        )
                                                                     }
                                                                     value={
                                                                         item.jumlah ??
@@ -477,13 +603,31 @@ export default function CashierPage({
                                                                             item.id_kategori,
                                                                             item.id,
                                                                             item.jumlah,
+                                                                            item
+                                                                                .variants
+                                                                                ?.length
+                                                                                ? selectedVariant[
+                                                                                      item
+                                                                                          .id
+                                                                                  ] ??
+                                                                                      undefined
+                                                                                : undefined,
                                                                         )
                                                                     }
                                                                     className="rounded-lg bg-emerald-600 px-4 py-1.5 text-white hover:bg-emerald-700 disabled:opacity-50"
                                                                     disabled={
                                                                         !item.jumlah ||
                                                                         item.jumlah <
-                                                                            1
+                                                                            1 ||
+                                                                        Boolean(
+                                                                            item
+                                                                                .variants
+                                                                                ?.length &&
+                                                                                !selectedVariant[
+                                                                                    item
+                                                                                        .id
+                                                                                ],
+                                                                        )
                                                                     }
                                                                 >
                                                                     Tambah
@@ -652,6 +796,44 @@ export default function CashierPage({
                                     )}
 
                                     <div className="mt-6 space-y-5 border-t pt-6">
+                                        <div>
+                                            <label
+                                                htmlFor="pelanggan"
+                                                className="mb-1 block text-sm font-medium"
+                                            >
+                                                Pelanggan
+                                            </label>
+                                            <select
+                                                value={selectedCustomer}
+                                                onChange={(e) =>
+                                                    setSelectedCustomer(
+                                                        e.target.value === ''
+                                                            ? ''
+                                                            : Number(
+                                                                  e.target
+                                                                      .value,
+                                                              ),
+                                                    )
+                                                }
+                                                className="w-full rounded border px-3 py-2 focus:ring-emerald-500"
+                                            >
+                                                <option value="">
+                                                    — Tanpa pelanggan (umum) —
+                                                </option>
+                                                {customers.map((c) => (
+                                                    <option
+                                                        key={c.id}
+                                                        value={c.id}
+                                                    >
+                                                        {c.name}
+                                                        {c.points
+                                                            ? ` · ${c.points} poin`
+                                                            : ''}
+                                                    </option>
+                                                ))}
+                                            </select>
+                                        </div>
+
                                         <div className="flex justify-between text-lg font-bold">
                                             <span>Total</span>
                                             <span>

@@ -2,6 +2,8 @@
 
 use App\Http\Controllers\CashierController;
 use App\Http\Controllers\CheckoutController;
+use App\Http\Controllers\CouponController;
+use App\Http\Controllers\CustomerController;
 use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\HomepageController;
 use App\Http\Controllers\InvoiceController;
@@ -10,15 +12,18 @@ use App\Http\Controllers\KategoriController;
 use App\Http\Controllers\KelolaProdukController;
 use App\Http\Controllers\KeranjangBelanjaKasirController;
 use App\Http\Controllers\KeranjangBelanjaUserController;
+use App\Http\Controllers\NotificationController;
 use App\Http\Controllers\OrderController;
 use App\Http\Controllers\OutletController;
 use App\Http\Controllers\PaketController;
 use App\Http\Controllers\ProdukController;
+use App\Http\Controllers\ProdukVariantController;
 use App\Http\Controllers\RequestRoleController;
 use App\Http\Controllers\RequestStaffController;
 use App\Http\Controllers\ReturnController;
 use App\Http\Controllers\ShippingController;
 use App\Http\Controllers\StokController;
+use App\Http\Controllers\StorefrontController;
 use App\Http\Controllers\WebhookController;
 use App\Http\Controllers\WelcomeController;
 use Illuminate\Http\Request;
@@ -67,6 +72,29 @@ Route::middleware(['auth', ValidateSessionWithWorkOS::class])->group(function ()
     Route::post('produk', [ProdukController::class, 'store'])->middleware('role:owner outlet,admin outlet')->name('produk.add');
     Route::put('produk/{produk}', [ProdukController::class, 'update'])->middleware('role:owner outlet,admin outlet')->name('produk.update');
     Route::delete('produk/{produk}', [ProdukController::class, 'destroy'])->middleware('role:owner outlet,admin outlet')->name('produk.delete');
+
+    Route::get('produk/{produk}/variants', [ProdukVariantController::class, 'index'])->middleware('role:owner outlet,admin outlet')->name('produk.variants');
+    Route::post('produk/{produk}/variants', [ProdukVariantController::class, 'store'])->middleware('role:owner outlet,admin outlet')->name('produk.variants.add');
+    Route::put('produk/{produk}/variants/{variant}', [ProdukVariantController::class, 'update'])->middleware('role:owner outlet,admin outlet')->name('produk.variants.update');
+    Route::delete('produk/{produk}/variants/{variant}', [ProdukVariantController::class, 'destroy'])->middleware('role:owner outlet,admin outlet')->name('produk.variants.delete');
+
+    Route::middleware('role:owner outlet,admin outlet')->group(function () {
+        Route::get('customers', [CustomerController::class, 'index'])->name('customers');
+        Route::post('customers', [CustomerController::class, 'store'])->name('customers.add');
+        Route::put('customers/{customer}', [CustomerController::class, 'update'])->name('customers.update');
+        Route::delete('customers/{customer}', [CustomerController::class, 'destroy'])->name('customers.delete');
+
+        Route::get('coupons', [CouponController::class, 'index'])->name('coupons');
+        Route::post('coupons', [CouponController::class, 'store'])->name('coupons.add');
+        Route::put('coupons/{coupon}', [CouponController::class, 'update'])->name('coupons.update');
+        Route::post('coupons/{coupon}/toggle', [CouponController::class, 'toggle'])->name('coupons.toggle');
+        Route::delete('coupons/{coupon}', [CouponController::class, 'destroy'])->name('coupons.delete');
+    });
+
+    Route::get('notifikasi', [NotificationController::class, 'index'])->name('notifications');
+    Route::post('notifikasi/{notification}/read', [NotificationController::class, 'read'])->name('notifications.read');
+    Route::post('notifikasi/read-all', [NotificationController::class, 'readAll'])->name('notifications.read-all');
+    Route::get('notifikasi/unread-count', [NotificationController::class, 'unreadCount'])->name('notifications.unread-count');
 
     Route::get('req_staff', [RequestStaffController::class, 'index'])->name('req_staff');
     Route::post('req_staff', [RequestStaffController::class, 'store'])->name('req_staff.add');
@@ -144,3 +172,6 @@ require __DIR__.'/admin.php';
 
 Route::post('api/webhooks/xendit', [WebhookController::class, 'xendit'])->name('webhooks.xendit');
 Route::post('api/webhooks/midtrans', [WebhookController::class, 'midtrans'])->name('webhooks.midtrans');
+
+// Public storefront (catch-all): must stay last so specific routes win.
+Route::get('{slug}', [StorefrontController::class, 'index'])->where('slug', '[a-z0-9_\-]+')->name('storefront');

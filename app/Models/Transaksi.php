@@ -14,6 +14,7 @@ class Transaksi extends Model
     protected $fillable = [
         'tgl_transaksi',
         'id_user',
+        'customer_id',
         'id_outlet',
         'id_kategori',
         'id_produk',
@@ -35,6 +36,11 @@ class Transaksi extends Model
     public function user()
     {
         return $this->belongsTo(User::class, 'id_user');
+    }
+
+    public function customer()
+    {
+        return $this->belongsTo(Customer::class, 'customer_id');
     }
 
     public function outlet()

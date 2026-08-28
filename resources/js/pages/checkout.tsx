@@ -2,11 +2,13 @@ import { Head, router, useForm, usePage } from '@inertiajs/react';
 import {
     ArrowLeft,
     CreditCard,
+    Info,
     MapPin,
     Package,
     Search,
     ShoppingBag,
     StickyNote,
+    Ticket,
     Truck,
     Wallet,
 } from 'lucide-react';
@@ -32,7 +34,9 @@ interface CheckoutProps {
     total: number;
     active_gateway: string | null;
     shipping_configured: boolean;
-    user: { name: string; email: string };
+    user_points_balance: number;
+    min_redeem_points: number;
+    point_value: number;
 }
 
 const breadcrumbs: BreadcrumbItem[] = [
@@ -78,11 +82,11 @@ function Building2Icon({ className }: { className?: string }) {
 export default function Checkout({
     cartItems,
     subtotal,
-    tax,
-    total,
     active_gateway,
     shipping_configured,
-    user,
+    user_points_balance,
+    min_redeem_points,
+    point_value,
 }: Readonly<CheckoutProps>) {
     const { flash } = usePage().props;
     const { data, setData, post, processing, errors } = useForm({
@@ -91,6 +95,8 @@ export default function Checkout({
         payment_method: 'bank_transfer',
         shipping_cost: 0,
         courier: '',
+        coupon_code: '',
+        points: 0,
     });
 
     const [shippingOptions, setShippingOptions] = useState<Array<{ service: string; description: string; cost: number; etd: string }>>([]);
@@ -155,7 +161,25 @@ export default function Checkout({
     };
 
     const shippingCost = selectedShipping?.cost ?? 0;
-    const orderTotal = total + shippingCost;
+
+    const maxAffordablePoints = Math.max(
+        0,
+        Math.min(user_points_balance, Math.floor(subtotal / point_value)),
+    );
+
+    const pointsRedeemed = Math.max(
+        0,
+        Math.min(
+            Math.floor(data.points / min_redeem_points) * min_redeem_points,
+            maxAffordablePoints,
+        ),
+    );
+    const pointsDiscount = pointsRedeemed * point_value;
+
+    const discountTotal = Math.min(pointsDiscount, subtotal);
+    const taxablePreview = subtotal - discountTotal;
+    const taxPreview = taxablePreview * 0.11;
+    const orderTotal = taxablePreview + taxPreview + shippingCost;
 
     const submit = () => {
         post('/checkout');
@@ -308,6 +332,76 @@ export default function Checkout({
 
                         <div className="rounded-2xl border border-gray-200 bg-white p-5 shadow-sm dark:border-gray-700 dark:bg-gray-800">
                             <h2 className="mb-4 flex items-center gap-2 text-base font-semibold text-gray-800 dark:text-gray-100">
+                                <Ticket className="h-5 w-5 text-indigo-500" />
+                                Voucher &amp; Poin Loyalty
+                            </h2>
+                            <div className="space-y-4">
+                                <div>
+                                    <label className="mb-1 block text-sm font-medium text-gray-700 dark:text-gray-300">
+                                        Kode Voucher
+                                    </label>
+                                    <input
+                                        type="text"
+                                        value={data.coupon_code}
+                                        onChange={(e) =>
+                                            setData('coupon_code', e.target.value.toUpperCase())
+                                        }
+                                        placeholder="Contoh: GRATIS10"
+                                        className="w-full rounded-xl border border-gray-200 bg-white px-3 py-2 text-sm text-gray-900 shadow-sm focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/30 dark:border-gray-700 dark:bg-gray-800 dark:text-gray-100"
+                                    />
+                                    {errors.coupon_code && (
+                                        <p className="mt-1 text-xs text-red-500">{errors.coupon_code}</p>
+                                    )}
+                                </div>
+
+                                <div>
+                                    <label className="mb-1 block text-sm font-medium text-gray-700 dark:text-gray-300">
+                                        Tukar Poin Loyalty
+                                    </label>
+                                    <div className="flex items-center gap-2">
+                                        <div className="relative flex-1">
+                                            <input
+                                                type="number"
+                                                min={0}
+                                                max={maxAffordablePoints}
+                                                step={min_redeem_points}
+                                                value={data.points}
+                                                onChange={(e) =>
+                                                    setData('points', Math.max(0, Number(e.target.value)))
+                                                }
+                                                className="w-full rounded-xl border border-gray-200 bg-white px-3 py-2 text-sm text-gray-900 shadow-sm focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/30 dark:border-gray-700 dark:bg-gray-800 dark:text-gray-100"
+                                            />
+                                            <button
+                                                type="button"
+                                                onClick={() => setData('points', maxAffordablePoints)}
+                                                className="absolute top-1/2 right-2 -translate-y-1/2 rounded-lg bg-indigo-50 px-2 py-1 text-xs font-semibold text-indigo-600 transition hover:bg-indigo-100 dark:bg-indigo-900/40 dark:text-indigo-300"
+                                            >
+                                                Max
+                                            </button>
+                                        </div>
+                                    </div>
+                                    <p className="mt-1 text-xs text-gray-500 dark:text-gray-400">
+                                        Saldo:{' '}
+                                        <span className="font-medium text-gray-700 dark:text-gray-300">
+                                            {user_points_balance.toLocaleString('id-ID')}
+                                        </span>{' '}
+                                        poin · 100 poin ={' '}
+                                        {formatRupiah(point_value * min_redeem_points)}
+                                    </p>
+                                    {errors.points && (
+                                        <p className="mt-1 text-xs text-red-500">{errors.points}</p>
+                                    )}
+                                </div>
+
+                                <div className="flex items-center gap-2 rounded-xl bg-indigo-50/60 px-3 py-2.5 text-xs text-indigo-700 dark:bg-indigo-900/30 dark:text-indigo-300">
+                                    <Info className="h-4 w-4 shrink-0" />
+                                    Kode voucher &amp; poin divalidasi saat pesanan dibuat.
+                                </div>
+                            </div>
+                        </div>
+
+                        <div className="rounded-2xl border border-gray-200 bg-white p-5 shadow-sm dark:border-gray-700 dark:bg-gray-800">
+                            <h2 className="mb-4 flex items-center gap-2 text-base font-semibold text-gray-800 dark:text-gray-100">
                                 <CreditCard className="h-5 w-5 text-indigo-500" />
                                 Metode Pembayaran
                                 {!active_gateway && (
@@ -405,9 +499,21 @@ export default function Checkout({
                                     <span>Subtotal</span>
                                     <span>{formatRupiah(subtotal)}</span>
                                 </div>
+                                {data.coupon_code && (
+                                    <div className="flex justify-between text-sm text-emerald-600 dark:text-emerald-400">
+                                        <span>Kupon ({data.coupon_code})</span>
+                                        <span>Divalidasi sistem</span>
+                                    </div>
+                                )}
+                                {pointsDiscount > 0 && (
+                                    <div className="flex justify-between text-sm text-emerald-600 dark:text-emerald-400">
+                                        <span>Poin ({pointsRedeemed.toLocaleString('id-ID')})</span>
+                                        <span>- {formatRupiah(pointsDiscount)}</span>
+                                    </div>
+                                )}
                                 <div className="flex justify-between text-sm text-gray-600 dark:text-gray-400">
                                     <span>PPN (11%)</span>
-                                    <span>{formatRupiah(tax)}</span>
+                                    <span>{formatRupiah(taxPreview)}</span>
                                 </div>
                                 {shippingCost > 0 && (
                                     <div className="flex justify-between text-sm text-gray-600 dark:text-gray-400">

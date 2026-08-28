@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\Customer;
 use App\Models\KeranjangBelanjaKasir;
 use App\Models\Produk;
 use App\Models\Role;
@@ -42,6 +43,7 @@ class CashierController extends Controller
 
         $produks = Produk::where('id_outlet', $outlet->id)
             ->orderBy('nama_produk')
+            ->with('variants')
             ->withSum(['transaksi as stok' => function ($query) {
                 $query->select(DB::raw("SUM(
                             CASE
@@ -51,19 +53,36 @@ class CashierController extends Controller
                             END
                         )"));
             }], 'jumlah_produk')
-            ->get();
+            ->get()
+            ->map(function (Produk $produk) {
+                $produk->setAttribute('effective_stok', $produk->effectiveStock());
+
+                return $produk;
+            });
+
+        $customers = Customer::query()
+            ->where('outlet_id', $outlet->id)
+            ->orderBy('name')
+            ->get(['id', 'name', 'phone', 'email', 'points']);
 
         $keranjang = KeranjangBelanjaKasir::query()
             ->where('id_user', $user->id)
             ->where('status', 'pending')
-            ->with('produk:id,nama_produk,harga')
+            ->with('produk:id,nama_produk,harga', 'variant:id,produk_id,nama,harga', 'customer:id,name,points')
             ->latest()
             ->get()
             ->map(fn (KeranjangBelanjaKasir $item) => [
                 'id' => $item->id,
-                'produk' => $item->produk?->nama_produk ?? 'Produk dihapus',
-                'price' => (int) ($item->produk?->harga ?? 0),
+                'produk' => $item->variant?->nama
+                    ? ($item->produk?->nama_produk ?? 'Produk dihapus').' - '.$item->variant->nama
+                    : ($item->produk?->nama_produk ?? 'Produk dihapus'),
+                'price' => (int) ($item->variant?->harga ?? $item->produk?->harga ?? 0),
                 'quantity' => (int) $item->jumlah_produk,
+                'customer' => $item->customer ? [
+                    'id' => $item->customer->id,
+                    'name' => $item->customer->name,
+                    'points' => (int) $item->customer->points,
+                ] : null,
             ])
             ->values()
             ->all();
@@ -72,6 +91,7 @@ class CashierController extends Controller
             'outlet' => $outlet,
             'produks' => $produks,
             'keranjang' => $keranjang,
+            'customers' => $customers,
         ]);
     }
 

@@ -50,6 +50,7 @@ class HandleInertiaRequests extends Middleware
         $pendingRequestCount = 0;
         $pendingRequestList = [];
         $cartCount = 0;
+        $unreadNotificationCount = 0;
         $isSuperAdmin = false;
         $tenant = null;
         $plan = null;
@@ -105,6 +106,8 @@ class HandleInertiaRequests extends Middleware
                 ->where('status', 'pending')
                 ->sum('jumlah_produk');
 
+            $unreadNotificationCount = $user->unreadNotifications()->count();
+
             $outlets = $user->outlets()->orderBy('outlets.nama_outlet')->get(['outlets.id', 'outlets.nama_outlet']);
 
             if (in_array('owner outlet', $roleNames)) {
@@ -130,6 +133,7 @@ class HandleInertiaRequests extends Middleware
             'pendingRequestCount' => $pendingRequestCount,
             'pendingRequestList' => $pendingRequestList,
             'cartCount' => $cartCount,
+            'unreadNotificationCount' => $unreadNotificationCount,
             'isSuperAdmin' => $isSuperAdmin,
             'tenant' => $tenant,
             'plan' => $plan,

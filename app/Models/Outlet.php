@@ -17,6 +17,7 @@ class Outlet extends Model
     protected $fillable = [
         'gambar',
         'nama_outlet',
+        'slug',
         'alamat_outlet',
         'kota',
         'telp',
@@ -62,5 +63,15 @@ class Outlet extends Model
     public function requestRoles()
     {
         return $this->hasMany(RequestRole::class, 'id_outlet');
+    }
+
+    public function customers(): HasMany
+    {
+        return $this->hasMany(Customer::class, 'outlet_id');
+    }
+
+    public function coupons(): HasMany
+    {
+        return $this->hasMany(Coupon::class, 'outlet_id');
     }
 }

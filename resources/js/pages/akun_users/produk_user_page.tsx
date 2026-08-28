@@ -1,4 +1,5 @@
 import {
+    CubeIcon,
     EllipsisVerticalIcon,
     PencilSquareIcon,
     PlusIcon,
@@ -14,6 +15,7 @@ import React, {
     useCallback,
     memo,
 } from 'react';
+import VariantManagerModal from '@/components/variant-manager-modal';
 import AppLayout from '@/layouts/app-layout';
 import type { BreadcrumbItem } from '@/types';
 
@@ -37,6 +39,19 @@ interface Produk {
     keterangan?: string;
     diskon?: string;
     harga_diskon?: number;
+    sku?: string | null;
+    stok?: number;
+    min_stok?: number;
+    variants?: Variant[];
+}
+
+interface Variant {
+    id: number;
+    nama: string;
+    sku: string | null;
+    harga: number | null;
+    stok: number;
+    is_active: boolean;
 }
 
 interface PaginatedProduk {
@@ -117,6 +132,7 @@ interface ProdukTableRowProps {
     formatRupiah: (value: number) => string;
     onEdit: (item: Produk) => void;
     onDelete: (id: number) => void;
+    onManageVariants: (item: Produk) => void;
 }
 
 const ProdukTableRow = memo(function ProdukTableRow({
@@ -127,6 +143,7 @@ const ProdukTableRow = memo(function ProdukTableRow({
     formatRupiah,
     onEdit,
     onDelete,
+    onManageVariants,
 }: Readonly<ProdukTableRowProps>) {
     const nomor = (page - 1) * limit + index + 1;
     const [menuOpen, setMenuOpen] = useState(false);
@@ -156,6 +173,10 @@ const ProdukTableRow = memo(function ProdukTableRow({
     const handleDeleteClick = useCallback(
         () => onDelete(item.id!),
         [item.id, onDelete],
+    );
+    const handleVariantsClick = useCallback(
+        () => onManageVariants(item),
+        [item, onManageVariants],
     );
 
     return (
@@ -249,6 +270,18 @@ const ProdukTableRow = memo(function ProdukTableRow({
                                 type="button"
                                 onClick={() => {
                                     closeMenu();
+                                    handleVariantsClick();
+                                }}
+                                className="flex w-full items-center gap-2.5 px-4 py-2.5 text-sm font-medium text-gray-700 transition-colors hover:bg-gray-50 dark:text-gray-300 dark:hover:bg-gray-700"
+                            >
+                                <CubeIcon className="h-4 w-4 text-gray-400" />
+                                Kelola Varian
+                            </button>
+                            <div className="h-px bg-gray-100 dark:bg-gray-700" />
+                            <button
+                                type="button"
+                                onClick={() => {
+                                    closeMenu();
                                     handleDeleteClick();
                                 }}
                                 className="flex w-full items-center gap-2.5 px-4 py-2.5 text-sm font-medium text-red-600 transition-colors hover:bg-red-50 dark:text-red-400 dark:hover:bg-red-900/30"
@@ -269,6 +302,7 @@ interface ProdukCardMobileProps {
     formatRupiah: (value: number) => string;
     onEdit: (item: Produk) => void;
     onDelete: (id: number) => void;
+    onManageVariants: (item: Produk) => void;
 }
 
 const ProdukCardMobile = memo(function ProdukCardMobile({
@@ -276,11 +310,16 @@ const ProdukCardMobile = memo(function ProdukCardMobile({
     formatRupiah,
     onEdit,
     onDelete,
+    onManageVariants,
 }: Readonly<ProdukCardMobileProps>) {
     const handleEditClick = useCallback(() => onEdit(item), [item, onEdit]);
     const handleDeleteClick = useCallback(
         () => onDelete(item.id!),
         [item.id, onDelete],
+    );
+    const handleVariantsClick = useCallback(
+        () => onManageVariants(item),
+        [item, onManageVariants],
     );
 
     return (
@@ -336,6 +375,13 @@ const ProdukCardMobile = memo(function ProdukCardMobile({
                     </button>
                     <button
                         type="button"
+                        onClick={handleVariantsClick}
+                        className="rounded-lg bg-indigo-50 px-3 py-2 text-xs font-medium text-indigo-700 hover:bg-indigo-100 sm:text-sm dark:bg-indigo-900/30 dark:text-indigo-300 dark:hover:bg-indigo-900/50"
+                    >
+                        <CubeIcon className="inline h-4 w-4" /> Varian
+                    </button>
+                    <button
+                        type="button"
                         onClick={handleDeleteClick}
                         className="flex-1 rounded-lg bg-red-50 px-3 py-2 text-xs font-medium text-red-700 hover:bg-red-100 sm:text-sm dark:bg-red-900/30 dark:text-red-300 dark:hover:bg-red-900/50"
                     >
@@ -359,6 +405,7 @@ export default function Produk_User_Page({
     const [page, setPage] = useState(1);
     const [limit] = useState(10);
     const [preview, setPreview] = useState<string | null>(null);
+    const [variantProduct, setVariantProduct] = useState<Produk | null>(null);
     const kategoris = kategori ?? [];
     const fetchProdukRef = useRef<(() => void) | null>(null);
 
@@ -1011,6 +1058,7 @@ export default function Produk_User_Page({
                                         formatRupiah={formatRupiah}
                                         onEdit={handleEdit}
                                         onDelete={handleDelete}
+                                        onManageVariants={setVariantProduct}
                                     />
                                 ))}
                             </div>
@@ -1081,6 +1129,7 @@ export default function Produk_User_Page({
                                                 formatRupiah={formatRupiah}
                                                 onEdit={handleEdit}
                                                 onDelete={handleDelete}
+                                                onManageVariants={setVariantProduct}
                                             />
                                         ))
                                     )}
@@ -1114,6 +1163,13 @@ export default function Produk_User_Page({
                     </div>
                 </div>
             </main>
+
+            {variantProduct && (
+                <VariantManagerModal
+                    product={variantProduct}
+                    onClose={() => setVariantProduct(null)}
+                />
+            )}
         </AppLayout>
     );
 }

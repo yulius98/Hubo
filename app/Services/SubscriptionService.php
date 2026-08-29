@@ -32,15 +32,20 @@ class SubscriptionService
     {
         $now = Carbon::now();
 
-        return Subscription::create([
+        $isTrial = $status === Subscription::STATUS_TRIAL;
+        $trialEndsAt = $isTrial ? $now->copy()->addDays($plan->trial_days) : null;
+
+        $subscription = Subscription::create([
             'company_id' => $company->id,
             'plan_id' => $plan->id,
             'status' => $status,
             'starts_at' => $now,
-            'trial_ends_at' => $status === Subscription::STATUS_TRIAL
-                ? $now->copy()->addDays($plan->trial_days)
-                : null,
+            'trial_ends_at' => $trialEndsAt,
+            'current_period_start' => $now,
+            'current_period_end' => $trialEndsAt ?? $now->copy()->addMonth(),
         ]);
+
+        return $subscription;
     }
 
     /**

@@ -29,6 +29,7 @@ class OrderService
         protected LoyaltyService $loyalty,
         protected NotificationService $notifications,
         protected TenantService $tenants,
+        protected UsageMeteringService $metering,
     ) {}
 
     /**
@@ -187,6 +188,8 @@ class OrderService
             }
 
             $this->notifyLowStockProducts();
+
+            $this->metering->recordOrder($order);
 
             return $order;
         });
@@ -364,6 +367,8 @@ class OrderService
             }
 
             $this->notifyLowStockProducts();
+
+            $this->metering->recordOrder($order);
 
             return $order;
         });

@@ -2,8 +2,10 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\AuditLog;
 use App\Models\Customer;
 use App\Models\Role;
+use App\Services\AuditService;
 use App\Services\TenantService;
 use Illuminate\Foundation\Auth\User;
 use Illuminate\Http\Request;
@@ -14,7 +16,10 @@ use Inertia\Response;
 
 class CustomerController extends Controller
 {
-    public function __construct(protected TenantService $tenants) {}
+    public function __construct(
+        protected TenantService $tenants,
+        protected AuditService $audit,
+    ) {}
 
     /**
      * List customers for the user's accessible outlets.
@@ -76,6 +81,13 @@ class CustomerController extends Controller
             'notes' => $validated['notes'] ?? null,
         ]);
 
+        $this->audit->record(
+            $customer,
+            AuditLog::EVENT_CREATED,
+            "Menambah pelanggan \"{$customer->name}\"",
+            new: ['name' => $customer->name, 'email' => $customer->email],
+        );
+
         return redirect()->back()->with('success', "Pelanggan \"{$customer->name}\" berhasil ditambahkan.");
     }
 
@@ -98,6 +110,13 @@ class CustomerController extends Controller
 
         $customer->update($validated);
 
+        $this->audit->record(
+            $customer,
+            AuditLog::EVENT_UPDATED,
+            "Memperbarui pelanggan \"{$customer->name}\"",
+            new: $validated,
+        );
+
         return redirect()->back()->with('success', 'Pelanggan berhasil diperbarui.');
     }
 
@@ -109,7 +128,14 @@ class CustomerController extends Controller
         $company = $this->tenants->resolveForUser($request->user());
         abort_unless($company !== null && $customer->company_id === $company->id, 403, 'Anda tidak memiliki akses ke pelanggan ini.');
 
+        $name = $customer->name;
         $customer->delete();
+
+        $this->audit->record(
+            $customer,
+            AuditLog::EVENT_DELETED,
+            "Menghapus pelanggan \"{$name}\"",
+        );
 
         return redirect()->back()->with('success', 'Pelanggan berhasil dihapus.');
     }

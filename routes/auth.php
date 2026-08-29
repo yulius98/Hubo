@@ -20,11 +20,11 @@ use Illuminate\Support\Facades\Route;
 // })->middleware(['auth'])->name('logout');
 
 Route::get('login', [WorkOSController::class, 'login'])
-    ->middleware(['guest'])
+    ->middleware(['guest', 'throttle:auth'])
     ->name('login');
 
 Route::get('authenticate', [WorkOSController::class, 'authenticate'])
-    ->middleware(['guest']);
+    ->middleware(['guest', 'throttle:auth']);
 
 Route::post('logout', [WorkOSController::class, 'logout'])
     ->middleware(['auth'])

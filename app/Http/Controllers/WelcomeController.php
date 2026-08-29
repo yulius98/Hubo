@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Models\Kategori;
 use App\Models\Produk;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Cache;
 use Inertia\Inertia;
 
 class WelcomeController extends Controller
@@ -14,8 +15,18 @@ class WelcomeController extends Controller
      */
     public function index()
     {
-        $kategoris = Kategori::all();
-        $products = Produk::all();
+        [$kategoris, $products] = Cache::remember('welcome.catalog', 300, function () {
+            $kategoris = Kategori::query()->orderBy('kategori')->get(['id', 'kategori', 'gambar']);
+
+            $products = Produk::query()
+                ->with('kategori:id,kategori')
+                ->where('stok', '>', 0)
+                ->inRandomOrder()
+                ->take(12)
+                ->get();
+
+            return [$kategoris, $products];
+        });
 
         return Inertia::render('welcome', ['products' => $products, 'kategoris' => $kategoris]);
     }

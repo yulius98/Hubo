@@ -1,5 +1,7 @@
 <?php
 
+use App\Http\Controllers\Admin\AuditLogController;
+use App\Http\Controllers\Admin\BillingController;
 use App\Http\Controllers\Admin\DashboardController;
 use App\Http\Controllers\Admin\ExpenseController;
 use App\Http\Controllers\Admin\PaketController;
@@ -61,4 +63,9 @@ Route::middleware([
     Route::get('reports/export-pdf', [ReportController::class, 'exportPdf'])->name('reports.export-pdf');
 
     Route::get('returns', [ReturnController::class, 'index'])->name('returns');
+
+    Route::get('billing', [BillingController::class, 'index'])->name('billing');
+    Route::post('billing/process', [BillingController::class, 'process'])->name('billing.process');
+
+    Route::get('audit-logs', [AuditLogController::class, 'index'])->name('audit-logs');
 });

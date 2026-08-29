@@ -6,6 +6,7 @@ use App\Models\Kategori;
 use App\Models\Outlet;
 use App\Models\Produk;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Cache;
 use Inertia\Inertia;
 use Inertia\Response;
 
@@ -16,16 +17,24 @@ class StorefrontController extends Controller
      */
     public function index(Request $request, string $slug): Response
     {
-        $outlet = Outlet::query()
-            ->where('slug', $slug)
-            ->with('company')
-            ->firstOrFail();
+        $outlet = Cache::remember(
+            'storefront.outlet.'.md5($slug),
+            300,
+            fn () => Outlet::query()
+                ->where('slug', $slug)
+                ->with('company')
+                ->firstOrFail(),
+        );
 
         $search = trim((string) $request->query('q', ''));
         $kategoriId = (int) $request->query('kategori', 0);
 
-        $kategoris = Kategori::whereHas('outlets', fn ($query) => $query->where('outlets.id', $outlet->id))
-            ->get(['id', 'kategori', 'gambar']);
+        $kategoris = Cache::remember(
+            'storefront.kategoris.'.$outlet->id,
+            300,
+            fn () => Kategori::whereHas('outlets', fn ($query) => $query->where('outlets.id', $outlet->id))
+                ->get(['id', 'kategori', 'gambar']),
+        );
 
         $products = Produk::query()
             ->with('kategori:id,kategori')
@@ -45,7 +54,7 @@ class StorefrontController extends Controller
         $products->getCollection()->transform(fn (Produk $produk) => $produk
             ->setAttribute(
                 'display_price',
-                $produk->variants()->where('is_active', true)->value('harga')
+                $produk->variants->firstWhere('is_active', true)?->harga
                     ?? $produk->harga_diskon
                     ?? (float) $produk->harga
             ));

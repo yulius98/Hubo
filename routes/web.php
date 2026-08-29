@@ -1,11 +1,11 @@
 <?php
 
+use App\Http\Controllers\BillingController;
 use App\Http\Controllers\CashierController;
 use App\Http\Controllers\CheckoutController;
 use App\Http\Controllers\CouponController;
 use App\Http\Controllers\CustomerController;
 use App\Http\Controllers\DashboardController;
-use App\Http\Controllers\HomepageController;
 use App\Http\Controllers\InvoiceController;
 use App\Http\Controllers\KaryawanController;
 use App\Http\Controllers\KategoriController;
@@ -36,7 +36,7 @@ Route::get('produk/{produk}/detail', [ProdukController::class, 'show'])->name('p
 
 Route::middleware(['auth', ValidateSessionWithWorkOS::class])->group(function () {
 
-    Route::get('homapage', [HomepageController::class, 'index'])->name('homepage');
+    Route::get('homepage', [WelcomeController::class, 'index'])->name('homepage');
 
     Route::get('myprofile', function () {
         return Inertia::render('akun_users/profile_user_page');
@@ -47,6 +47,9 @@ Route::middleware(['auth', ValidateSessionWithWorkOS::class])->group(function ()
     Route::middleware('role:owner outlet')->group(function () {
         Route::get('paket', [PaketController::class, 'index'])->name('paket');
         Route::post('paket/ganti', [PaketController::class, 'changePlan'])->name('paket.ganti');
+
+        Route::get('billing', [BillingController::class, 'index'])->name('billing');
+        Route::post('billing/pay', [BillingController::class, 'payInvoice'])->name('billing.pay');
     });
 
     Route::middleware('role:owner outlet,admin outlet')->group(function () {
@@ -116,10 +119,10 @@ Route::middleware(['auth', ValidateSessionWithWorkOS::class])->group(function ()
     Route::post('produk/{produk}/keranjang-belanja', [KeranjangBelanjaUserController::class, 'store'])->name('cart.add');
 
     Route::get('checkout', [CheckoutController::class, 'index'])->name('checkout');
-    Route::post('checkout', [CheckoutController::class, 'store'])->name('checkout.store');
-    Route::post('api/shipping/cost', [ShippingController::class, 'calculateCost'])->name('api.shipping.cost');
+    Route::post('checkout', [CheckoutController::class, 'store'])->middleware('throttle:checkout')->name('checkout.store');
+    Route::post('api/shipping/cost', [ShippingController::class, 'calculateCost'])->middleware('throttle:checkout')->name('api.shipping.cost');
 
-    Route::post('pesanan-saya/checkout', [KeranjangBelanjaUserController::class, 'checkout'])->name('pesanan_saya.checkout');
+    Route::post('pesanan-saya/checkout', [KeranjangBelanjaUserController::class, 'checkout'])->middleware('throttle:checkout')->name('pesanan_saya.checkout');
 
     Route::get('pesanan-saya', [KeranjangBelanjaUserController::class, 'index'])->name('pesanan_saya');
 
@@ -170,8 +173,8 @@ require __DIR__.'/settings.php';
 require __DIR__.'/auth.php';
 require __DIR__.'/admin.php';
 
-Route::post('api/webhooks/xendit', [WebhookController::class, 'xendit'])->name('webhooks.xendit');
-Route::post('api/webhooks/midtrans', [WebhookController::class, 'midtrans'])->name('webhooks.midtrans');
+Route::post('api/webhooks/xendit', [WebhookController::class, 'xendit'])->middleware('throttle:webhooks')->name('webhooks.xendit');
+Route::post('api/webhooks/midtrans', [WebhookController::class, 'midtrans'])->middleware('throttle:webhooks')->name('webhooks.midtrans');
 
 // Public storefront (catch-all): must stay last so specific routes win.
-Route::get('{slug}', [StorefrontController::class, 'index'])->where('slug', '[a-z0-9_\-]+')->name('storefront');
+Route::get('{slug}', [StorefrontController::class, 'index'])->middleware('throttle:storefront')->where('slug', '[a-z0-9_\-]+')->name('storefront');

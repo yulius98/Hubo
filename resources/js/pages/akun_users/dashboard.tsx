@@ -179,7 +179,9 @@ function StatChart({
             <div className="flex h-44 items-end gap-[3px]">
                 {data.map((value, index) => {
                     const height =
-                        max > 0 ? Math.max((value / max) * 100, value > 0 ? 6 : 1.5) : 1.5;
+                        max > 0
+                            ? Math.max((value / max) * 100, value > 0 ? 6 : 1.5)
+                            : 1.5;
 
                     return (
                         <div
@@ -236,7 +238,9 @@ function StatCard({
                         {title}
                     </p>
                     <p className="mt-1 text-2xl font-bold text-gray-900 dark:text-gray-100">
-                        {formatValue ? formatValue(serie.total) : formatNumber(serie.total)}
+                        {formatValue
+                            ? formatValue(serie.total)
+                            : formatNumber(serie.total)}
                     </p>
                 </div>
                 <div
@@ -331,9 +335,7 @@ function PeriodSelector({
     );
 }
 
-function KaryawanSection({
-    karyawan,
-}: Readonly<{ karyawan: Karyawan[] }>) {
+function KaryawanSection({ karyawan }: Readonly<{ karyawan: Karyawan[] }>) {
     return (
         <div className="overflow-hidden rounded-2xl border border-gray-200 bg-white shadow-sm dark:border-gray-700 dark:bg-gray-800">
             <div className="flex flex-wrap items-center justify-between gap-2 border-b border-gray-200 px-5 py-3.5 dark:border-gray-700">
@@ -595,7 +597,8 @@ export default function Dashboard({
                             <Store className="h-7 w-7 text-amber-600 dark:text-amber-400" />
                         </div>
                         <h2 className="text-lg font-semibold text-amber-800 dark:text-amber-200">
-                            {emptyState?.title ?? 'Pilih Outlet Terlebih Dahulu'}
+                            {emptyState?.title ??
+                                'Pilih Outlet Terlebih Dahulu'}
                         </h2>
                         <p className="mt-2 max-w-md text-sm text-amber-700 dark:text-amber-300">
                             {emptyState?.message ??
@@ -628,7 +631,8 @@ export default function Dashboard({
             title: isKasir ? 'Transaksi Saya' : 'Transaksi',
             icon: ClipboardList,
             barClass: 'bg-indigo-500',
-            iconClass: 'bg-indigo-50 text-indigo-600 dark:bg-indigo-900/40 dark:text-indigo-400',
+            iconClass:
+                'bg-indigo-50 text-indigo-600 dark:bg-indigo-900/40 dark:text-indigo-400',
             serie: statistik.transaksi,
         });
 
@@ -638,7 +642,8 @@ export default function Dashboard({
                 title: 'Produk Terjual',
                 icon: PackageCheck,
                 barClass: 'bg-emerald-500',
-                iconClass: 'bg-emerald-50 text-emerald-600 dark:bg-emerald-900/40 dark:text-emerald-400',
+                iconClass:
+                    'bg-emerald-50 text-emerald-600 dark:bg-emerald-900/40 dark:text-emerald-400',
                 serie: statistik.produk_terjual,
             });
         }
@@ -649,7 +654,8 @@ export default function Dashboard({
                 title: 'Omset',
                 icon: Banknote,
                 barClass: 'bg-amber-500',
-                iconClass: 'bg-amber-50 text-amber-600 dark:bg-amber-900/40 dark:text-amber-400',
+                iconClass:
+                    'bg-amber-50 text-amber-600 dark:bg-amber-900/40 dark:text-amber-400',
                 serie: statistik.omset,
                 formatValue: formatRupiah,
             });
@@ -735,7 +741,9 @@ export default function Dashboard({
 
                 {canSeeRecent && (
                     <div className="mt-8">
-                        <RecentTransaksisSection transaksis={recentTransaksis} />
+                        <RecentTransaksisSection
+                            transaksis={recentTransaksis}
+                        />
                     </div>
                 )}
             </main>

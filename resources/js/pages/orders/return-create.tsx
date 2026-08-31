@@ -1,5 +1,11 @@
-import { Head, Link, router, useForm } from '@inertiajs/react';
-import { ArrowLeft, CheckSquare, Package, RotateCcw, Square } from 'lucide-react';
+import { Head, Link, useForm } from '@inertiajs/react';
+import {
+    ArrowLeft,
+    CheckSquare,
+    Package,
+    RotateCcw,
+    Square,
+} from 'lucide-react';
 import AppLayout from '@/layouts/app-layout';
 import type { BreadcrumbItem } from '@/types';
 
@@ -77,7 +83,9 @@ const orderStatusBadgeClass = (status: string): string => {
     }
 };
 
-export default function ReturnCreatePage({ order }: Readonly<ReturnCreateProps>) {
+export default function ReturnCreatePage({
+    order,
+}: Readonly<ReturnCreateProps>) {
     const { data, setData, post, processing, errors } = useForm({
         order_id: order.id,
         reason: '',
@@ -125,7 +133,11 @@ export default function ReturnCreatePage({ order }: Readonly<ReturnCreateProps>)
     const hasSelectedItems = selectedItems.length > 0;
     const selectedTotal = selectedItems.reduce((sum, item) => {
         const original = order.items.find((oi) => oi.id === item.order_item_id);
-        return sum + (original?.subtotal ?? 0) * (item.quantity / (original?.quantity ?? 1));
+        return (
+            sum +
+            (original?.subtotal ?? 0) *
+                (item.quantity / (original?.quantity ?? 1))
+        );
     }, 0);
 
     const submit = () => {
@@ -152,7 +164,8 @@ export default function ReturnCreatePage({ order }: Readonly<ReturnCreateProps>)
                                 Ajukan Retur
                             </h1>
                             <p className="mt-1 text-sm text-gray-500 dark:text-gray-400">
-                                Pilih item yang ingin dikembalikan dan jelaskan alasan retur.
+                                Pilih item yang ingin dikembalikan dan jelaskan
+                                alasan retur.
                             </p>
                         </div>
                     </div>
@@ -212,23 +225,24 @@ export default function ReturnCreatePage({ order }: Readonly<ReturnCreateProps>)
                                 <thead>
                                     <tr className="border-b border-gray-100 dark:border-gray-700">
                                         <th className="w-10 px-4 py-2.5" />
-                                        <th className="whitespace-nowrap px-4 py-2.5 text-xs font-semibold uppercase tracking-wider text-gray-500 dark:text-gray-400">
+                                        <th className="px-4 py-2.5 text-xs font-semibold tracking-wider whitespace-nowrap text-gray-500 uppercase dark:text-gray-400">
                                             Produk
                                         </th>
-                                        <th className="whitespace-nowrap px-4 py-2.5 text-xs font-semibold uppercase tracking-wider text-gray-500 dark:text-gray-400">
+                                        <th className="px-4 py-2.5 text-xs font-semibold tracking-wider whitespace-nowrap text-gray-500 uppercase dark:text-gray-400">
                                             Harga
                                         </th>
-                                        <th className="whitespace-nowrap px-4 py-2.5 text-xs font-semibold uppercase tracking-wider text-gray-500 dark:text-gray-400">
+                                        <th className="px-4 py-2.5 text-xs font-semibold tracking-wider whitespace-nowrap text-gray-500 uppercase dark:text-gray-400">
                                             Jumlah
                                         </th>
-                                        <th className="whitespace-nowrap px-4 py-2.5 text-xs font-semibold uppercase tracking-wider text-gray-500 dark:text-gray-400">
+                                        <th className="px-4 py-2.5 text-xs font-semibold tracking-wider whitespace-nowrap text-gray-500 uppercase dark:text-gray-400">
                                             Subtotal
                                         </th>
                                     </tr>
                                 </thead>
                                 <tbody className="divide-y divide-gray-100 dark:divide-gray-700">
                                     {order.items.map((item, index) => {
-                                        const isSelected = data.items[index].quantity > 0;
+                                        const isSelected =
+                                            data.items[index].quantity > 0;
                                         return (
                                             <tr
                                                 key={item.id}
@@ -237,7 +251,9 @@ export default function ReturnCreatePage({ order }: Readonly<ReturnCreateProps>)
                                                 <td className="px-4 py-3">
                                                     <button
                                                         type="button"
-                                                        onClick={() => toggleItem(index)}
+                                                        onClick={() =>
+                                                            toggleItem(index)
+                                                        }
                                                         className="text-indigo-500 hover:text-indigo-600 dark:text-indigo-400 dark:hover:text-indigo-300"
                                                     >
                                                         {isSelected ? (
@@ -252,8 +268,12 @@ export default function ReturnCreatePage({ order }: Readonly<ReturnCreateProps>)
                                                         <div className="h-10 w-10 shrink-0 overflow-hidden rounded-lg bg-gray-100 dark:bg-gray-700">
                                                             {item.gambar ? (
                                                                 <img
-                                                                    src={item.gambar}
-                                                                    alt={item.product_name}
+                                                                    src={
+                                                                        item.gambar
+                                                                    }
+                                                                    alt={
+                                                                        item.product_name
+                                                                    }
                                                                     className="h-full w-full object-cover"
                                                                 />
                                                             ) : (
@@ -267,18 +287,28 @@ export default function ReturnCreatePage({ order }: Readonly<ReturnCreateProps>)
                                                         </p>
                                                     </div>
                                                 </td>
-                                                <td className="whitespace-nowrap px-4 py-3 text-gray-600 dark:text-gray-400">
+                                                <td className="px-4 py-3 whitespace-nowrap text-gray-600 dark:text-gray-400">
                                                     {formatRupiah(item.price)}
                                                 </td>
-                                                <td className="whitespace-nowrap px-4 py-3">
+                                                <td className="px-4 py-3 whitespace-nowrap">
                                                     {isSelected ? (
                                                         <input
                                                             type="number"
                                                             min={1}
                                                             max={item.quantity}
-                                                            value={data.items[index].quantity}
+                                                            value={
+                                                                data.items[
+                                                                    index
+                                                                ].quantity
+                                                            }
                                                             onChange={(e) =>
-                                                                setItemQuantity(index, parseInt(e.target.value) || 0)
+                                                                setItemQuantity(
+                                                                    index,
+                                                                    parseInt(
+                                                                        e.target
+                                                                            .value,
+                                                                    ) || 0,
+                                                                )
                                                             }
                                                             className="h-9 w-20 rounded-lg border border-gray-200 bg-white px-2 text-center text-sm text-gray-900 shadow-sm focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/30 dark:border-gray-700 dark:bg-gray-800 dark:text-gray-100"
                                                         />
@@ -288,8 +318,10 @@ export default function ReturnCreatePage({ order }: Readonly<ReturnCreateProps>)
                                                         </span>
                                                     )}
                                                 </td>
-                                                <td className="whitespace-nowrap px-4 py-3 font-semibold text-gray-900 dark:text-gray-100">
-                                                    {formatRupiah(item.subtotal)}
+                                                <td className="px-4 py-3 font-semibold whitespace-nowrap text-gray-900 dark:text-gray-100">
+                                                    {formatRupiah(
+                                                        item.subtotal,
+                                                    )}
                                                 </td>
                                             </tr>
                                         );
@@ -298,9 +330,15 @@ export default function ReturnCreatePage({ order }: Readonly<ReturnCreateProps>)
                             </table>
                         </div>
 
-                        {errors[`items.${selectedItems.length - 1}.order_item_id`] && (
+                        {errors[
+                            `items.${selectedItems.length - 1}.order_item_id`
+                        ] && (
                             <p className="mt-2 text-xs text-red-500">
-                                {String(errors[`items.${selectedItems.length - 1}.order_item_id`])}
+                                {String(
+                                    errors[
+                                        `items.${selectedItems.length - 1}.order_item_id`
+                                    ],
+                                )}
                             </p>
                         )}
                     </div>
@@ -326,13 +364,24 @@ export default function ReturnCreatePage({ order }: Readonly<ReturnCreateProps>)
                                             <input
                                                 type="text"
                                                 value={formItem.reason}
-                                                onChange={(e) => setItemReason(index, e.target.value)}
+                                                onChange={(e) =>
+                                                    setItemReason(
+                                                        index,
+                                                        e.target.value,
+                                                    )
+                                                }
                                                 placeholder="Contoh: Produk rusak, tidak sesuai, dll."
                                                 className={inputClass}
                                             />
-                                            {errors[`items.${index}.reason`] && (
+                                            {errors[
+                                                `items.${index}.reason`
+                                            ] && (
                                                 <p className="mt-1 text-xs text-red-500">
-                                                    {String(errors[`items.${index}.reason`])}
+                                                    {String(
+                                                        errors[
+                                                            `items.${index}.reason`
+                                                        ],
+                                                    )}
                                                 </p>
                                             )}
                                         </div>
@@ -355,7 +404,9 @@ export default function ReturnCreatePage({ order }: Readonly<ReturnCreateProps>)
                             className={textareaClass}
                         />
                         {errors.reason && (
-                            <p className="mt-1 text-xs text-red-500">{errors.reason}</p>
+                            <p className="mt-1 text-xs text-red-500">
+                                {errors.reason}
+                            </p>
                         )}
                     </div>
 
@@ -368,7 +419,8 @@ export default function ReturnCreatePage({ order }: Readonly<ReturnCreateProps>)
                                 </p>
                                 {hasSelectedItems && (
                                     <p className="text-lg font-bold text-gray-900 dark:text-gray-100">
-                                        Estimasi Refund: {formatRupiah(selectedTotal)}
+                                        Estimasi Refund:{' '}
+                                        {formatRupiah(selectedTotal)}
                                     </p>
                                 )}
                             </div>

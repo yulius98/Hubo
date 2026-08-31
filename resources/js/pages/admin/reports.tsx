@@ -1,7 +1,6 @@
-import { Head, Link, router, usePage } from '@inertiajs/react';
+import { Head, router, usePage } from '@inertiajs/react';
 import {
     ArrowDownRight,
-    ArrowUpRight,
     BarChart3,
     Download,
     DollarSign,
@@ -28,7 +27,6 @@ interface ReportsProps {
     revenue: number;
     cogs: number;
     totalExpenses: number;
-    grossProfit: number;
     netProfit: number;
     monthlyBreakdown: MonthlyRow[];
     outlets: Outlet[];
@@ -56,13 +54,6 @@ const formatRupiah = (value: number): string =>
         currency: 'IDR',
         minimumFractionDigits: 0,
     }).format(value);
-
-const formatTanggal = (value: string): string =>
-    new Date(value).toLocaleDateString('id-ID', {
-        day: '2-digit',
-        month: 'short',
-        year: 'numeric',
-    });
 
 function MetricCard({
     title,
@@ -102,7 +93,6 @@ export default function Reports({
     revenue,
     cogs,
     totalExpenses,
-    grossProfit,
     netProfit,
     monthlyBreakdown,
     outlets,
@@ -158,14 +148,20 @@ export default function Reports({
                         CSV
                     </a>
                     <a
-                        href={`${exportUrl()}&format=excel`.replace('/reports/export', '/reports/export-excel')}
+                        href={`${exportUrl()}&format=excel`.replace(
+                            '/reports/export',
+                            '/reports/export-excel',
+                        )}
                         className="inline-flex items-center gap-2 rounded-xl px-4 py-2 text-sm font-medium text-gray-600 hover:bg-gray-100 dark:text-gray-300 dark:hover:bg-gray-700/60"
                     >
                         <Download className="h-4 w-4" />
                         Excel
                     </a>
                     <a
-                        href={`${exportUrl()}&format=pdf`.replace('/reports/export', '/reports/export-pdf')}
+                        href={`${exportUrl()}&format=pdf`.replace(
+                            '/reports/export',
+                            '/reports/export-pdf',
+                        )}
                         className="inline-flex items-center gap-2 rounded-xl px-4 py-2 text-sm font-medium text-gray-600 hover:bg-gray-100 dark:text-gray-300 dark:hover:bg-gray-700/60"
                     >
                         <Download className="h-4 w-4" />

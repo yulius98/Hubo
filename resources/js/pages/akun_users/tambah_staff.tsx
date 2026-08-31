@@ -6,6 +6,7 @@ import {
 import { router, Head } from '@inertiajs/react';
 import { useState } from 'react';
 import AppLayout from '@/layouts/app-layout';
+import { remove_staff, terima_staff, tolak_staff } from '@/routes';
 import type { BreadcrumbItem } from '@/types';
 
 interface AddStaff {
@@ -64,7 +65,7 @@ export default function Tambah_Staf({
     // Terima Request
     const handleTerima = async (id: number) => {
         router.post(
-            route('terima_staff', id),
+            terima_staff.url({ id }),
             {},
             { preserveState: true, preserveScroll: true },
         );
@@ -73,7 +74,7 @@ export default function Tambah_Staf({
     // Tolak Request
     const handleTolak = async (id: number) => {
         router.put(
-            route('tolak_staff', id),
+            tolak_staff.url({ id }),
             {},
             { preserveState: true, preserveScroll: true },
         );
@@ -86,7 +87,7 @@ export default function Tambah_Staf({
         }
 
         router.post(
-            route('remove_staff', outlet_id),
+            remove_staff.url({ outlet: outlet_id }),
             { staff_id: id },
             { preserveState: true, preserveScroll: true },
         );

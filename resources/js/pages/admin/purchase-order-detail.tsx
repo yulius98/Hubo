@@ -1,5 +1,5 @@
 import { Head, Link, router } from '@inertiajs/react';
-import { ArrowLeft, CheckCircle, FileText, Truck, StickyNote } from 'lucide-react';
+import { ArrowLeft, CheckCircle, FileText, StickyNote } from 'lucide-react';
 import AppLayout from '@/layouts/app-layout';
 import admin from '@/routes/admin';
 import type { BreadcrumbItem } from '@/types';
@@ -99,7 +99,8 @@ export default function PurchaseOrderDetailPage({
     const handleReceive = () => {
         if (!window.confirm('Konimasi bahwa PO ini telah diterima?')) return;
         router.post(
-            admin.purchaseOrders.receive({ purchaseOrder: purchaseOrder.id }).url,
+            admin.purchaseOrders.receive({ purchaseOrder: purchaseOrder.id })
+                .url,
             {},
             { preserveScroll: true },
         );
@@ -135,7 +136,8 @@ export default function PurchaseOrderDetailPage({
                             </span>
                         </h1>
                         <p className="mt-2 text-sm text-gray-600 dark:text-gray-400">
-                            Dibuat pada {formatTanggal(purchaseOrder.created_at)}
+                            Dibuat pada{' '}
+                            {formatTanggal(purchaseOrder.created_at)}
                             {purchaseOrder.outlet && (
                                 <> · {purchaseOrder.outlet.nama_outlet}</>
                             )}
@@ -173,7 +175,10 @@ export default function PurchaseOrderDetailPage({
                                             Kontak Person
                                         </span>
                                         <span className="text-sm font-medium text-gray-900 dark:text-gray-100">
-                                            {purchaseOrder.supplier.kontak_person}
+                                            {
+                                                purchaseOrder.supplier
+                                                    .kontak_person
+                                            }
                                         </span>
                                     </div>
                                 )}
@@ -311,22 +316,22 @@ export default function PurchaseOrderDetailPage({
                         <table className="w-full text-left text-sm">
                             <thead>
                                 <tr className="border-b border-gray-200 bg-gray-50 dark:border-gray-700 dark:bg-gray-900/50">
-                                    <th className="px-5 py-3 text-xs font-semibold uppercase tracking-wider text-gray-500 dark:text-gray-400">
+                                    <th className="px-5 py-3 text-xs font-semibold tracking-wider text-gray-500 uppercase dark:text-gray-400">
                                         #
                                     </th>
-                                    <th className="px-5 py-3 text-xs font-semibold uppercase tracking-wider text-gray-500 dark:text-gray-400">
+                                    <th className="px-5 py-3 text-xs font-semibold tracking-wider text-gray-500 uppercase dark:text-gray-400">
                                         Produk
                                     </th>
-                                    <th className="px-5 py-3 text-right text-xs font-semibold uppercase tracking-wider text-gray-500 dark:text-gray-400">
+                                    <th className="px-5 py-3 text-right text-xs font-semibold tracking-wider text-gray-500 uppercase dark:text-gray-400">
                                         Stok
                                     </th>
-                                    <th className="px-5 py-3 text-right text-xs font-semibold uppercase tracking-wider text-gray-500 dark:text-gray-400">
+                                    <th className="px-5 py-3 text-right text-xs font-semibold tracking-wider text-gray-500 uppercase dark:text-gray-400">
                                         Jumlah
                                     </th>
-                                    <th className="px-5 py-3 text-right text-xs font-semibold uppercase tracking-wider text-gray-500 dark:text-gray-400">
+                                    <th className="px-5 py-3 text-right text-xs font-semibold tracking-wider text-gray-500 uppercase dark:text-gray-400">
                                         Harga Beli
                                     </th>
-                                    <th className="px-5 py-3 text-right text-xs font-semibold uppercase tracking-wider text-gray-500 dark:text-gray-400">
+                                    <th className="px-5 py-3 text-right text-xs font-semibold tracking-wider text-gray-500 uppercase dark:text-gray-400">
                                         Subtotal
                                     </th>
                                 </tr>
@@ -342,7 +347,8 @@ export default function PurchaseOrderDetailPage({
                                         </td>
                                         <td className="px-5 py-3.5">
                                             <p className="font-medium text-gray-900 dark:text-gray-100">
-                                                {item.produk?.nama_produk ?? '—'}
+                                                {item.produk?.nama_produk ??
+                                                    '—'}
                                             </p>
                                         </td>
                                         <td className="px-5 py-3.5 text-right text-sm text-gray-600 dark:text-gray-300">

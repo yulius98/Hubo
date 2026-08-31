@@ -1,6 +1,14 @@
-import { router, usePage } from '@inertiajs/react';
+import { router, useForm, usePage } from '@inertiajs/react';
 import { motion } from 'framer-motion';
-import { ArrowLeft, ShoppingCart, LogIn, Star, MapPin, Minus, Plus } from 'lucide-react';
+import {
+    ArrowLeft,
+    ShoppingCart,
+    LogIn,
+    Star,
+    MapPin,
+    Minus,
+    Plus,
+} from 'lucide-react';
 import { useMemo, useState } from 'react';
 import LoadingOverlay from '@/components/loading-overlay';
 import StoreNavbar from '@/components/store-navbar';
@@ -8,6 +16,7 @@ import { useAppearance } from '@/hooks/use-appearance';
 import { t } from '@/i18n';
 import { homepage, login } from '@/routes';
 import { add as addToCart } from '@/routes/cart';
+import { store as productReviewsStore } from '@/routes/produk/reviews';
 
 interface Outlet {
     nama_outlet: string;
@@ -32,19 +41,41 @@ interface User {
     name: string;
 }
 
+interface ReviewItem {
+    id: number;
+    rating: number;
+    review: string | null;
+    user: string;
+    created_at: string;
+}
+
+interface MyReview {
+    rating: number;
+    review: string | null;
+}
+
 interface Props {
     product: Product;
     user: User | null;
+    reviews: ReviewItem[];
+    review_count: number;
+    can_review: boolean;
+    my_review: MyReview | null;
 }
 
 export default function ProductDetail(props: Readonly<Props>) {
-    const { product, user } = props;
+    const { product, user, reviews, review_count, can_review, my_review } = props;
     const { locale } = usePage().props as unknown as { locale: string };
     const { resolvedAppearance } = useAppearance();
     const isDark = resolvedAppearance === 'dark';
     const [loading, setLoading] = useState(false);
     const [buyLoading, setBuyLoading] = useState(false);
     const [jumlah, setJumlah] = useState(1);
+    const [hoverRating, setHoverRating] = useState(0);
+    const reviewForm = useForm({
+        rating: my_review?.rating ?? 0,
+        review: my_review?.review ?? '',
+    });
 
     const themeClass = useMemo(
         () =>
@@ -155,6 +186,18 @@ export default function ProductDetail(props: Readonly<Props>) {
             }
         }
         return stars;
+    };
+
+    const handleReviewSubmit = (e: React.FormEvent) => {
+        e.preventDefault();
+
+        if (reviewForm.data.rating < 1) {
+            return;
+        }
+
+        reviewForm.post(productReviewsStore.url({ produk: product.id }), {
+            preserveScroll: true,
+        });
     };
 
     return (
@@ -352,10 +395,7 @@ export default function ProductDetail(props: Readonly<Props>) {
                                         className="text-cyan-400"
                                     />
                                     <span className="text-sm font-semibold text-blue-200">
-                                        {t(
-                                            'produk.shipping_address',
-                                            locale,
-                                        )}
+                                        {t('produk.shipping_address', locale)}
                                     </span>
                                 </div>
                                 <p className="mt-3 text-sm font-medium text-white">
@@ -371,6 +411,151 @@ export default function ProductDetail(props: Readonly<Props>) {
                         )}
                     </motion.div>
                 </div>
+            </div>
+
+            {/* Reviews Section */}
+            <div className="mx-auto w-full max-w-4xl px-6 pb-16">
+                <motion.div
+                    initial={{ opacity: 0, y: 24 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ duration: 0.5, delay: 0.3 }}
+                    className={`rounded-2xl border bg-white/80 p-6 backdrop-blur-xl md:p-8 ${
+                        isDark
+                            ? 'border-blue-700/40 bg-blue-900/60 text-white'
+                            : 'border-blue-200 text-blue-950'
+                    }`}
+                >
+                    <h2 className="text-xl font-bold md:text-2xl">
+                        Ulasan Pembeli ({review_count})
+                    </h2>
+
+                    {can_review && (
+                        <form
+                            onSubmit={handleReviewSubmit}
+                            className="mt-6 space-y-4 rounded-xl border border-blue-400/20 p-4"
+                        >
+                            <h3 className="text-sm font-semibold text-blue-300">
+                                {my_review
+                                    ? 'Perbarui ulasan Anda'
+                                    : 'Tulis ulasan Anda'}
+                            </h3>
+
+                            <div className="flex items-center gap-1">
+                                {[1, 2, 3, 4, 5].map((value) => (
+                                    <button
+                                        key={value}
+                                        type="button"
+                                        onClick={() =>
+                                            reviewForm.setData('rating', value)
+                                        }
+                                        onMouseEnter={() =>
+                                            setHoverRating(value)
+                                        }
+                                        onMouseLeave={() => setHoverRating(0)}
+                                        className="cursor-pointer transition-transform hover:scale-110"
+                                        aria-label={`Rating ${value}`}
+                                    >
+                                        <Star
+                                            size={28}
+                                            className={
+                                                (hoverRating || reviewForm.data.rating) >=
+                                                value
+                                                    ? 'fill-yellow-400 text-yellow-400'
+                                                    : 'text-blue-400/30'
+                                            }
+                                        />
+                                    </button>
+                                ))}
+                                <span className="ml-2 text-sm font-semibold text-blue-300">
+                                    {reviewForm.data.rating > 0
+                                        ? `${reviewForm.data.rating}/5`
+                                        : 'Pilih rating'}
+                                </span>
+                            </div>
+
+                            <textarea
+                                value={reviewForm.data.review}
+                                onChange={(e) =>
+                                    reviewForm.setData('review', e.target.value)
+                                }
+                                rows={3}
+                                maxLength={1000}
+                                placeholder="Bagaimana pendapatmu tentang produk ini?"
+                                className={`w-full rounded-lg border border-blue-400/30 bg-blue-900/10 p-3 text-sm outline-none focus:border-cyan-400 ${
+                                    isDark ? 'text-white' : 'text-blue-950'
+                                }`}
+                            />
+                            {reviewForm.errors.rating && (
+                                <p className="text-xs font-medium text-red-400">
+                                    {reviewForm.errors.rating}
+                                </p>
+                            )}
+                            {reviewForm.errors.review && (
+                                <p className="text-xs font-medium text-red-400">
+                                    {reviewForm.errors.review}
+                                </p>
+                            )}
+
+                            <button
+                                type="submit"
+                                disabled={
+                                    reviewForm.processing ||
+                                    reviewForm.data.rating < 1
+                                }
+                                className="rounded-lg bg-linear-to-r from-cyan-500 to-blue-600 px-5 py-2.5 text-sm font-bold text-white shadow-lg shadow-cyan-500/30 transition hover:from-cyan-400 hover:to-blue-500 disabled:cursor-not-allowed disabled:opacity-40"
+                            >
+                                {my_review ? 'Perbarui Ulasan' : 'Kirim Ulasan'}
+                            </button>
+                        </form>
+                    )}
+
+                    {!user && (
+                        <p className="mt-4 text-sm text-blue-300">
+                            <button
+                                type="button"
+                                onClick={() => router.visit(login())}
+                                className="font-semibold text-cyan-400 underline"
+                            >
+                                Masuk
+                            </button>{' '}
+                            untuk mengirim ulasan.
+                        </p>
+                    )}
+
+                    <div className="mt-6 space-y-4">
+                        {reviews.length === 0 ? (
+                            <p className="text-sm text-blue-300">
+                                Belum ada ulasan untuk produk ini.
+                            </p>
+                        ) : (
+                            reviews.map((review) => (
+                                <div
+                                    key={review.id}
+                                    className="rounded-xl border border-blue-400/15 bg-blue-900/10 p-4"
+                                >
+                                    <div className="flex items-center justify-between gap-3">
+                                        <div className="flex items-center gap-2">
+                                            <span className="text-sm font-semibold text-white">
+                                                {review.user}
+                                            </span>
+                                            <span className="text-xs text-blue-400">
+                                                {review.created_at}
+                                            </span>
+                                        </div>
+                                        <div className="flex items-center gap-0.5">
+                                            {renderStars(review.rating)}
+                                        </div>
+                                    </div>
+                                    {review.review && (
+                                        <p className="mt-2 text-sm leading-relaxed text-blue-300">
+                                            {review.review}
+                                        </p>
+                                    )}
+                                </div>
+                            ))
+                        )}
+                    </div>
+                </motion.div>
             </div>
 
             <LoadingOverlay show={loading || buyLoading} />

@@ -82,7 +82,7 @@ export default function OrderIndex({ orders }: Readonly<OrdersProps>) {
         <AppLayout breadcrumbs={breadcrumbs}>
             <Head title="Riwayat Pesanan" />
 
-            <main className="max-w-5xl mx-auto p-4 sm:p-6 lg:p-8">
+            <main className="mx-auto max-w-5xl p-4 sm:p-6 lg:p-8">
                 <div className="mb-6 sm:mb-8">
                     <button
                         type="button"
@@ -148,12 +148,14 @@ export default function OrderIndex({ orders }: Readonly<OrdersProps>) {
                                     <div className="flex flex-wrap gap-x-4 gap-y-1 text-xs text-gray-600 dark:text-gray-400">
                                         {order.items.slice(0, 3).map((item) => (
                                             <span key={item.id}>
-                                                {item.product_name} (x{item.quantity})
+                                                {item.product_name} (x
+                                                {item.quantity})
                                             </span>
                                         ))}
                                         {order.items.length > 3 && (
                                             <span className="text-gray-400">
-                                                +{order.items.length - 3} lainnya
+                                                +{order.items.length - 3}{' '}
+                                                lainnya
                                             </span>
                                         )}
                                     </div>
@@ -173,7 +175,9 @@ export default function OrderIndex({ orders }: Readonly<OrdersProps>) {
                                 key={index}
                                 type="button"
                                 disabled={!link.url}
-                                onClick={() => link.url && router.visit(link.url)}
+                                onClick={() =>
+                                    link.url && router.visit(link.url)
+                                }
                                 className={`rounded-lg px-3 py-1.5 text-sm font-medium transition ${
                                     link.active
                                         ? 'bg-indigo-600 text-white'

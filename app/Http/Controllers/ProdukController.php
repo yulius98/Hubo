@@ -3,8 +3,10 @@
 namespace App\Http\Controllers;
 
 use App\Models\Kategori;
+use App\Models\Order;
 use App\Models\Outlet;
 use App\Models\Produk;
+use App\Models\Review;
 use App\Services\SubscriptionService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
@@ -195,13 +197,51 @@ class ProdukController extends Controller
             'kategori:id,kategori',
             'outlet:id,nama_outlet,alamat_outlet,kota',
             'variants',
+            'reviews' => fn ($query) => $query->where('is_approved', true)->latest(),
+            'reviews.user:id,name',
         ]);
 
         $produk->setAttribute('effective_stok', $produk->effectiveStock());
 
+        $reviews = $produk->reviews
+            ->map(fn (Review $review) => [
+                'id' => $review->id,
+                'rating' => $review->rating,
+                'review' => $review->review,
+                'user' => $review->user?->name ?? 'Pengguna',
+                'created_at' => $review->created_at?->format('d M Y'),
+            ])
+            ->values()
+            ->all();
+
+        $userId = Auth::id();
+        $myReview = null;
+        $canReview = false;
+
+        if ($userId !== null) {
+            $my = $produk->reviews->firstWhere('user_id', $userId);
+
+            if ($my !== null) {
+                $myReview = [
+                    'rating' => $my->rating,
+                    'review' => $my->review,
+                ];
+            }
+
+            $canReview = Order::query()
+                ->where('user_id', $userId)
+                ->whereHas('items', fn ($query) => $query->where('produk_id', $produk->id))
+                ->whereIn('status', ['paid', 'processing', 'shipped', 'completed'])
+                ->exists();
+        }
+
         return Inertia::render('produk/detail', [
             'product' => $produk,
             'user' => Auth::check() ? Auth::user() : null,
+            'reviews' => $reviews,
+            'review_count' => count($reviews),
+            'can_review' => $canReview,
+            'my_review' => $myReview,
         ]);
     }
 

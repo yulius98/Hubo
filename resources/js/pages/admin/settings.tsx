@@ -46,14 +46,34 @@ type SecretField = {
 };
 
 const XENDIT_FIELDS: SecretField[] = [
-    { key: 'secret_key', label: 'Secret API Key', placeholder: 'xnd_development_...' },
-    { key: 'publishable_key', label: 'Publishable API Key', placeholder: 'xnd_public_development_...' },
-    { key: 'webhook_token', label: 'Webhook Verification Token', placeholder: 'Token dari Dashboard Xendit' },
+    {
+        key: 'secret_key',
+        label: 'Secret API Key',
+        placeholder: 'xnd_development_...',
+    },
+    {
+        key: 'publishable_key',
+        label: 'Publishable API Key',
+        placeholder: 'xnd_public_development_...',
+    },
+    {
+        key: 'webhook_token',
+        label: 'Webhook Verification Token',
+        placeholder: 'Token dari Dashboard Xendit',
+    },
 ];
 
 const MIDTRANS_FIELDS: SecretField[] = [
-    { key: 'server_key', label: 'Server Key', placeholder: 'SB-Mid-server-...' },
-    { key: 'client_key', label: 'Client Key', placeholder: 'SB-Mid-client-...' },
+    {
+        key: 'server_key',
+        label: 'Server Key',
+        placeholder: 'SB-Mid-server-...',
+    },
+    {
+        key: 'client_key',
+        label: 'Client Key',
+        placeholder: 'SB-Mid-client-...',
+    },
 ];
 
 function SecretInput({
@@ -87,7 +107,11 @@ function SecretInput({
                     type={visible ? 'text' : 'password'}
                     value={value}
                     onChange={(e) => onChange(e.target.value)}
-                    placeholder={hasExisting ? 'Kosongkan jika tidak ingin mengubah' : field.placeholder}
+                    placeholder={
+                        hasExisting
+                            ? 'Kosongkan jika tidak ingin mengubah'
+                            : field.placeholder
+                    }
                     className="h-10 w-full rounded-xl border border-gray-200 bg-white py-2 pr-10 pl-9 text-sm text-gray-900 shadow-sm focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/30 dark:border-gray-700 dark:bg-gray-800 dark:text-gray-100"
                 />
                 <button
@@ -95,11 +119,17 @@ function SecretInput({
                     onClick={() => setVisible(!visible)}
                     className="absolute top-1/2 right-3 -translate-y-1/2 text-gray-400 hover:text-gray-600 dark:hover:text-gray-300"
                 >
-                    {visible ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                    {visible ? (
+                        <EyeOff className="h-4 w-4" />
+                    ) : (
+                        <Eye className="h-4 w-4" />
+                    )}
                 </button>
             </div>
             {error && (
-                <p className="text-xs text-red-600 dark:text-red-400">{error}</p>
+                <p className="text-xs text-red-600 dark:text-red-400">
+                    {error}
+                </p>
             )}
         </div>
     );
@@ -116,9 +146,8 @@ export default function AdminSettings({
         active_gateway ?? 'xendit',
     );
 
-    const currentGateway = gateways.find(
-        (g) => g.gateway === selectedGateway,
-    ) ?? gateways[0];
+    const currentGateway =
+        gateways.find((g) => g.gateway === selectedGateway) ?? gateways[0];
 
     const isXendit = selectedGateway === 'xendit';
     const secretFields = isXendit ? XENDIT_FIELDS : MIDTRANS_FIELDS;
@@ -151,9 +180,11 @@ export default function AdminSettings({
         setWebhookUrl(info.config.webhook_url ?? info.default_webhook_url);
         setMerchantId(info.config.merchant_id ?? '');
         const newSecrets: Record<string, string> = {};
-        (gateway === 'xendit' ? XENDIT_FIELDS : MIDTRANS_FIELDS).forEach((f) => {
-            newSecrets[f.key] = '';
-        });
+        (gateway === 'xendit' ? XENDIT_FIELDS : MIDTRANS_FIELDS).forEach(
+            (f) => {
+                newSecrets[f.key] = '';
+            },
+        );
         setSecretValues(newSecrets);
     };
 
@@ -188,14 +219,15 @@ export default function AdminSettings({
         <AppLayout breadcrumbs={breadcrumbs}>
             <Head title="Payment Gateway Settings" />
 
-            <main className="max-w-4xl mx-auto p-4 sm:p-6 lg:p-8">
+            <main className="mx-auto max-w-4xl p-4 sm:p-6 lg:p-8">
                 <div className="mb-6 sm:mb-8">
                     <h1 className="flex flex-wrap items-center gap-3 text-2xl font-bold tracking-tight text-gray-900 sm:text-3xl dark:text-gray-100">
                         <Globe className="h-8 w-8 text-indigo-500" />
                         Payment Gateway
                     </h1>
                     <p className="mt-2 text-sm text-gray-600 dark:text-gray-400">
-                        Konfigurasi payment gateway untuk transaksi online dan langganan tenant
+                        Konfigurasi payment gateway untuk transaksi online dan
+                        langganan tenant
                     </p>
                 </div>
 
@@ -217,17 +249,16 @@ export default function AdminSettings({
                     <label className="text-sm font-medium text-gray-700 dark:text-gray-300">
                         Pilih Payment Gateway
                     </label>
-                    <Select value={selectedGateway} onValueChange={handleGatewayChange}>
+                    <Select
+                        value={selectedGateway}
+                        onValueChange={handleGatewayChange}
+                    >
                         <SelectTrigger className="mt-2 h-10 w-full rounded-xl">
                             <SelectValue />
                         </SelectTrigger>
                         <SelectContent>
-                            <SelectItem value="xendit">
-                                Xendit
-                            </SelectItem>
-                            <SelectItem value="midtrans">
-                                Midtrans
-                            </SelectItem>
+                            <SelectItem value="xendit">Xendit</SelectItem>
+                            <SelectItem value="midtrans">Midtrans</SelectItem>
                         </SelectContent>
                     </Select>
 
@@ -254,7 +285,8 @@ export default function AdminSettings({
 
                 <div className="rounded-2xl border border-gray-200 bg-white p-5 shadow-sm dark:border-gray-700 dark:bg-gray-800">
                     <h2 className="mb-4 text-base font-semibold text-gray-800 dark:text-gray-100">
-                        Konfigurasi {selectedGateway === 'xendit' ? 'Xendit' : 'Midtrans'}
+                        Konfigurasi{' '}
+                        {selectedGateway === 'xendit' ? 'Xendit' : 'Midtrans'}
                     </h2>
 
                     <div className="grid gap-4">
@@ -289,7 +321,9 @@ export default function AdminSettings({
                                 </label>
                                 <input
                                     value={merchantId}
-                                    onChange={(e) => setMerchantId(e.target.value)}
+                                    onChange={(e) =>
+                                        setMerchantId(e.target.value)
+                                    }
                                     className={inputClass}
                                     placeholder="ID merchant Midtrans kamu"
                                 />
@@ -308,8 +342,9 @@ export default function AdminSettings({
                                     }))
                                 }
                                 hasExisting={
-                                    currentGateway.configured_fields[field.key] ??
-                                    false
+                                    currentGateway.configured_fields[
+                                        field.key
+                                    ] ?? false
                                 }
                                 error={typedErrors[`config.${field.key}`]}
                             />
@@ -327,7 +362,11 @@ export default function AdminSettings({
                                 placeholder={currentGateway.default_webhook_url}
                             />
                             <p className="text-xs text-gray-400 dark:text-gray-500">
-                                URL endpoint untuk menerima notifikasi status pembayaran dari {selectedGateway === 'xendit' ? 'Xendit' : 'Midtrans'}
+                                URL endpoint untuk menerima notifikasi status
+                                pembayaran dari{' '}
+                                {selectedGateway === 'xendit'
+                                    ? 'Xendit'
+                                    : 'Midtrans'}
                             </p>
                             {typedErrors['config.webhook_url'] && (
                                 <p className="text-xs text-red-600 dark:text-red-400">
@@ -362,10 +401,21 @@ export default function AdminSettings({
                         Keamanan
                     </h3>
                     <ul className="mt-2 space-y-1 text-xs text-amber-700 dark:text-amber-400">
-                        <li>Semua API key dan token disimpan terenkripsi di database</li>
-                        <li>API key tidak akan pernah ditampilkan setelah disimpan</li>
-                        <li>Hanya super admin yang dapat mengakses halaman ini</li>
-                        <li>Saat mengisi kolom API key, kosongkan jika tidak ingin mengubah nilai yang sudah ada</li>
+                        <li>
+                            Semua API key dan token disimpan terenkripsi di
+                            database
+                        </li>
+                        <li>
+                            API key tidak akan pernah ditampilkan setelah
+                            disimpan
+                        </li>
+                        <li>
+                            Hanya super admin yang dapat mengakses halaman ini
+                        </li>
+                        <li>
+                            Saat mengisi kolom API key, kosongkan jika tidak
+                            ingin mengubah nilai yang sudah ada
+                        </li>
                     </ul>
                 </div>
             </main>

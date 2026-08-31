@@ -2,10 +2,17 @@ import { Head, Link, router, usePage } from '@inertiajs/react';
 import { Pencil, Plus, Search, Store, Trash2 } from 'lucide-react';
 import type { FormEvent } from 'react';
 import { useState } from 'react';
+import {
+    Dialog,
+    DialogContent,
+    DialogDescription,
+    DialogFooter,
+    DialogHeader,
+    DialogTitle,
+} from '@/components/ui/dialog';
 import AppLayout from '@/layouts/app-layout';
 import admin from '@/routes/admin';
 import type { BreadcrumbItem } from '@/types';
-import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 
 interface Supplier {
     id: number;
@@ -49,13 +56,6 @@ const breadcrumbs: BreadcrumbItem[] = [
 const formatNumber = (value: number): string =>
     new Intl.NumberFormat('id-ID').format(value);
 
-const formatWaktu = (value: string): string =>
-    new Date(value).toLocaleString('id-ID', {
-        day: '2-digit',
-        month: 'short',
-        year: 'numeric',
-    });
-
 const emptyForm = {
     nama: '',
     kontak_person: '',
@@ -68,7 +68,10 @@ const emptyForm = {
 const inputClass =
     'h-10 w-full rounded-xl border border-gray-200 bg-white px-3 text-sm text-gray-900 shadow-sm focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/30 dark:border-gray-700 dark:bg-gray-800 dark:text-gray-100';
 
-export default function Suppliers({ suppliers, search }: Readonly<SuppliersProps>) {
+export default function Suppliers({
+    suppliers,
+    search,
+}: Readonly<SuppliersProps>) {
     const { flash } = usePage().props;
 
     const [dialogOpen, setDialogOpen] = useState(false);
@@ -126,17 +129,13 @@ export default function Suppliers({ suppliers, search }: Readonly<SuppliersProps
                 },
             );
         } else {
-            router.post(
-                admin.suppliers.store().url,
-                form,
-                {
-                    onSuccess: () => {
-                        setDialogOpen(false);
-                        setForm(emptyForm);
-                    },
-                    onFinish: () => setProcessing(false),
+            router.post(admin.suppliers.store().url, form, {
+                onSuccess: () => {
+                    setDialogOpen(false);
+                    setForm(emptyForm);
                 },
-            );
+                onFinish: () => setProcessing(false),
+            });
         }
     };
 
@@ -148,16 +147,13 @@ export default function Suppliers({ suppliers, search }: Readonly<SuppliersProps
     const handleDelete = () => {
         if (!deleting) return;
         setProcessing(true);
-        router.delete(
-            admin.suppliers.destroy({ supplier: deleting.id }).url,
-            {
-                onSuccess: () => {
-                    setDeleteDialogOpen(false);
-                    setDeleting(null);
-                },
-                onFinish: () => setProcessing(false),
+        router.delete(admin.suppliers.destroy({ supplier: deleting.id }).url, {
+            onSuccess: () => {
+                setDeleteDialogOpen(false);
+                setDeleting(null);
             },
-        );
+            onFinish: () => setProcessing(false),
+        });
     };
 
     return (
@@ -199,7 +195,10 @@ export default function Suppliers({ suppliers, search }: Readonly<SuppliersProps
                 )}
 
                 <div className="mb-6">
-                    <form onSubmit={handleSearch} className="relative sm:max-w-xs">
+                    <form
+                        onSubmit={handleSearch}
+                        className="relative sm:max-w-xs"
+                    >
                         <Search className="pointer-events-none absolute top-1/2 left-3.5 h-4 w-4 -translate-y-1/2 text-gray-400" />
                         <input
                             type="search"
@@ -227,7 +226,8 @@ export default function Suppliers({ suppliers, search }: Readonly<SuppliersProps
                                 Tidak ada supplier ditemukan
                             </p>
                             <p className="mt-1 text-sm text-gray-400 dark:text-gray-500">
-                                Coba ubah kata kunci pencarian atau tambah supplier baru.
+                                Coba ubah kata kunci pencarian atau tambah
+                                supplier baru.
                             </p>
                         </div>
                     ) : (
@@ -276,18 +276,24 @@ export default function Suppliers({ suppliers, search }: Readonly<SuppliersProps
                                                 <div className="flex items-center gap-2">
                                                     <button
                                                         type="button"
-                                                        onClick={() => openEdit(supplier)}
+                                                        onClick={() =>
+                                                            openEdit(supplier)
+                                                        }
                                                         className="rounded-lg px-3 py-1.5 text-xs font-medium text-indigo-600 hover:bg-indigo-50 dark:text-indigo-400 dark:hover:bg-indigo-900/30"
                                                     >
-                                                        <Pencil className="inline h-3.5 w-3.5 mr-1" />
+                                                        <Pencil className="mr-1 inline h-3.5 w-3.5" />
                                                         Edit
                                                     </button>
                                                     <button
                                                         type="button"
-                                                        onClick={() => confirmDelete(supplier)}
+                                                        onClick={() =>
+                                                            confirmDelete(
+                                                                supplier,
+                                                            )
+                                                        }
                                                         className="rounded-lg px-3 py-1.5 text-xs font-medium text-red-600 hover:bg-red-50 dark:text-red-400 dark:hover:bg-red-900/30"
                                                     >
-                                                        <Trash2 className="inline h-3.5 w-3.5 mr-1" />
+                                                        <Trash2 className="mr-1 inline h-3.5 w-3.5" />
                                                         Hapus
                                                     </button>
                                                 </div>
@@ -350,7 +356,10 @@ export default function Suppliers({ suppliers, search }: Readonly<SuppliersProps
 
                     <form onSubmit={submit} className="space-y-4">
                         <div>
-                            <label htmlFor="nama" className="mb-1 block text-sm font-medium text-gray-700 dark:text-gray-300">
+                            <label
+                                htmlFor="nama"
+                                className="mb-1 block text-sm font-medium text-gray-700 dark:text-gray-300"
+                            >
                                 Nama <span className="text-red-500">*</span>
                             </label>
                             <input
@@ -358,7 +367,9 @@ export default function Suppliers({ suppliers, search }: Readonly<SuppliersProps
                                 type="text"
                                 required
                                 value={form.nama}
-                                onChange={(e) => setForm({ ...form, nama: e.target.value })}
+                                onChange={(e) =>
+                                    setForm({ ...form, nama: e.target.value })
+                                }
                                 className={inputClass}
                                 placeholder="Nama supplier"
                             />
@@ -366,27 +377,43 @@ export default function Suppliers({ suppliers, search }: Readonly<SuppliersProps
 
                         <div className="grid grid-cols-2 gap-4">
                             <div>
-                                <label htmlFor="kontak_person" className="mb-1 block text-sm font-medium text-gray-700 dark:text-gray-300">
+                                <label
+                                    htmlFor="kontak_person"
+                                    className="mb-1 block text-sm font-medium text-gray-700 dark:text-gray-300"
+                                >
                                     Kontak Person
                                 </label>
                                 <input
                                     id="kontak_person"
                                     type="text"
                                     value={form.kontak_person}
-                                    onChange={(e) => setForm({ ...form, kontak_person: e.target.value })}
+                                    onChange={(e) =>
+                                        setForm({
+                                            ...form,
+                                            kontak_person: e.target.value,
+                                        })
+                                    }
                                     className={inputClass}
                                     placeholder="Nama kontak"
                                 />
                             </div>
                             <div>
-                                <label htmlFor="email" className="mb-1 block text-sm font-medium text-gray-700 dark:text-gray-300">
+                                <label
+                                    htmlFor="email"
+                                    className="mb-1 block text-sm font-medium text-gray-700 dark:text-gray-300"
+                                >
                                     Email
                                 </label>
                                 <input
                                     id="email"
                                     type="email"
                                     value={form.email}
-                                    onChange={(e) => setForm({ ...form, email: e.target.value })}
+                                    onChange={(e) =>
+                                        setForm({
+                                            ...form,
+                                            email: e.target.value,
+                                        })
+                                    }
                                     className={inputClass}
                                     placeholder="email@contoh.com"
                                 />
@@ -394,42 +421,63 @@ export default function Suppliers({ suppliers, search }: Readonly<SuppliersProps
                         </div>
 
                         <div>
-                            <label htmlFor="telepon" className="mb-1 block text-sm font-medium text-gray-700 dark:text-gray-300">
+                            <label
+                                htmlFor="telepon"
+                                className="mb-1 block text-sm font-medium text-gray-700 dark:text-gray-300"
+                            >
                                 Telepon
                             </label>
                             <input
                                 id="telepon"
                                 type="text"
                                 value={form.telepon}
-                                onChange={(e) => setForm({ ...form, telepon: e.target.value })}
+                                onChange={(e) =>
+                                    setForm({
+                                        ...form,
+                                        telepon: e.target.value,
+                                    })
+                                }
                                 className={inputClass}
                                 placeholder="08xxxxxxxxxx"
                             />
                         </div>
 
                         <div>
-                            <label htmlFor="alamat" className="mb-1 block text-sm font-medium text-gray-700 dark:text-gray-300">
+                            <label
+                                htmlFor="alamat"
+                                className="mb-1 block text-sm font-medium text-gray-700 dark:text-gray-300"
+                            >
                                 Alamat
                             </label>
                             <textarea
                                 id="alamat"
                                 rows={3}
                                 value={form.alamat}
-                                onChange={(e) => setForm({ ...form, alamat: e.target.value })}
+                                onChange={(e) =>
+                                    setForm({ ...form, alamat: e.target.value })
+                                }
                                 className={`${inputClass} py-2.5`}
                                 placeholder="Alamat lengkap"
                             />
                         </div>
 
                         <div>
-                            <label htmlFor="catatan" className="mb-1 block text-sm font-medium text-gray-700 dark:text-gray-300">
+                            <label
+                                htmlFor="catatan"
+                                className="mb-1 block text-sm font-medium text-gray-700 dark:text-gray-300"
+                            >
                                 Catatan
                             </label>
                             <textarea
                                 id="catatan"
                                 rows={3}
                                 value={form.catatan}
-                                onChange={(e) => setForm({ ...form, catatan: e.target.value })}
+                                onChange={(e) =>
+                                    setForm({
+                                        ...form,
+                                        catatan: e.target.value,
+                                    })
+                                }
                                 className={`${inputClass} py-2.5`}
                                 placeholder="Catatan tambahan"
                             />
@@ -451,8 +499,8 @@ export default function Suppliers({ suppliers, search }: Readonly<SuppliersProps
                                 {processing
                                     ? 'Menyimpan...'
                                     : editing
-                                        ? 'Simpan Perubahan'
-                                        : 'Tambah'}
+                                      ? 'Simpan Perubahan'
+                                      : 'Tambah'}
                             </button>
                         </DialogFooter>
                     </form>

@@ -6,6 +6,7 @@ use App\Models\Outlet;
 use App\Models\Produk;
 use App\Models\Role;
 use App\Models\Transaksi;
+use App\Services\UsageMeteringService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\ValidationException;
@@ -13,6 +14,8 @@ use Inertia\Inertia;
 
 class StokController extends Controller
 {
+    public function __construct(protected UsageMeteringService $metering) {}
+
     /**
      * Display the stock management page.
      */
@@ -96,7 +99,7 @@ class StokController extends Controller
         DB::transaction(function () use ($produk, $validated, $request, $newStok) {
             $produk->update(['stok' => $newStok]);
 
-            Transaksi::create([
+            $transaksi = Transaksi::create([
                 'tgl_transaksi' => now(),
                 'id_user' => $request->user()->id,
                 'id_outlet' => $produk->id_outlet,
@@ -106,6 +109,8 @@ class StokController extends Controller
                 'jumlah_produk' => (int) $validated['jumlah_produk'],
                 'keterangan' => $validated['keterangan'] ?? null,
             ]);
+
+            $this->metering->recordTransaction($transaksi);
         });
 
         return redirect()->back()->with('success', 'Stok berhasil diperbarui');

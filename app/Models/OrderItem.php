@@ -19,6 +19,9 @@ class OrderItem extends Model
         'price',
         'quantity',
         'subtotal',
+        'tax',
+        'tax_rate',
+        'tax_code',
     ];
 
     protected function casts(): array
@@ -27,6 +30,8 @@ class OrderItem extends Model
             'price' => 'decimal:2',
             'quantity' => 'integer',
             'subtotal' => 'decimal:2',
+            'tax' => 'decimal:2',
+            'tax_rate' => 'decimal:2',
         ];
     }
 

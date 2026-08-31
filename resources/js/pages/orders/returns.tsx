@@ -111,25 +111,25 @@ export default function OrderReturns({ returns }: Readonly<ReturnsProps>) {
                             <table className="w-full text-left text-sm">
                                 <thead>
                                     <tr className="border-b border-gray-100 dark:border-gray-700">
-                                        <th className="whitespace-nowrap px-5 py-3 text-xs font-semibold uppercase tracking-wider text-gray-500 dark:text-gray-400">
+                                        <th className="px-5 py-3 text-xs font-semibold tracking-wider whitespace-nowrap text-gray-500 uppercase dark:text-gray-400">
                                             No. Retur
                                         </th>
-                                        <th className="whitespace-nowrap px-5 py-3 text-xs font-semibold uppercase tracking-wider text-gray-500 dark:text-gray-400">
+                                        <th className="px-5 py-3 text-xs font-semibold tracking-wider whitespace-nowrap text-gray-500 uppercase dark:text-gray-400">
                                             No. Pesanan
                                         </th>
-                                        <th className="whitespace-nowrap px-5 py-3 text-xs font-semibold uppercase tracking-wider text-gray-500 dark:text-gray-400">
+                                        <th className="px-5 py-3 text-xs font-semibold tracking-wider whitespace-nowrap text-gray-500 uppercase dark:text-gray-400">
                                             Alasan
                                         </th>
-                                        <th className="whitespace-nowrap px-5 py-3 text-xs font-semibold uppercase tracking-wider text-gray-500 dark:text-gray-400">
+                                        <th className="px-5 py-3 text-xs font-semibold tracking-wider whitespace-nowrap text-gray-500 uppercase dark:text-gray-400">
                                             Jumlah Refund
                                         </th>
-                                        <th className="whitespace-nowrap px-5 py-3 text-xs font-semibold uppercase tracking-wider text-gray-500 dark:text-gray-400">
+                                        <th className="px-5 py-3 text-xs font-semibold tracking-wider whitespace-nowrap text-gray-500 uppercase dark:text-gray-400">
                                             Status
                                         </th>
-                                        <th className="whitespace-nowrap px-5 py-3 text-xs font-semibold uppercase tracking-wider text-gray-500 dark:text-gray-400">
+                                        <th className="px-5 py-3 text-xs font-semibold tracking-wider whitespace-nowrap text-gray-500 uppercase dark:text-gray-400">
                                             Tanggal
                                         </th>
-                                        <th className="whitespace-nowrap px-5 py-3 text-xs font-semibold uppercase tracking-wider text-gray-500 dark:text-gray-400">
+                                        <th className="px-5 py-3 text-xs font-semibold tracking-wider whitespace-nowrap text-gray-500 uppercase dark:text-gray-400">
                                             Aksi
                                         </th>
                                     </tr>
@@ -140,32 +140,38 @@ export default function OrderReturns({ returns }: Readonly<ReturnsProps>) {
                                             key={item.id}
                                             className="transition hover:bg-gray-50/50 dark:hover:bg-gray-700/30"
                                         >
-                                            <td className="whitespace-nowrap px-5 py-3 font-medium text-gray-900 dark:text-gray-100">
+                                            <td className="px-5 py-3 font-medium whitespace-nowrap text-gray-900 dark:text-gray-100">
                                                 {item.return_number}
                                             </td>
-                                            <td className="whitespace-nowrap px-5 py-3 text-gray-600 dark:text-gray-400">
+                                            <td className="px-5 py-3 whitespace-nowrap text-gray-600 dark:text-gray-400">
                                                 {item.order.order_number}
                                             </td>
                                             <td className="max-w-[200px] truncate px-5 py-3 text-gray-600 dark:text-gray-400">
                                                 {item.reason}
                                             </td>
-                                            <td className="whitespace-nowrap px-5 py-3 font-semibold text-gray-900 dark:text-gray-100">
-                                                {formatRupiah(item.refund_amount)}
+                                            <td className="px-5 py-3 font-semibold whitespace-nowrap text-gray-900 dark:text-gray-100">
+                                                {formatRupiah(
+                                                    item.refund_amount,
+                                                )}
                                             </td>
-                                            <td className="whitespace-nowrap px-5 py-3">
+                                            <td className="px-5 py-3 whitespace-nowrap">
                                                 <span
                                                     className={`inline-flex rounded-full px-2.5 py-0.5 text-xs font-semibold ${returnStatusBadgeClass(item.status)}`}
                                                 >
-                                                    {returnStatusLabel(item.status)}
+                                                    {returnStatusLabel(
+                                                        item.status,
+                                                    )}
                                                 </span>
                                             </td>
-                                            <td className="whitespace-nowrap px-5 py-3">
+                                            <td className="px-5 py-3 whitespace-nowrap">
                                                 <div className="flex items-center gap-1.5 text-xs text-gray-500 dark:text-gray-400">
                                                     <Clock className="h-3.5 w-3.5" />
-                                                    {formatTanggal(item.created_at)}
+                                                    {formatTanggal(
+                                                        item.created_at,
+                                                    )}
                                                 </div>
                                             </td>
-                                            <td className="whitespace-nowrap px-5 py-3">
+                                            <td className="px-5 py-3 whitespace-nowrap">
                                                 <Link
                                                     href={`/returns/${item.id}`}
                                                     className="inline-flex items-center gap-1 rounded-lg bg-indigo-50 px-3 py-1.5 text-xs font-medium text-indigo-600 transition hover:bg-indigo-100 dark:bg-indigo-900/30 dark:text-indigo-400 dark:hover:bg-indigo-900/50"

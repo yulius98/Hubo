@@ -49,7 +49,7 @@ class OrderService
             $cartItems = KeranjangBelanjaUser::query()
                 ->where('id_user', $userId)
                 ->where('status', 'pending')
-                ->with('produk:id,id_outlet,nama_produk,harga,harga_diskon,stok', 'variant:id,produk_id,nama,sku,harga,stok')
+                ->with('produk:id,id_outlet,nama_produk,harga,harga_diskon,stok,ppn,tax', 'variant:id,produk_id,nama,sku,harga,stok')
                 ->get();
 
             if ($cartItems->isEmpty()) {
@@ -59,6 +59,7 @@ class OrderService
             }
 
             $subtotal = 0;
+            $totalTax = 0;
             $outletId = null;
             $orderItems = [];
 
@@ -92,6 +93,9 @@ class OrderService
                 $itemSubtotal = $price * $cartItem->jumlah_produk;
                 $subtotal += $itemSubtotal;
 
+                $lineTax = TaxService::lineTax($price, $cartItem->jumlah_produk, (float) $produk->ppn, $produk->tax);
+                $totalTax += $lineTax;
+
                 $orderItems[] = [
                     'produk_id' => $produk->id,
                     'variant_id' => $variant?->id,
@@ -100,6 +104,9 @@ class OrderService
                     'price' => $price,
                     'quantity' => $cartItem->jumlah_produk,
                     'subtotal' => $itemSubtotal,
+                    'tax' => $lineTax,
+                    'tax_rate' => (float) $produk->ppn,
+                    'tax_code' => TaxService::taxCode($produk),
                 ];
             }
 
@@ -126,9 +133,8 @@ class OrderService
             }
 
             $discount = $couponDiscount + $pointsDiscount;
-            $taxable = $subtotal - $discount;
-            $tax = round($taxable * 0.11, 2);
-            $total = $taxable + $tax + $shippingCost;
+            $tax = $this->scaleTaxForDiscount($totalTax, $subtotal, $discount);
+            $total = $subtotal - $discount + $tax + $shippingCost;
 
             $order = Order::create([
                 'order_number' => Order::generateOrderNumber(),
@@ -145,6 +151,7 @@ class OrderService
                 'points_used' => $pointsUsed,
                 'points_discount' => $pointsDiscount,
                 'tax' => $tax,
+                'tax_breakdown' => $this->buildTaxBreakdown($orderItems, $subtotal, $discount),
                 'total' => $total,
                 'payment_method' => $paymentMethod,
                 'courier' => $courier,
@@ -233,7 +240,7 @@ class OrderService
             $cartItems = KeranjangBelanjaKasir::query()
                 ->where('id_user', $userId)
                 ->where('status', 'pending')
-                ->with('produk:id,id_outlet,nama_produk,harga,harga_diskon,stok', 'variant:id,produk_id,nama,sku,harga,stok', 'customer')
+                ->with('produk:id,id_outlet,nama_produk,harga,harga_diskon,stok,ppn,tax', 'variant:id,produk_id,nama,sku,harga,stok', 'customer')
                 ->get();
 
             if ($cartItems->isEmpty()) {
@@ -243,6 +250,7 @@ class OrderService
             }
 
             $subtotal = 0;
+            $totalTax = 0;
             $orderItems = [];
 
             foreach ($cartItems as $cartItem) {
@@ -272,6 +280,9 @@ class OrderService
                 $price = (float) ($variant?->harga ?? $produk->harga_diskon ?? $produk->harga);
                 $subtotal += $price * $cartItem->jumlah_produk;
 
+                $lineTax = TaxService::lineTax($price, $cartItem->jumlah_produk, (float) $produk->ppn, $produk->tax);
+                $totalTax += $lineTax;
+
                 $orderItems[] = [
                     'produk_id' => $produk->id,
                     'variant_id' => $variant?->id,
@@ -282,6 +293,9 @@ class OrderService
                     'price' => $price,
                     'quantity' => $cartItem->jumlah_produk,
                     'subtotal' => $price * $cartItem->jumlah_produk,
+                    'tax' => $lineTax,
+                    'tax_rate' => (float) $produk->ppn,
+                    'tax_code' => (float) $produk->ppn > 0 ? TaxService::taxCode($produk) : null,
                 ];
             }
 
@@ -290,6 +304,16 @@ class OrderService
 
             $selectedCustomerId = $cartItems->firstWhere('customer_id', '!=', null)?->customer_id
                 ?? (isset($customerId) ? $customerId : null);
+
+            if ($selectedCustomerId !== null) {
+                $customer = Customer::query()->find($selectedCustomerId);
+
+                if ($customer === null || $company === null || (int) $customer->company_id !== (int) $company->id) {
+                    throw ValidationException::withMessages([
+                        'customer_id' => 'Pelanggan tidak valid untuk outlet ini.',
+                    ]);
+                }
+            }
 
             $couponDiscount = 0;
             $coupon = null;
@@ -308,9 +332,8 @@ class OrderService
             }
 
             $discount = $couponDiscount + $pointsDiscount;
-            $taxable = $subtotal - $discount;
-            $tax = round($taxable * 0.11, 2);
-            $total = $taxable + $tax;
+            $tax = $this->scaleTaxForDiscount($totalTax, $subtotal, $discount);
+            $total = $subtotal - $discount + $tax;
 
             $order = Order::create([
                 'order_number' => 'CT-'.date('YmdHis').'-'.random_int(100, 999),
@@ -327,6 +350,7 @@ class OrderService
                 'points_used' => $pointsUsed,
                 'points_discount' => $pointsDiscount,
                 'tax' => $tax,
+                'tax_breakdown' => $this->buildTaxBreakdown($orderItems, $subtotal, $discount),
                 'total' => $total,
                 'payment_method' => $paymentMethod,
                 'paid_at' => now(),
@@ -377,6 +401,50 @@ class OrderService
     private function companyOfOutlet(int $outletId): ?Company
     {
         return Outlet::query()->with('company')->find($outletId)?->company;
+    }
+
+    /**
+     * Reduce the total tax proportionally when a discount applies, so the
+     * charged tax never exceeds the tax on the final selling amount.
+     */
+    private function scaleTaxForDiscount(float $totalTax, float $subtotal, float $discount): float
+    {
+        if ($totalTax <= 0 || $subtotal <= 0) {
+            return round($totalTax, 2);
+        }
+
+        $factor = max(0, min(1, ($subtotal - $discount) / $subtotal));
+
+        return round($totalTax * $factor, 2);
+    }
+
+    /**
+     * Build a grouped tax invoice breakdown (by tax code/rate) for the order.
+     *
+     * @param  list<array<string, mixed>>  $orderItems
+     * @return list<array{tax_code: string|null, tax_rate: float, taxable: float, tax: float}>
+     */
+    private function buildTaxBreakdown(array $orderItems, float $subtotal, float $discount): array
+    {
+        $factor = $subtotal > 0 ? max(0, min(1, ($subtotal - $discount) / $subtotal)) : 1;
+
+        return collect($orderItems)
+            ->groupBy(fn (array $item) => (string) ($item['tax_code'] ?? 'NON-PPN'))
+            ->map(function ($group, string $taxCode) use ($factor): array {
+                $taxable = (float) $group->sum('subtotal') * $factor;
+                $tax = (float) $group->sum('tax') * $factor;
+                $rate = (float) $group->first()['tax_rate'];
+
+                return [
+                    'tax_code' => $taxCode === 'NON-PPN' ? null : $taxCode,
+                    'tax_rate' => $rate,
+                    'taxable' => round($taxable, 2),
+                    'tax' => round($tax, 2),
+                ];
+            })
+            ->filter(fn (array $entry) => $entry['tax'] > 0 || $entry['tax_code'] !== null)
+            ->values()
+            ->all();
     }
 
     /**
@@ -441,6 +509,7 @@ class OrderService
             $this->restoreRedeemedPoints($order);
         } elseif ($newStatus === 'expired') {
             $this->restoreStock($order);
+            $this->restoreCouponQuota($order);
             $this->restoreRedeemedPoints($order);
         }
 

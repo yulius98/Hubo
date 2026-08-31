@@ -8,7 +8,13 @@ use Illuminate\Support\Facades\Log;
 
 class ShippingService
 {
-    private const BASE_URL = 'https://api.rajaongkir.com/starter';
+    /**
+     * The base URL of the RajaOngkir API, overridable via config.
+     */
+    private function baseUrl(): string
+    {
+        return rtrim((string) config('services.rajaongkir.base_url', 'https://api.rajaongkir.com/starter'), '/');
+    }
 
     public function isConfigured(): bool
     {
@@ -42,7 +48,7 @@ class ShippingService
         try {
             $response = Http::withHeaders([
                 'key' => $apiKey,
-            ])->post(self::BASE_URL.'/cost', [
+            ])->post($this->baseUrl().'/cost', [
                 'origin' => $originCityId,
                 'destination' => $destinationCityId,
                 'weight' => $weightGram,
@@ -77,7 +83,7 @@ class ShippingService
         }
 
         try {
-            $response = Http::withHeaders(['key' => $apiKey])->get(self::BASE_URL.'/province');
+            $response = Http::withHeaders(['key' => $apiKey])->get($this->baseUrl().'/province');
 
             return $response->json('rajaongkir.results') ?? [];
         } catch (\Exception $e) {
@@ -99,7 +105,7 @@ class ShippingService
         }
 
         try {
-            $response = Http::withHeaders(['key' => $apiKey])->get(self::BASE_URL.'/city', [
+            $response = Http::withHeaders(['key' => $apiKey])->get($this->baseUrl().'/city', [
                 'province' => $provinceId,
             ]);
 

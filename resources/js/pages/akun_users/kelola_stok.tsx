@@ -244,8 +244,7 @@ export default function KelolaStokPage() {
                                 Peringatan Stok Menipis
                             </h2>
                             <span className="text-sm text-rose-700 dark:text-rose-300">
-                                {lowStockItems.length} produk perlu
-                                restock
+                                {lowStockItems.length} produk perlu restock
                             </span>
                         </div>
                         <div className="grid gap-3 p-4 sm:grid-cols-2 sm:p-5 lg:grid-cols-3">

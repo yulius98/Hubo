@@ -187,7 +187,9 @@ const paymentMethodLabel = (method: string): string => {
 };
 
 export default function OrderShow({ order }: Readonly<OrderShowProps>) {
-    const { flash } = usePage().props as { flash?: { success?: string; error?: string; payment_url?: string } };
+    const { flash } = usePage().props as {
+        flash?: { success?: string; error?: string; payment_url?: string };
+    };
     const currentStep = getStepIndex(order.status);
     const isCancelled = ['cancelled', 'expired'].includes(order.status);
 
@@ -195,7 +197,7 @@ export default function OrderShow({ order }: Readonly<OrderShowProps>) {
         <AppLayout breadcrumbs={breadcrumbs}>
             <Head title={`Pesanan ${order.order_number}`} />
 
-            <main className="max-w-4xl mx-auto p-4 sm:p-6 lg:p-8">
+            <main className="mx-auto max-w-4xl p-4 sm:p-6 lg:p-8">
                 <div className="mb-6 sm:mb-8">
                     <button
                         type="button"
@@ -267,15 +269,18 @@ export default function OrderShow({ order }: Readonly<OrderShowProps>) {
                                 const isCompleted = idx < currentStep;
 
                                 return (
-                                    <div key={step.key} className="flex flex-1 items-center">
+                                    <div
+                                        key={step.key}
+                                        className="flex flex-1 items-center"
+                                    >
                                         <div className="flex flex-col items-center">
                                             <div
                                                 className={`flex h-8 w-8 items-center justify-center rounded-full text-xs font-bold transition ${
                                                     isCompleted
                                                         ? 'bg-emerald-500 text-white'
                                                         : isActive
-                                                            ? 'bg-indigo-600 text-white ring-4 ring-indigo-100 dark:ring-indigo-900/50'
-                                                            : 'bg-gray-200 text-gray-500 dark:bg-gray-700 dark:text-gray-400'
+                                                          ? 'bg-indigo-600 text-white ring-4 ring-indigo-100 dark:ring-indigo-900/50'
+                                                          : 'bg-gray-200 text-gray-500 dark:bg-gray-700 dark:text-gray-400'
                                                 }`}
                                             >
                                                 {isCompleted ? (
@@ -319,7 +324,10 @@ export default function OrderShow({ order }: Readonly<OrderShowProps>) {
                             </h2>
                             <div className="divide-y divide-gray-100 dark:divide-gray-700">
                                 {order.items.map((item) => (
-                                    <div key={item.id} className="flex items-start gap-4 py-3 first:pt-0 last:pb-0">
+                                    <div
+                                        key={item.id}
+                                        className="flex items-start gap-4 py-3 first:pt-0 last:pb-0"
+                                    >
                                         <div className="h-16 w-16 shrink-0 overflow-hidden rounded-xl bg-gray-100 dark:bg-gray-700">
                                             {item.gambar ? (
                                                 <img
@@ -338,7 +346,8 @@ export default function OrderShow({ order }: Readonly<OrderShowProps>) {
                                                 {item.product_name}
                                             </p>
                                             <p className="text-xs text-gray-500 dark:text-gray-400">
-                                                {formatRupiah(item.price)} x {item.quantity}
+                                                {formatRupiah(item.price)} x{' '}
+                                                {item.quantity}
                                             </p>
                                         </div>
                                         <p className="text-sm font-semibold text-gray-900 dark:text-gray-100">
@@ -360,26 +369,28 @@ export default function OrderShow({ order }: Readonly<OrderShowProps>) {
                             </div>
                         )}
 
-                        {['shipped', 'completed'].includes(order.status) && (
-                            !order.returns?.some((r) => ['pending', 'approved'].includes(r.status))
-                        ) && (
-                            <div className="rounded-2xl border border-gray-200 bg-white p-5 shadow-sm dark:border-gray-700 dark:bg-gray-800">
-                                <h2 className="mb-2 flex items-center gap-2 text-sm font-semibold text-gray-800 dark:text-gray-100">
-                                    <RotateCcw className="h-5 w-5 text-indigo-500" />
-                                    Retur
-                                </h2>
-                                <p className="mb-3 text-sm text-gray-600 dark:text-gray-400">
-                                    Pesanan ini dapat dikembalikan jika ada masalah dengan produk.
-                                </p>
-                                <Link
-                                    href={`/orders/${order.id}/return-create`}
-                                    className="inline-flex items-center gap-2 rounded-xl border border-gray-200 bg-white px-4 py-2 text-sm font-medium text-gray-700 shadow-sm transition hover:bg-gray-50 dark:border-gray-700 dark:bg-gray-800 dark:text-gray-300 dark:hover:bg-gray-700"
-                                >
-                                    <RotateCcw className="h-4 w-4" />
-                                    Ajukan Retur
-                                </Link>
-                            </div>
-                        )}
+                        {['shipped', 'completed'].includes(order.status) &&
+                            !order.returns?.some((r) =>
+                                ['pending', 'approved'].includes(r.status),
+                            ) && (
+                                <div className="rounded-2xl border border-gray-200 bg-white p-5 shadow-sm dark:border-gray-700 dark:bg-gray-800">
+                                    <h2 className="mb-2 flex items-center gap-2 text-sm font-semibold text-gray-800 dark:text-gray-100">
+                                        <RotateCcw className="h-5 w-5 text-indigo-500" />
+                                        Retur
+                                    </h2>
+                                    <p className="mb-3 text-sm text-gray-600 dark:text-gray-400">
+                                        Pesanan ini dapat dikembalikan jika ada
+                                        masalah dengan produk.
+                                    </p>
+                                    <Link
+                                        href={`/orders/${order.id}/return-create`}
+                                        className="inline-flex items-center gap-2 rounded-xl border border-gray-200 bg-white px-4 py-2 text-sm font-medium text-gray-700 shadow-sm transition hover:bg-gray-50 dark:border-gray-700 dark:bg-gray-800 dark:text-gray-300 dark:hover:bg-gray-700"
+                                    >
+                                        <RotateCcw className="h-4 w-4" />
+                                        Ajukan Retur
+                                    </Link>
+                                </div>
+                            )}
 
                         {order.returns && order.returns.length > 0 && (
                             <div className="rounded-2xl border border-gray-200 bg-white p-5 shadow-sm dark:border-gray-700 dark:bg-gray-800">
@@ -396,16 +407,27 @@ export default function OrderShow({ order }: Readonly<OrderShowProps>) {
                                             <span className="text-sm font-medium text-gray-900 dark:text-gray-100">
                                                 {ret.return_number}
                                             </span>
-                                            <span className={`inline-flex rounded-full px-2.5 py-0.5 text-xs font-semibold ${
-                                                ret.status === 'pending'
-                                                    ? 'bg-amber-100 text-amber-800 dark:bg-amber-900/40 dark:text-amber-300'
-                                                    : ret.status === 'approved'
-                                                        ? 'bg-emerald-100 text-emerald-800 dark:bg-emerald-900/40 dark:text-emerald-300'
-                                                        : ret.status === 'rejected'
+                                            <span
+                                                className={`inline-flex rounded-full px-2.5 py-0.5 text-xs font-semibold ${
+                                                    ret.status === 'pending'
+                                                        ? 'bg-amber-100 text-amber-800 dark:bg-amber-900/40 dark:text-amber-300'
+                                                        : ret.status ===
+                                                            'approved'
+                                                          ? 'bg-emerald-100 text-emerald-800 dark:bg-emerald-900/40 dark:text-emerald-300'
+                                                          : ret.status ===
+                                                              'rejected'
                                                             ? 'bg-red-100 text-red-800 dark:bg-red-900/40 dark:text-red-300'
                                                             : 'bg-blue-100 text-blue-800 dark:bg-blue-900/40 dark:text-blue-300'
-                                            }`}>
-                                                {ret.status === 'pending' ? 'Menunggu' : ret.status === 'approved' ? 'Disetujui' : ret.status === 'rejected' ? 'Ditolak' : 'Selesai'}
+                                                }`}
+                                            >
+                                                {ret.status === 'pending'
+                                                    ? 'Menunggu'
+                                                    : ret.status === 'approved'
+                                                      ? 'Disetujui'
+                                                      : ret.status ===
+                                                          'rejected'
+                                                        ? 'Ditolak'
+                                                        : 'Selesai'}
                                             </span>
                                         </Link>
                                     ))}
@@ -427,13 +449,17 @@ export default function OrderShow({ order }: Readonly<OrderShowProps>) {
                                 {order.shipping_cost > 0 && (
                                     <div className="flex justify-between text-gray-600 dark:text-gray-400">
                                         <span>Ongkir</span>
-                                        <span>{formatRupiah(order.shipping_cost)}</span>
+                                        <span>
+                                            {formatRupiah(order.shipping_cost)}
+                                        </span>
                                     </div>
                                 )}
                                 {order.discount > 0 && (
                                     <div className="flex justify-between text-emerald-600 dark:text-emerald-400">
                                         <span>Diskon</span>
-                                        <span>-{formatRupiah(order.discount)}</span>
+                                        <span>
+                                            -{formatRupiah(order.discount)}
+                                        </span>
                                     </div>
                                 )}
                                 <div className="flex justify-between text-gray-600 dark:text-gray-400">
@@ -457,7 +483,9 @@ export default function OrderShow({ order }: Readonly<OrderShowProps>) {
                                         Metode Pembayaran
                                     </p>
                                     <p className="text-gray-900 dark:text-gray-100">
-                                        {paymentMethodLabel(order.payment_method)}
+                                        {paymentMethodLabel(
+                                            order.payment_method,
+                                        )}
                                     </p>
                                 </div>
                                 <div>
@@ -509,21 +537,31 @@ export default function OrderShow({ order }: Readonly<OrderShowProps>) {
                                 </h2>
                                 <div className="space-y-2 text-sm">
                                     <div>
-                                        <p className="text-xs text-gray-500 dark:text-gray-400">Nomor</p>
+                                        <p className="text-xs text-gray-500 dark:text-gray-400">
+                                            Nomor
+                                        </p>
                                         <p className="font-mono text-gray-900 dark:text-gray-100">
                                             {order.payment.payment_number}
                                         </p>
                                     </div>
                                     <div>
-                                        <p className="text-xs text-gray-500 dark:text-gray-400">Gateway</p>
+                                        <p className="text-xs text-gray-500 dark:text-gray-400">
+                                            Gateway
+                                        </p>
                                         <p className="text-gray-900 dark:text-gray-100">
                                             {order.payment.gateway}
                                         </p>
                                     </div>
                                     <div>
-                                        <p className="text-xs text-gray-500 dark:text-gray-400">Status</p>
-                                        <span className={`inline-flex rounded-full px-2 py-0.5 text-xs font-medium ${paymentStatusBadgeClass(order.payment.status)}`}>
-                                            {paymentStatusLabel(order.payment.status)}
+                                        <p className="text-xs text-gray-500 dark:text-gray-400">
+                                            Status
+                                        </p>
+                                        <span
+                                            className={`inline-flex rounded-full px-2 py-0.5 text-xs font-medium ${paymentStatusBadgeClass(order.payment.status)}`}
+                                        >
+                                            {paymentStatusLabel(
+                                                order.payment.status,
+                                            )}
                                         </span>
                                     </div>
                                     {order.payment.paid_at && (
@@ -532,7 +570,9 @@ export default function OrderShow({ order }: Readonly<OrderShowProps>) {
                                                 Dibayar pada
                                             </p>
                                             <p className="text-gray-900 dark:text-gray-100">
-                                                {formatTanggal(order.payment.paid_at)}
+                                                {formatTanggal(
+                                                    order.payment.paid_at,
+                                                )}
                                             </p>
                                         </div>
                                     )}

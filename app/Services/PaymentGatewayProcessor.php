@@ -66,10 +66,7 @@ class PaymentGatewayProcessor
             throw new \RuntimeException('Xendit secret key tidak dikonfigurasi.');
         }
 
-        $mode = $config['mode'] ?? 'sandbox';
-        $baseUrl = $mode === 'production'
-            ? 'https://api.xendit.co'
-            : 'https://api.xendit.co';
+        $baseUrl = rtrim((string) ($config['base_url'] ?? config('services.xendit.base_url', 'https://api.xendit.co')), '/');
 
         $webhookUrl = $config['webhook_url'] ?? $this->gateways->defaultWebhookUrl('xendit');
 
@@ -117,8 +114,8 @@ class PaymentGatewayProcessor
 
         $mode = $config['mode'] ?? 'sandbox';
         $baseUrl = $mode === 'production'
-            ? 'https://app.midtrans.com/api/v2'
-            : 'https://app.sandbox.midtrans.com/api/v2';
+            ? (string) config('services.midtrans.production_base_url', 'https://app.midtrans.com/api/v2')
+            : (string) config('services.midtrans.sandbox_base_url', 'https://app.sandbox.midtrans.com/api/v2');
 
         $response = Http::withBasicAuth($serverKey, '')
             ->post("{$baseUrl}/payment-links", [

@@ -45,6 +45,8 @@ class ReturnController extends Controller
 
     public function show(OrderReturn $return): Response
     {
+        abort_if($return->order->user_id !== auth()->id(), 403);
+
         $return->load([
             'order',
             'items.orderItem',

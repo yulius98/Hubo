@@ -24,7 +24,7 @@ class RequestStaffController extends Controller
             abort(403, 'Unauthorized.');
         }
 
-        $outlet = Outlet::with('owner')->get();
+        $outlet = Outlet::with('owner:id,name,email')->orderBy('nama_outlet')->get();
         $jmlOutlet = $outlet->count();
         $statusreq = RequestRole::with([
             'owner:id,name',
@@ -90,17 +90,22 @@ class RequestStaffController extends Controller
         $kasirRoleId = Role::where('role', 'kasir')->value('id');
 
         $validated = $request->validate([
-            'user_id' => 'required|numeric',
-            'owner_id' => 'required|numeric',
             'role_id' => ['required', 'numeric', Rule::in([$adminRoleId, $kasirRoleId])],
             'outlet_id' => 'required|numeric',
-            'status' => 'required|string',
+            'owner_id' => 'required|numeric',
         ]);
 
         $roleId = (int) $validated['role_id'];
 
         $outlet = Outlet::with('owner')->find($validated['outlet_id']);
-        $actualOwner = $outlet?->owner->first();
+
+        if ($outlet === null) {
+            throw ValidationException::withMessages([
+                'outlet_id' => 'Outlet yang dipilih tidak valid.',
+            ]);
+        }
+
+        $actualOwner = $outlet->owner->first();
 
         if (! $actualOwner || (int) $actualOwner->id !== (int) $validated['owner_id']) {
             throw ValidationException::withMessages([
@@ -162,7 +167,13 @@ class RequestStaffController extends Controller
             ]);
         }
 
-        RequestRole::create($validated);
+        RequestRole::create([
+            'user_id' => $user->id,
+            'owner_id' => (int) $actualOwner->id,
+            'role_id' => $roleId,
+            'outlet_id' => (int) $outlet->id,
+            'status' => 'pending',
+        ]);
 
         return redirect()->back()->with('success', 'Request berhasil dikirim');
 

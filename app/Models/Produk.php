@@ -94,4 +94,26 @@ class Produk extends Model
     {
         return $this->hasMany(KeranjangBelanjaKasir::class, 'id_produk');
     }
+
+    public function reviews(): HasMany
+    {
+        return $this->hasMany(Review::class);
+    }
+
+    public function approvedReviews(): HasMany
+    {
+        return $this->reviews()->where('is_approved', true);
+    }
+
+    /**
+     * Recompute the aggregate rating stored on the produk row from reviews.
+     */
+    public function recalculateRating(): void
+    {
+        $average = $this->reviews()->where('is_approved', true)->avg('rating');
+
+        $this->forceFill([
+            'rating' => $average !== null ? round((float) $average, 2) : 0,
+        ])->save();
+    }
 }

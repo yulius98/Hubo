@@ -1,13 +1,5 @@
-import { Head, Link, router, usePage } from '@inertiajs/react';
-import {
-    ArrowLeft,
-    Building2,
-    CheckCircle,
-    CreditCard,
-    Download,
-    FileText,
-    Printer,
-} from 'lucide-react';
+import { Head, router, usePage } from '@inertiajs/react';
+import { ArrowLeft, CheckCircle, FileText, Printer } from 'lucide-react';
 import AppLayout from '@/layouts/app-layout';
 import type { BreadcrumbItem } from '@/types';
 
@@ -17,6 +9,16 @@ interface InvoiceItem {
     price: number;
     quantity: number;
     subtotal: number;
+    tax: number;
+    tax_rate: number;
+    tax_code: string | null;
+}
+
+interface TaxBreakdownEntry {
+    tax_code: string | null;
+    tax_rate: number;
+    taxable: number;
+    tax: number;
 }
 
 interface InvoicePayment {
@@ -36,6 +38,7 @@ interface InvoiceOrder {
     shipping_cost: number;
     discount: number;
     tax: number;
+    tax_breakdown: TaxBreakdownEntry[];
     total: number;
     payment_method: string;
     shipping_address: string;
@@ -128,7 +131,7 @@ export default function InvoicePage({ order }: Readonly<InvoiceProps>) {
                     </div>
                 )}
 
-                <div className="rounded-2xl border border-gray-200 bg-white p-6 shadow-sm dark:border-gray-700 dark:bg-gray-800 sm:p-8">
+                <div className="rounded-2xl border border-gray-200 bg-white p-6 shadow-sm sm:p-8 dark:border-gray-700 dark:bg-gray-800">
                     <div className="mb-8 flex flex-col items-start justify-between gap-4 sm:flex-row sm:items-center">
                         <div>
                             <h1 className="flex items-center gap-2 text-xl font-bold text-gray-900 dark:text-gray-100">
@@ -151,7 +154,7 @@ export default function InvoicePage({ order }: Readonly<InvoiceProps>) {
 
                     <div className="mb-8 grid grid-cols-1 gap-6 sm:grid-cols-2">
                         <div>
-                            <h2 className="mb-1 text-xs font-semibold uppercase tracking-wider text-gray-500 dark:text-gray-400">
+                            <h2 className="mb-1 text-xs font-semibold tracking-wider text-gray-500 uppercase dark:text-gray-400">
                                 Tagih Kepada
                             </h2>
                             <p className="text-sm font-medium text-gray-900 dark:text-gray-100">
@@ -165,21 +168,29 @@ export default function InvoicePage({ order }: Readonly<InvoiceProps>) {
                             </p>
                         </div>
                         <div>
-                            <h2 className="mb-1 text-xs font-semibold uppercase tracking-wider text-gray-500 dark:text-gray-400">
+                            <h2 className="mb-1 text-xs font-semibold tracking-wider text-gray-500 uppercase dark:text-gray-400">
                                 Rincian Pembayaran
                             </h2>
                             <p className="text-sm text-gray-600 dark:text-gray-400">
-                                <span className="font-medium text-gray-900 dark:text-gray-100">Metode: </span>
+                                <span className="font-medium text-gray-900 dark:text-gray-100">
+                                    Metode:{' '}
+                                </span>
                                 {paymentMethodLabel(order.payment_method)}
                             </p>
                             {order.payment && (
                                 <>
                                     <p className="text-sm text-gray-600 dark:text-gray-400">
-                                        <span className="font-medium text-gray-900 dark:text-gray-100">Nomor Ref: </span>
-                                        <span className="font-mono">{order.payment.payment_number}</span>
+                                        <span className="font-medium text-gray-900 dark:text-gray-100">
+                                            Nomor Ref:{' '}
+                                        </span>
+                                        <span className="font-mono">
+                                            {order.payment.payment_number}
+                                        </span>
                                     </p>
                                     <p className="text-sm text-gray-600 dark:text-gray-400">
-                                        <span className="font-medium text-gray-900 dark:text-gray-100">Status: </span>
+                                        <span className="font-medium text-gray-900 dark:text-gray-100">
+                                            Status:{' '}
+                                        </span>
                                         <span className="inline-flex items-center gap-1 text-emerald-600 dark:text-emerald-400">
                                             <CheckCircle className="h-3.5 w-3.5" />
                                             Dibayar
@@ -187,8 +198,12 @@ export default function InvoicePage({ order }: Readonly<InvoiceProps>) {
                                     </p>
                                     {order.payment.paid_at && (
                                         <p className="text-sm text-gray-600 dark:text-gray-400">
-                                            <span className="font-medium text-gray-900 dark:text-gray-100">Tanggal Bayar: </span>
-                                            {formatTanggal(order.payment.paid_at)}
+                                            <span className="font-medium text-gray-900 dark:text-gray-100">
+                                                Tanggal Bayar:{' '}
+                                            </span>
+                                            {formatTanggal(
+                                                order.payment.paid_at,
+                                            )}
                                         </p>
                                     )}
                                 </>
@@ -200,16 +215,16 @@ export default function InvoicePage({ order }: Readonly<InvoiceProps>) {
                         <table className="w-full">
                             <thead>
                                 <tr className="bg-gray-50 dark:bg-gray-800/50">
-                                    <th className="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wider text-gray-500 dark:text-gray-400">
+                                    <th className="px-4 py-3 text-left text-xs font-semibold tracking-wider text-gray-500 uppercase dark:text-gray-400">
                                         Item
                                     </th>
-                                    <th className="px-4 py-3 text-center text-xs font-semibold uppercase tracking-wider text-gray-500 dark:text-gray-400">
+                                    <th className="px-4 py-3 text-center text-xs font-semibold tracking-wider text-gray-500 uppercase dark:text-gray-400">
                                         Qty
                                     </th>
-                                    <th className="px-4 py-3 text-right text-xs font-semibold uppercase tracking-wider text-gray-500 dark:text-gray-400">
+                                    <th className="px-4 py-3 text-right text-xs font-semibold tracking-wider text-gray-500 uppercase dark:text-gray-400">
                                         Harga
                                     </th>
-                                    <th className="px-4 py-3 text-right text-xs font-semibold uppercase tracking-wider text-gray-500 dark:text-gray-400">
+                                    <th className="px-4 py-3 text-right text-xs font-semibold tracking-wider text-gray-500 uppercase dark:text-gray-400">
                                         Subtotal
                                     </th>
                                 </tr>
@@ -244,7 +259,9 @@ export default function InvoicePage({ order }: Readonly<InvoiceProps>) {
                             {order.shipping_cost > 0 && (
                                 <div className="flex justify-between text-sm text-gray-600 dark:text-gray-400">
                                     <span>Ongkir</span>
-                                    <span>{formatRupiah(order.shipping_cost)}</span>
+                                    <span>
+                                        {formatRupiah(order.shipping_cost)}
+                                    </span>
                                 </div>
                             )}
                             {order.discount > 0 && (
@@ -253,8 +270,42 @@ export default function InvoicePage({ order }: Readonly<InvoiceProps>) {
                                     <span>-{formatRupiah(order.discount)}</span>
                                 </div>
                             )}
+                            {order.tax_breakdown.length > 0 && (
+                                <div className="rounded-xl border border-gray-200 bg-gray-50 p-4 dark:border-gray-700 dark:bg-gray-800/50">
+                                    <h3 className="mb-2 text-xs font-semibold tracking-wider text-gray-500 uppercase dark:text-gray-400">
+                                        Faktur Pajak / Rincian PPN
+                                    </h3>
+                                    <div className="space-y-1.5">
+                                        {order.tax_breakdown.map((entry) => (
+                                            <div
+                                                key={
+                                                    entry.tax_code ?? 'NON-PPN'
+                                                }
+                                                className="flex justify-between text-sm text-gray-600 dark:text-gray-400"
+                                            >
+                                                <span>
+                                                    {entry.tax_code ??
+                                                        'Non-PPN'}
+                                                    {entry.tax_rate > 0
+                                                        ? ` (${entry.tax_rate}%)`
+                                                        : ''}
+                                                </span>
+                                                <span>
+                                                    DPP{' '}
+                                                    {formatRupiah(
+                                                        entry.taxable,
+                                                    )}{' '}
+                                                    = PPN{' '}
+                                                    {formatRupiah(entry.tax)}
+                                                </span>
+                                            </div>
+                                        ))}
+                                    </div>
+                                </div>
+                            )}
+
                             <div className="flex justify-between text-sm text-gray-600 dark:text-gray-400">
-                                <span>PPN (11%)</span>
+                                <span>PPN</span>
                                 <span>{formatRupiah(order.tax)}</span>
                             </div>
                             <div className="flex justify-between border-t border-gray-200 pt-2 text-lg font-bold text-gray-900 dark:border-gray-700 dark:text-gray-100">
@@ -266,16 +317,22 @@ export default function InvoicePage({ order }: Readonly<InvoiceProps>) {
 
                     {order.notes && (
                         <div className="mt-6 rounded-xl border border-gray-200 bg-gray-50 p-4 dark:border-gray-700 dark:bg-gray-800/50">
-                            <h3 className="mb-1 text-xs font-semibold uppercase tracking-wider text-gray-500 dark:text-gray-400">
+                            <h3 className="mb-1 text-xs font-semibold tracking-wider text-gray-500 uppercase dark:text-gray-400">
                                 Catatan
                             </h3>
-                            <p className="text-sm text-gray-600 dark:text-gray-400">{order.notes}</p>
+                            <p className="text-sm text-gray-600 dark:text-gray-400">
+                                {order.notes}
+                            </p>
                         </div>
                     )}
 
                     <div className="mt-8 text-center text-xs text-gray-400 dark:text-gray-500">
-                        <p>Invoice ini dibuat secara otomatis oleh sistem Hubo.</p>
-                        <p className="mt-1">Terima kasih atas pembelian Anda!</p>
+                        <p>
+                            Invoice ini dibuat secara otomatis oleh sistem Hubo.
+                        </p>
+                        <p className="mt-1">
+                            Terima kasih atas pembelian Anda!
+                        </p>
                     </div>
                 </div>
             </main>

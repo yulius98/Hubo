@@ -52,11 +52,36 @@ const formatRupiah = (value: number): string =>
     }).format(value);
 
 const PAYMENT_METHODS = [
-    { value: 'bank_transfer', label: 'Transfer Bank', icon: Building2Icon, desc: 'BCA, BRI, Mandiri, BNI' },
-    { value: 'ewallet', label: 'E-Wallet', icon: Wallet, desc: 'GoPay, OVO, DANA, ShopeePay' },
-    { value: 'va', label: 'Virtual Account', icon: CreditCard, desc: 'VA BCA, BRI, Mandiri' },
-    { value: 'card', label: 'Kartu Kredit/Debit', icon: CreditCard, desc: 'Visa, Mastercard, JCB' },
-    { value: 'cod', label: 'Bayar di Tempat', icon: Truck, desc: 'Cash On Delivery' },
+    {
+        value: 'bank_transfer',
+        label: 'Transfer Bank',
+        icon: Building2Icon,
+        desc: 'BCA, BRI, Mandiri, BNI',
+    },
+    {
+        value: 'ewallet',
+        label: 'E-Wallet',
+        icon: Wallet,
+        desc: 'GoPay, OVO, DANA, ShopeePay',
+    },
+    {
+        value: 'va',
+        label: 'Virtual Account',
+        icon: CreditCard,
+        desc: 'VA BCA, BRI, Mandiri',
+    },
+    {
+        value: 'card',
+        label: 'Kartu Kredit/Debit',
+        icon: CreditCard,
+        desc: 'Visa, Mastercard, JCB',
+    },
+    {
+        value: 'cod',
+        label: 'Bayar di Tempat',
+        icon: Truck,
+        desc: 'Cash On Delivery',
+    },
 ] as const;
 
 const COURIERS = [
@@ -67,13 +92,25 @@ const COURIERS = [
 
 function Building2Icon({ className }: { className?: string }) {
     return (
-        <svg className={className} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+        <svg
+            className={className}
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            strokeWidth="2"
+            strokeLinecap="round"
+            strokeLinejoin="round"
+        >
             <rect x="4" y="2" width="16" height="20" rx="2" ry="2" />
             <path d="M9 22v-4h6v4" />
-            <path d="M8 6h.01" /><path d="M16 6h.01" />
-            <path d="M12 6h.01" /><path d="M12 10h.01" />
-            <path d="M12 14h.01" /><path d="M16 10h.01" />
-            <path d="M16 14h.01" /><path d="M8 10h.01" />
+            <path d="M8 6h.01" />
+            <path d="M16 6h.01" />
+            <path d="M12 6h.01" />
+            <path d="M12 10h.01" />
+            <path d="M12 14h.01" />
+            <path d="M16 10h.01" />
+            <path d="M16 14h.01" />
+            <path d="M8 10h.01" />
             <path d="M8 14h.01" />
         </svg>
     );
@@ -88,21 +125,39 @@ export default function Checkout({
     min_redeem_points,
     point_value,
 }: Readonly<CheckoutProps>) {
-    const { flash } = usePage().props;
+    const { flash, shipping } = usePage().props as unknown as {
+        flash: { success?: string; error?: string };
+        shipping?: { unitWeightGram?: number; defaultDestinationCityId?: string };
+    };
+    const unitWeightGram = shipping?.unitWeightGram ?? 500;
+    const defaultDestinationCityId =
+        shipping?.defaultDestinationCityId ?? '152';
     const { data, setData, post, processing, errors } = useForm({
         shipping_address: '',
         notes: '',
         payment_method: 'bank_transfer',
         shipping_cost: 0,
         courier: '',
+        shipping_courier_code: '',
+        shipping_destination_city_id: '',
         coupon_code: '',
         points: 0,
     });
 
-    const [shippingOptions, setShippingOptions] = useState<Array<{ service: string; description: string; cost: number; etd: string }>>([]);
+    const [shippingOptions, setShippingOptions] = useState<
+        Array<{
+            service: string;
+            description: string;
+            cost: number;
+            etd: string;
+        }>
+    >([]);
     const [shippingLoading, setShippingLoading] = useState(false);
     const [shippingError, setShippingError] = useState('');
-    const [selectedShipping, setSelectedShipping] = useState<{ service: string; cost: number } | null>(null);
+    const [selectedShipping, setSelectedShipping] = useState<{
+        service: string;
+        cost: number;
+    } | null>(null);
 
     const fetchShippingCost = async () => {
         if (!data.courier) {
@@ -115,8 +170,14 @@ export default function Checkout({
         setShippingOptions([]);
         setSelectedShipping(null);
 
+        setData('shipping_courier_code', data.courier);
+        setData('shipping_destination_city_id', defaultDestinationCityId);
+
         try {
-            const totalWeight = cartItems.reduce((sum, item) => sum + item.jumlah * 500, 0);
+            const totalWeight = cartItems.reduce(
+                (sum, item) => sum + item.jumlah * unitWeightGram,
+                0,
+            );
             const response = await fetch('/api/shipping/cost', {
                 method: 'POST',
                 headers: {
@@ -127,7 +188,9 @@ export default function Checkout({
                     ),
                 },
                 body: JSON.stringify({
-                    destination_city_id: '152',
+                    destination_city_id:
+                        data.shipping_destination_city_id ||
+                        defaultDestinationCityId,
                     weight: totalWeight,
                     courier: data.courier,
                 }),
@@ -139,12 +202,18 @@ export default function Checkout({
                 setShippingError(result.error || 'Gagal menghitung ongkir.');
             } else {
                 setShippingOptions(
-                    (result.costs || []).map((c: { service: string; description: string; cost: Array<{ value: number; etd: string }> }) => ({
-                        service: c.service,
-                        description: c.description,
-                        cost: c.cost[0]?.value ?? 0,
-                        etd: c.cost[0]?.etd ?? '-',
-                    })),
+                    (result.costs || []).map(
+                        (c: {
+                            service: string;
+                            description: string;
+                            cost: Array<{ value: number; etd: string }>;
+                        }) => ({
+                            service: c.service,
+                            description: c.description,
+                            cost: c.cost[0]?.value ?? 0,
+                            etd: c.cost[0]?.etd ?? '-',
+                        }),
+                    ),
                 );
             }
         } catch {
@@ -192,7 +261,7 @@ export default function Checkout({
         <AppLayout breadcrumbs={breadcrumbs}>
             <Head title="Checkout" />
 
-            <main className="max-w-6xl mx-auto p-4 sm:p-6 lg:p-8">
+            <main className="mx-auto max-w-6xl p-4 sm:p-6 lg:p-8">
                 <div className="mb-6 sm:mb-8">
                     <button
                         type="button"
@@ -223,13 +292,17 @@ export default function Checkout({
                             </h2>
                             <textarea
                                 value={data.shipping_address}
-                                onChange={(e) => setData('shipping_address', e.target.value)}
+                                onChange={(e) =>
+                                    setData('shipping_address', e.target.value)
+                                }
                                 rows={3}
                                 className={`w-full rounded-xl border bg-white px-3 py-2 text-sm text-gray-900 shadow-sm focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/30 dark:bg-gray-800 dark:text-gray-100 ${errors.shipping_address ? 'border-red-500 dark:border-red-500' : 'border-gray-200 dark:border-gray-700'}`}
                                 placeholder="Alamat lengkap pengiriman..."
                             />
                             {errors.shipping_address && (
-                                <p className="mt-1 text-xs text-red-500">{errors.shipping_address}</p>
+                                <p className="mt-1 text-xs text-red-500">
+                                    {errors.shipping_address}
+                                </p>
                             )}
                         </div>
 
@@ -247,15 +320,25 @@ export default function Checkout({
                                         <select
                                             value={data.courier}
                                             onChange={(e) => {
-                                                setData('courier', e.target.value);
+                                                setData(
+                                                    'courier',
+                                                    e.target.value,
+                                                );
                                                 setSelectedShipping(null);
                                                 setShippingOptions([]);
                                             }}
                                             className={inputClass}
                                         >
-                                            <option value="">Pilih kurir</option>
+                                            <option value="">
+                                                Pilih kurir
+                                            </option>
                                             {COURIERS.map((c) => (
-                                                <option key={c.value} value={c.value}>{c.label}</option>
+                                                <option
+                                                    key={c.value}
+                                                    value={c.value}
+                                                >
+                                                    {c.label}
+                                                </option>
                                             ))}
                                         </select>
                                     </div>
@@ -263,17 +346,23 @@ export default function Checkout({
                                         <button
                                             type="button"
                                             onClick={fetchShippingCost}
-                                            disabled={shippingLoading || !data.courier}
+                                            disabled={
+                                                shippingLoading || !data.courier
+                                            }
                                             className="inline-flex h-10 items-center gap-2 rounded-xl border border-gray-200 bg-white px-4 text-sm font-medium text-gray-700 shadow-sm transition hover:bg-gray-50 disabled:cursor-not-allowed disabled:opacity-50 dark:border-gray-700 dark:bg-gray-800 dark:text-gray-300 dark:hover:bg-gray-700"
                                         >
                                             <Search className="h-4 w-4" />
-                                            {shippingLoading ? 'Menghitung...' : 'Hitung Ongkir'}
+                                            {shippingLoading
+                                                ? 'Menghitung...'
+                                                : 'Hitung Ongkir'}
                                         </button>
                                     </div>
                                 </div>
 
                                 {shippingError && (
-                                    <p className="mt-3 text-sm text-red-500">{shippingError}</p>
+                                    <p className="mt-3 text-sm text-red-500">
+                                        {shippingError}
+                                    </p>
                                 )}
 
                                 {shippingOptions.length > 0 && (
@@ -282,7 +371,8 @@ export default function Checkout({
                                             <label
                                                 key={opt.service}
                                                 className={`flex cursor-pointer items-center justify-between rounded-xl border-2 p-3 transition ${
-                                                    selectedShipping?.service === opt.service
+                                                    selectedShipping?.service ===
+                                                    opt.service
                                                         ? 'border-indigo-500 bg-indigo-50 dark:border-indigo-400 dark:bg-indigo-900/30'
                                                         : 'border-gray-200 hover:border-gray-300 dark:border-gray-700 dark:hover:border-gray-600'
                                                 }`}
@@ -291,16 +381,26 @@ export default function Checkout({
                                                     <input
                                                         type="radio"
                                                         name="shipping_option"
-                                                        checked={selectedShipping?.service === opt.service}
-                                                        onChange={() => selectShipping(opt.service, opt.cost)}
+                                                        checked={
+                                                            selectedShipping?.service ===
+                                                            opt.service
+                                                        }
+                                                        onChange={() =>
+                                                            selectShipping(
+                                                                opt.service,
+                                                                opt.cost,
+                                                            )
+                                                        }
                                                         className="sr-only"
                                                     />
                                                     <div>
                                                         <p className="text-sm font-medium text-gray-900 dark:text-gray-100">
-                                                            {opt.service} - {opt.description}
+                                                            {opt.service} -{' '}
+                                                            {opt.description}
                                                         </p>
                                                         <p className="text-xs text-gray-500 dark:text-gray-400">
-                                                            Estimasi: {opt.etd} hari
+                                                            Estimasi: {opt.etd}{' '}
+                                                            hari
                                                         </p>
                                                     </div>
                                                 </div>
@@ -323,7 +423,9 @@ export default function Checkout({
                                             Pengiriman belum dikonfigurasi
                                         </p>
                                         <p className="mt-1 text-sm text-amber-700 dark:text-amber-400">
-                                            Hubungi admin untuk mengatur API pengiriman. Saat ini pesanan hanya dapat menggunakan COD.
+                                            Hubungi admin untuk mengatur API
+                                            pengiriman. Saat ini pesanan hanya
+                                            dapat menggunakan COD.
                                         </p>
                                     </div>
                                 </div>
@@ -344,13 +446,18 @@ export default function Checkout({
                                         type="text"
                                         value={data.coupon_code}
                                         onChange={(e) =>
-                                            setData('coupon_code', e.target.value.toUpperCase())
+                                            setData(
+                                                'coupon_code',
+                                                e.target.value.toUpperCase(),
+                                            )
                                         }
                                         placeholder="Contoh: GRATIS10"
                                         className="w-full rounded-xl border border-gray-200 bg-white px-3 py-2 text-sm text-gray-900 shadow-sm focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/30 dark:border-gray-700 dark:bg-gray-800 dark:text-gray-100"
                                     />
                                     {errors.coupon_code && (
-                                        <p className="mt-1 text-xs text-red-500">{errors.coupon_code}</p>
+                                        <p className="mt-1 text-xs text-red-500">
+                                            {errors.coupon_code}
+                                        </p>
                                     )}
                                 </div>
 
@@ -367,13 +474,26 @@ export default function Checkout({
                                                 step={min_redeem_points}
                                                 value={data.points}
                                                 onChange={(e) =>
-                                                    setData('points', Math.max(0, Number(e.target.value)))
+                                                    setData(
+                                                        'points',
+                                                        Math.max(
+                                                            0,
+                                                            Number(
+                                                                e.target.value,
+                                                            ),
+                                                        ),
+                                                    )
                                                 }
                                                 className="w-full rounded-xl border border-gray-200 bg-white px-3 py-2 text-sm text-gray-900 shadow-sm focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/30 dark:border-gray-700 dark:bg-gray-800 dark:text-gray-100"
                                             />
                                             <button
                                                 type="button"
-                                                onClick={() => setData('points', maxAffordablePoints)}
+                                                onClick={() =>
+                                                    setData(
+                                                        'points',
+                                                        maxAffordablePoints,
+                                                    )
+                                                }
                                                 className="absolute top-1/2 right-2 -translate-y-1/2 rounded-lg bg-indigo-50 px-2 py-1 text-xs font-semibold text-indigo-600 transition hover:bg-indigo-100 dark:bg-indigo-900/40 dark:text-indigo-300"
                                             >
                                                 Max
@@ -383,19 +503,26 @@ export default function Checkout({
                                     <p className="mt-1 text-xs text-gray-500 dark:text-gray-400">
                                         Saldo:{' '}
                                         <span className="font-medium text-gray-700 dark:text-gray-300">
-                                            {user_points_balance.toLocaleString('id-ID')}
+                                            {user_points_balance.toLocaleString(
+                                                'id-ID',
+                                            )}
                                         </span>{' '}
                                         poin · 100 poin ={' '}
-                                        {formatRupiah(point_value * min_redeem_points)}
+                                        {formatRupiah(
+                                            point_value * min_redeem_points,
+                                        )}
                                     </p>
                                     {errors.points && (
-                                        <p className="mt-1 text-xs text-red-500">{errors.points}</p>
+                                        <p className="mt-1 text-xs text-red-500">
+                                            {errors.points}
+                                        </p>
                                     )}
                                 </div>
 
                                 <div className="flex items-center gap-2 rounded-xl bg-indigo-50/60 px-3 py-2.5 text-xs text-indigo-700 dark:bg-indigo-900/30 dark:text-indigo-300">
                                     <Info className="h-4 w-4 shrink-0" />
-                                    Kode voucher &amp; poin divalidasi saat pesanan dibuat.
+                                    Kode voucher &amp; poin divalidasi saat
+                                    pesanan dibuat.
                                 </div>
                             </div>
                         </div>
@@ -417,7 +544,8 @@ export default function Checkout({
                                         <label
                                             key={method.value}
                                             className={`flex cursor-pointer items-center gap-3 rounded-xl border-2 p-3 transition ${
-                                                data.payment_method === method.value
+                                                data.payment_method ===
+                                                method.value
                                                     ? 'border-indigo-500 bg-indigo-50 dark:border-indigo-400 dark:bg-indigo-900/30'
                                                     : 'border-gray-200 hover:border-gray-300 dark:border-gray-700 dark:hover:border-gray-600'
                                             }`}
@@ -426,8 +554,16 @@ export default function Checkout({
                                                 type="radio"
                                                 name="payment_method"
                                                 value={method.value}
-                                                checked={data.payment_method === method.value}
-                                                onChange={(e) => setData('payment_method', e.target.value)}
+                                                checked={
+                                                    data.payment_method ===
+                                                    method.value
+                                                }
+                                                onChange={(e) =>
+                                                    setData(
+                                                        'payment_method',
+                                                        e.target.value,
+                                                    )
+                                                }
                                                 className="sr-only"
                                             />
                                             <Icon className="h-5 w-5 shrink-0 text-indigo-500" />
@@ -452,7 +588,9 @@ export default function Checkout({
                             </h2>
                             <textarea
                                 value={data.notes}
-                                onChange={(e) => setData('notes', e.target.value)}
+                                onChange={(e) =>
+                                    setData('notes', e.target.value)
+                                }
                                 rows={2}
                                 className="w-full rounded-xl border border-gray-200 bg-white px-3 py-2 text-sm text-gray-900 shadow-sm focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/30 dark:border-gray-700 dark:bg-gray-800 dark:text-gray-100"
                                 placeholder="Catatan untuk penjual..."
@@ -469,10 +607,17 @@ export default function Checkout({
 
                             <div className="max-h-60 space-y-3 overflow-y-auto">
                                 {cartItems.map((item) => (
-                                    <div key={item.id} className="flex items-start gap-3">
+                                    <div
+                                        key={item.id}
+                                        className="flex items-start gap-3"
+                                    >
                                         <div className="h-12 w-12 shrink-0 overflow-hidden rounded-lg bg-gray-100 dark:bg-gray-700">
                                             {item.gambar ? (
-                                                <img src={item.gambar} alt={item.nama_produk} className="h-full w-full object-cover" />
+                                                <img
+                                                    src={item.gambar}
+                                                    alt={item.nama_produk}
+                                                    className="h-full w-full object-cover"
+                                                />
                                             ) : (
                                                 <div className="flex h-full w-full items-center justify-center">
                                                     <Package className="h-5 w-5 text-gray-400" />
@@ -484,7 +629,10 @@ export default function Checkout({
                                                 {item.nama_produk}
                                             </p>
                                             <p className="text-xs text-gray-500 dark:text-gray-400">
-                                                {item.jumlah} x {formatRupiah(item.subtotal / item.jumlah)}
+                                                {item.jumlah} x{' '}
+                                                {formatRupiah(
+                                                    item.subtotal / item.jumlah,
+                                                )}
                                             </p>
                                         </div>
                                         <p className="text-sm font-semibold text-gray-900 dark:text-gray-100">
@@ -507,8 +655,16 @@ export default function Checkout({
                                 )}
                                 {pointsDiscount > 0 && (
                                     <div className="flex justify-between text-sm text-emerald-600 dark:text-emerald-400">
-                                        <span>Poin ({pointsRedeemed.toLocaleString('id-ID')})</span>
-                                        <span>- {formatRupiah(pointsDiscount)}</span>
+                                        <span>
+                                            Poin (
+                                            {pointsRedeemed.toLocaleString(
+                                                'id-ID',
+                                            )}
+                                            )
+                                        </span>
+                                        <span>
+                                            - {formatRupiah(pointsDiscount)}
+                                        </span>
                                     </div>
                                 )}
                                 <div className="flex justify-between text-sm text-gray-600 dark:text-gray-400">
@@ -517,8 +673,12 @@ export default function Checkout({
                                 </div>
                                 {shippingCost > 0 && (
                                     <div className="flex justify-between text-sm text-gray-600 dark:text-gray-400">
-                                        <span>Ongkir ({selectedShipping?.service})</span>
-                                        <span>{formatRupiah(shippingCost)}</span>
+                                        <span>
+                                            Ongkir ({selectedShipping?.service})
+                                        </span>
+                                        <span>
+                                            {formatRupiah(shippingCost)}
+                                        </span>
                                     </div>
                                 )}
                                 <div className="flex justify-between border-t border-gray-200 pt-2 text-base font-bold text-gray-900 dark:border-gray-700 dark:text-gray-100">

@@ -3,7 +3,9 @@
 namespace App\Http\Controllers\Auth;
 
 use App\Http\Controllers\Controller;
+use App\Models\AuditLog;
 use App\Models\User;
+use App\Services\AuditService;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Log;
 use Laravel\WorkOS\Http\Requests\AuthKitAuthenticationRequest;
@@ -12,6 +14,8 @@ use Laravel\WorkOS\Http\Requests\AuthKitLogoutRequest;
 
 class WorkOSController extends Controller
 {
+    public function __construct(protected AuditService $audit) {}
+
     public function login(AuthKitLoginRequest $request)
     {
         return $request->redirect();
@@ -61,6 +65,15 @@ class WorkOSController extends Controller
             // Regenerate session to prevent fixation attacks and ensure clean session
             $request->session()->regenerate();
 
+            try {
+                $this->audit->log(
+                    AuditLog::EVENT_LOGIN,
+                    'Berhasil masuk melalui WorkOS (AuthKit).',
+                );
+            } catch (\Exception $e) {
+                Log::error("Failed to record login audit: {$e->getMessage()}");
+            }
+
             return redirect()->intended(route('homepage'));
 
         } catch (\Exception $e) {
@@ -88,6 +101,20 @@ class WorkOSController extends Controller
 
     public function logout(AuthKitLogoutRequest $request)
     {
+        $user = $request->user();
+
+        if ($user) {
+            try {
+                $this->audit->log(
+                    AuditLog::EVENT_LOGOUT,
+                    "Keluar dari aplikasi sebagai {$user->name}.",
+                    auditable: $user,
+                );
+            } catch (\Exception $e) {
+                Log::error("Failed to record logout audit: {$e->getMessage()}");
+            }
+        }
+
         return $request->logout();
     }
 }

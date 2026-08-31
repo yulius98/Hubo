@@ -137,7 +137,9 @@ const orderStatusLabel = (status: string): string => {
     }
 };
 
-export default function ReturnDetailPage({ return: returnData }: Readonly<ReturnDetailProps>) {
+export default function ReturnDetailPage({
+    return: returnData,
+}: Readonly<ReturnDetailProps>) {
     const { auth } = usePage().props as { auth?: { user?: { name: string } } };
     const isOwner = auth?.user && auth.user.name === returnData.order.user.name;
 
@@ -222,16 +224,16 @@ export default function ReturnDetailPage({ return: returnData }: Readonly<Return
                             <table className="w-full text-left text-sm">
                                 <thead>
                                     <tr className="border-b border-gray-100 dark:border-gray-700">
-                                        <th className="whitespace-nowrap px-4 py-2.5 text-xs font-semibold uppercase tracking-wider text-gray-500 dark:text-gray-400">
+                                        <th className="px-4 py-2.5 text-xs font-semibold tracking-wider whitespace-nowrap text-gray-500 uppercase dark:text-gray-400">
                                             Produk
                                         </th>
-                                        <th className="whitespace-nowrap px-4 py-2.5 text-xs font-semibold uppercase tracking-wider text-gray-500 dark:text-gray-400">
+                                        <th className="px-4 py-2.5 text-xs font-semibold tracking-wider whitespace-nowrap text-gray-500 uppercase dark:text-gray-400">
                                             Jumlah Diretur
                                         </th>
-                                        <th className="whitespace-nowrap px-4 py-2.5 text-xs font-semibold uppercase tracking-wider text-gray-500 dark:text-gray-400">
+                                        <th className="px-4 py-2.5 text-xs font-semibold tracking-wider whitespace-nowrap text-gray-500 uppercase dark:text-gray-400">
                                             Harga
                                         </th>
-                                        <th className="whitespace-nowrap px-4 py-2.5 text-xs font-semibold uppercase tracking-wider text-gray-500 dark:text-gray-400">
+                                        <th className="px-4 py-2.5 text-xs font-semibold tracking-wider whitespace-nowrap text-gray-500 uppercase dark:text-gray-400">
                                             Subtotal
                                         </th>
                                     </tr>
@@ -241,7 +243,9 @@ export default function ReturnDetailPage({ return: returnData }: Readonly<Return
                                         <tr key={item.id}>
                                             <td className="px-4 py-3">
                                                 <p className="font-medium text-gray-900 dark:text-gray-100">
-                                                    {item.produk?.nama_produk || item.order_item.product_name}
+                                                    {item.produk?.nama_produk ||
+                                                        item.order_item
+                                                            .product_name}
                                                 </p>
                                                 {item.reason && (
                                                     <p className="mt-0.5 text-xs text-gray-500 dark:text-gray-400">
@@ -249,14 +253,18 @@ export default function ReturnDetailPage({ return: returnData }: Readonly<Return
                                                     </p>
                                                 )}
                                             </td>
-                                            <td className="whitespace-nowrap px-4 py-3 text-gray-600 dark:text-gray-400">
+                                            <td className="px-4 py-3 whitespace-nowrap text-gray-600 dark:text-gray-400">
                                                 {item.quantity}
                                             </td>
-                                            <td className="whitespace-nowrap px-4 py-3 text-gray-600 dark:text-gray-400">
-                                                {formatRupiah(item.order_item.price)}
+                                            <td className="px-4 py-3 whitespace-nowrap text-gray-600 dark:text-gray-400">
+                                                {formatRupiah(
+                                                    item.order_item.price,
+                                                )}
                                             </td>
-                                            <td className="whitespace-nowrap px-4 py-3 font-semibold text-gray-900 dark:text-gray-100">
-                                                {formatRupiah(item.order_item.subtotal)}
+                                            <td className="px-4 py-3 font-semibold whitespace-nowrap text-gray-900 dark:text-gray-100">
+                                                {formatRupiah(
+                                                    item.order_item.subtotal,
+                                                )}
                                             </td>
                                         </tr>
                                     ))}
@@ -276,7 +284,8 @@ export default function ReturnDetailPage({ return: returnData }: Readonly<Return
                             </p>
                             <div className="mt-3">
                                 <p className="text-xs text-gray-500 dark:text-gray-400">
-                                    Diajukan pada {formatTanggal(returnData.created_at)}
+                                    Diajukan pada{' '}
+                                    {formatTanggal(returnData.created_at)}
                                 </p>
                             </div>
                         </div>
@@ -311,7 +320,11 @@ export default function ReturnDetailPage({ return: returnData }: Readonly<Return
                                     <button
                                         type="button"
                                         onClick={() =>
-                                            router.post(`/returns/${returnData.id}/approve`, {}, { preserveScroll: true })
+                                            router.post(
+                                                `/returns/${returnData.id}/approve`,
+                                                {},
+                                                { preserveScroll: true },
+                                            )
                                         }
                                         className="inline-flex items-center gap-2 rounded-xl bg-emerald-600 px-5 py-2.5 text-sm font-medium text-white shadow-sm transition hover:bg-emerald-700"
                                     >
@@ -321,7 +334,11 @@ export default function ReturnDetailPage({ return: returnData }: Readonly<Return
                                     <button
                                         type="button"
                                         onClick={() =>
-                                            router.post(`/returns/${returnData.id}/reject`, {}, { preserveScroll: true })
+                                            router.post(
+                                                `/returns/${returnData.id}/reject`,
+                                                {},
+                                                { preserveScroll: true },
+                                            )
                                         }
                                         className="inline-flex items-center gap-2 rounded-xl bg-red-600 px-5 py-2.5 text-sm font-medium text-white shadow-sm transition hover:bg-red-700"
                                     >
@@ -334,7 +351,11 @@ export default function ReturnDetailPage({ return: returnData }: Readonly<Return
                                 <button
                                     type="button"
                                     onClick={() =>
-                                        router.post(`/returns/${returnData.id}/complete`, {}, { preserveScroll: true })
+                                        router.post(
+                                            `/returns/${returnData.id}/complete`,
+                                            {},
+                                            { preserveScroll: true },
+                                        )
                                     }
                                     className="inline-flex items-center gap-2 rounded-xl bg-blue-600 px-5 py-2.5 text-sm font-medium text-white shadow-sm transition hover:bg-blue-700"
                                 >

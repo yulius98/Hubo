@@ -1129,7 +1129,9 @@ export default function Produk_User_Page({
                                                 formatRupiah={formatRupiah}
                                                 onEdit={handleEdit}
                                                 onDelete={handleDelete}
-                                                onManageVariants={setVariantProduct}
+                                                onManageVariants={
+                                                    setVariantProduct
+                                                }
                                             />
                                         ))
                                     )}

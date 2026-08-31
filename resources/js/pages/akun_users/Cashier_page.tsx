@@ -296,7 +296,8 @@ export default function CashierPage({
             router.post(
                 '/cashier/cart/finalize',
                 {
-                    customer_id: selectedCustomer === '' ? null : selectedCustomer,
+                    customer_id:
+                        selectedCustomer === '' ? null : selectedCustomer,
                     payment_method: metodepembayaran,
                 },
                 {
@@ -309,7 +310,14 @@ export default function CashierPage({
         } catch {
             setError('Gagal memproses pembayaran');
         }
-    }, [stokBelanja, totalPrice, metodepembayaran, jumlahTunaiNum, kembalian, selectedCustomer]);
+    }, [
+        stokBelanja,
+        totalPrice,
+        metodepembayaran,
+        jumlahTunaiNum,
+        kembalian,
+        selectedCustomer,
+    ]);
 
     if (prevOutletId !== outlet.id) {
         setPrevOutletId(outlet.id);
@@ -509,54 +517,66 @@ export default function CashierPage({
                                                                     1}
                                                             </td>
                                                             <td className="px-4 py-3 font-medium">
-                                                                {item.nama_produk}
+                                                                {
+                                                                    item.nama_produk
+                                                                }
                                                             </td>
                                                             <td className="px-4 py-3">
-                                                                {item.variants?.length
-                                                                    ? (
-                                                                        <select
-                                                                            value={
-                                                                                selectedVariant[
-                                                                                    item.id
-                                                                                ] ?? ''
-                                                                            }
-                                                                            onChange={(e) =>
-                                                                                handleVariantChange(
-                                                                                    item.id,
-                                                                                    Number(
-                                                                                        e.target
-                                                                                            .value,
-                                                                                    ),
-                                                                                )
-                                                                            }
-                                                                            className="w-full max-w-[140px] rounded border px-2 py-1 text-sm focus:ring-emerald-500"
-                                                                        >
-                                                                            <option
-                                                                                value=""
-                                                                                disabled
-                                                                            >
-                                                                                Pilih varian
-                                                                            </option>
-                                                                            {item.variants.map(
-                                                                                (v) => (
-                                                                                    <option
-                                                                                        key={
-                                                                                            v.id
-                                                                                        }
-                                                                                        value={
-                                                                                            v.id
-                                                                                        }
-                                                                                    >
-                                                                                        {v.nama}
-                                                                                    </option>
+                                                                {item.variants
+                                                                    ?.length ? (
+                                                                    <select
+                                                                        value={
+                                                                            selectedVariant[
+                                                                                item
+                                                                                    .id
+                                                                            ] ??
+                                                                            ''
+                                                                        }
+                                                                        onChange={(
+                                                                            e,
+                                                                        ) =>
+                                                                            handleVariantChange(
+                                                                                item.id,
+                                                                                Number(
+                                                                                    e
+                                                                                        .target
+                                                                                        .value,
                                                                                 ),
-                                                                            )}
-                                                                        </select>
-                                                                    ) : (
-                                                                        <span className="text-xs text-slate-400">
-                                                                            -
-                                                                        </span>
-                                                                    )}
+                                                                            )
+                                                                        }
+                                                                        className="w-full max-w-[140px] rounded border px-2 py-1 text-sm focus:ring-emerald-500"
+                                                                    >
+                                                                        <option
+                                                                            value=""
+                                                                            disabled
+                                                                        >
+                                                                            Pilih
+                                                                            varian
+                                                                        </option>
+                                                                        {item.variants.map(
+                                                                            (
+                                                                                v,
+                                                                            ) => (
+                                                                                <option
+                                                                                    key={
+                                                                                        v.id
+                                                                                    }
+                                                                                    value={
+                                                                                        v.id
+                                                                                    }
+                                                                                >
+                                                                                    {
+                                                                                        v.nama
+                                                                                    }
+                                                                                </option>
+                                                                            ),
+                                                                        )}
+                                                                    </select>
+                                                                ) : (
+                                                                    <span className="text-xs text-slate-400">
+                                                                        -
+                                                                    </span>
+                                                                )}
                                                             </td>
                                                             <td className="px-4 py-3 text-center">
                                                                 {effectiveStockOf(
@@ -574,11 +594,9 @@ export default function CashierPage({
                                                                 <input
                                                                     type="number"
                                                                     min={1}
-                                                                    max={
-                                                                        effectiveStockOf(
-                                                                            item,
-                                                                        )
-                                                                    }
+                                                                    max={effectiveStockOf(
+                                                                        item,
+                                                                    )}
                                                                     value={
                                                                         item.jumlah ??
                                                                         ''
@@ -606,11 +624,11 @@ export default function CashierPage({
                                                                             item
                                                                                 .variants
                                                                                 ?.length
-                                                                                ? selectedVariant[
+                                                                                ? (selectedVariant[
                                                                                       item
                                                                                           .id
                                                                                   ] ??
-                                                                                      undefined
+                                                                                      undefined)
                                                                                 : undefined,
                                                                         )
                                                                     }
@@ -623,10 +641,10 @@ export default function CashierPage({
                                                                             item
                                                                                 .variants
                                                                                 ?.length &&
-                                                                                !selectedVariant[
-                                                                                    item
-                                                                                        .id
-                                                                                ],
+                                                                            !selectedVariant[
+                                                                                item
+                                                                                    .id
+                                                                            ],
                                                                         )
                                                                     }
                                                                 >

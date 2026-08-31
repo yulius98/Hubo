@@ -143,8 +143,14 @@ export default function AdminReturns({
                 <div className="mb-6 rounded-2xl border border-gray-200 bg-white p-5 shadow-sm dark:border-gray-700 dark:bg-gray-800">
                     <div className="grid gap-4 sm:grid-cols-2">
                         <div className="grid gap-1.5">
-                            <label className={labelClass}>Status</label>
+                            <label
+                                htmlFor="return-status"
+                                className={labelClass}
+                            >
+                                Status
+                            </label>
                             <select
+                                id="return-status"
                                 value={filters.status}
                                 onChange={(e) => applyFilter(e.target.value)}
                                 className={inputClass}
@@ -224,19 +230,19 @@ export default function AdminReturns({
                                                 <div>
                                                     <span className="font-medium text-gray-900 dark:text-gray-100">
                                                         {
-                                                            returnOrder.order.user
-                                                                .name
+                                                            returnOrder.order
+                                                                .user.name
                                                         }
                                                     </span>
                                                     <span className="block text-xs text-gray-400 dark:text-gray-500">
                                                         {
-                                                            returnOrder.order.user
-                                                                .email
+                                                            returnOrder.order
+                                                                .user.email
                                                         }
                                                     </span>
                                                 </div>
                                             </td>
-                                            <td className="max-w-[200px] truncate px-5 py-3.5 text-sm text-gray-600 dark:text-gray-400">
+                                            <td className="max-w-50 truncate px-5 py-3.5 text-sm text-gray-600 dark:text-gray-400">
                                                 {returnOrder.reason || '—'}
                                             </td>
                                             <td className="px-5 py-3.5 text-sm font-semibold whitespace-nowrap text-gray-900 dark:text-gray-100">
@@ -248,8 +254,9 @@ export default function AdminReturns({
                                                 <span
                                                     className={`inline-flex rounded-full px-3 py-1 text-xs font-semibold ${STATUS_BADGE[returnOrder.status] ?? STATUS_BADGE.pending}`}
                                                 >
-                                                    {STATUS_LABEL[returnOrder.status] ??
-                                                        returnOrder.status}
+                                                    {STATUS_LABEL[
+                                                        returnOrder.status
+                                                    ] ?? returnOrder.status}
                                                 </span>
                                             </td>
                                             <td className="px-5 py-3.5 text-sm whitespace-nowrap text-gray-600 dark:text-gray-400">
@@ -278,11 +285,11 @@ export default function AdminReturns({
 
                     {returns.last_page > 1 && (
                         <div className="flex flex-wrap items-center justify-end gap-1 border-t border-gray-200 px-5 py-3.5 dark:border-gray-700">
-                            {returns.links.map((link, index) => {
+                            {returns.links.map((link) => {
                                 if (link.url === null) {
                                     return (
                                         <span
-                                            key={index}
+                                            key={link.label}
                                             className="cursor-not-allowed rounded-lg px-2.5 py-1 text-sm text-gray-400 dark:text-gray-600"
                                             dangerouslySetInnerHTML={{
                                                 __html: link.label,
@@ -293,7 +300,7 @@ export default function AdminReturns({
 
                                 return (
                                     <Link
-                                        key={index}
+                                        key={link.url}
                                         href={link.url}
                                         preserveScroll
                                         className={`rounded-lg px-2.5 py-1 text-sm font-medium transition-colors ${

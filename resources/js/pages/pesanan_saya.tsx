@@ -187,8 +187,7 @@ export default function PesananSaya(props: Readonly<Props>) {
                                         </h3>
                                         <p className="mt-1 text-sm text-blue-400 dark:text-blue-300">
                                             {formatRupiah(
-                                                item.harga_diskon ||
-                                                    item.harga,
+                                                item.harga_diskon || item.harga,
                                             )}
                                         </p>
                                         <p className="mt-1 text-sm text-cyan-400">
@@ -201,9 +200,15 @@ export default function PesananSaya(props: Readonly<Props>) {
                                                 {t('pesanan.quantity', locale)}
                                             </p>
                                             <p className="mt-0.5 flex items-center gap-1 text-sm font-bold">
-                                                <Minus size={14} className="text-blue-400/60" />
+                                                <Minus
+                                                    size={14}
+                                                    className="text-blue-400/60"
+                                                />
                                                 {item.jumlah}
-                                                <Plus size={14} className="text-blue-400/60" />
+                                                <Plus
+                                                    size={14}
+                                                    className="text-blue-400/60"
+                                                />
                                             </p>
                                         </div>
                                         <button
@@ -234,7 +239,8 @@ export default function PesananSaya(props: Readonly<Props>) {
                                             className="flex justify-between gap-3 text-sm"
                                         >
                                             <span className="line-clamp-1 text-blue-400 dark:text-blue-300">
-                                                {item.nama_produk} × {item.jumlah}
+                                                {item.nama_produk} ×{' '}
+                                                {item.jumlah}
                                             </span>
                                             <span className="shrink-0 font-medium">
                                                 {formatRupiah(item.subtotal)}

@@ -13,6 +13,10 @@ use Illuminate\Validation\ValidationException;
 
 class ReturnService
 {
+    public function __construct(
+        protected UsageMeteringService $metering,
+    ) {}
+
     /**
      * Request a return for an order.
      */
@@ -128,7 +132,7 @@ class ReturnService
 
                 $produk = Produk::find($item->produk_id);
 
-                Transaksi::create([
+                $transaksi = Transaksi::create([
                     'tgl_transaksi' => now(),
                     'id_user' => $return->order->user_id,
                     'id_outlet' => $return->order->outlet_id,
@@ -140,6 +144,8 @@ class ReturnService
                     'harga_beli' => $produk->harga_beli,
                     'harga_jual' => $item->orderItem->price,
                 ]);
+
+                $this->metering->recordTransaction($transaksi);
             }
 
             if ($return->refund_amount > 0) {

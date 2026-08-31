@@ -2,7 +2,9 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\Customer;
 use App\Models\KeranjangBelanjaKasir;
+use App\Models\Outlet;
 use App\Models\ProductVariant;
 use App\Models\Produk;
 use App\Models\Role;
@@ -31,6 +33,12 @@ class KeranjangBelanjaKasirController extends Controller
         if ($produk->id_kategori !== (int) $validated['id_kategori']) {
             throw ValidationException::withMessages([
                 'id_kategori' => 'Kategori tidak cocok dengan produk.',
+            ]);
+        }
+
+        if ($this->customerBelongsToDifferentCompany($validated['customer_id'] ?? null, $produk->outlet?->company_id)) {
+            throw ValidationException::withMessages([
+                'customer_id' => 'Pelanggan tidak valid untuk outlet ini.',
             ]);
         }
 
@@ -110,6 +118,20 @@ class KeranjangBelanjaKasirController extends Controller
         $user = $request->user();
         $selectedOutletId = (int) $request->session()->get('selected_outlet_id');
 
+        $selectedOutlet = Outlet::query()->with('company')->find($selectedOutletId);
+
+        if ($selectedOutlet === null) {
+            throw ValidationException::withMessages([
+                'outlet' => 'Outlet yang dipilih tidak valid.',
+            ]);
+        }
+
+        if ($this->customerBelongsToDifferentCompany($validated['customer_id'] ?? null, $selectedOutlet->company_id)) {
+            throw ValidationException::withMessages([
+                'customer_id' => 'Pelanggan tidak valid untuk outlet ini.',
+            ]);
+        }
+
         try {
             $order = app(OrderService::class)->createFromKasirCart(
                 userId: $user->id,
@@ -127,5 +149,19 @@ class KeranjangBelanjaKasirController extends Controller
 
         return redirect()->route('orders.show', $order->id)
             ->with('success', 'Transaksi berhasil diproses');
+    }
+
+    /**
+     * Check that a provided customer belongs to the requested company.
+     */
+    private function customerBelongsToDifferentCompany(?int $customerId, ?int $companyId): bool
+    {
+        if ($customerId === null || $companyId === null) {
+            return false;
+        }
+
+        $customer = Customer::query()->find($customerId);
+
+        return $customer === null || (int) $customer->company_id !== (int) $companyId;
     }
 }

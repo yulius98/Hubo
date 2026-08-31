@@ -8,6 +8,7 @@ use App\Models\Produk;
 use App\Models\PurchaseOrder;
 use App\Models\Supplier;
 use App\Models\Transaksi;
+use App\Services\UsageMeteringService;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
@@ -16,6 +17,8 @@ use Inertia\Response;
 
 class PurchaseOrderController extends Controller
 {
+    public function __construct(protected UsageMeteringService $metering) {}
+
     public function index(Request $request): Response
     {
         $status = (string) $request->query('status', '');
@@ -133,7 +136,7 @@ class PurchaseOrderController extends Controller
             $purchaseOrder->load('items.produk');
 
             foreach ($purchaseOrder->items as $item) {
-                Transaksi::create([
+                $transaksi = Transaksi::create([
                     'tgl_transaksi' => now(),
                     'id_user' => auth()->id(),
                     'id_outlet' => $purchaseOrder->outlet_id,
@@ -145,6 +148,8 @@ class PurchaseOrderController extends Controller
                     'harga_beli' => $item->harga_beli,
                     'harga_jual' => $item->produk->harga ?? 0,
                 ]);
+
+                $this->metering->recordTransaction($transaksi);
 
                 Produk::where('id', $item->produk_id)
                     ->increment('stok', $item->jumlah);

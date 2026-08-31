@@ -1,4 +1,9 @@
-import { MagnifyingGlassIcon, ShoppingBagIcon, PlusIcon, MinusIcon } from '@heroicons/react/24/outline';
+import {
+    MagnifyingGlassIcon,
+    ShoppingBagIcon,
+    PlusIcon,
+    MinusIcon,
+} from '@heroicons/react/24/outline';
 import type { PageProps as InertiaPageProps } from '@inertiajs/core';
 import { Head, router, usePage } from '@inertiajs/react';
 import { useState } from 'react';
@@ -61,15 +66,21 @@ export default function StorefrontPage() {
         usePage<StorefrontPageProps>().props;
 
     const [query, setQuery] = useState(search);
-    const [selectedVariant, setSelectedVariant] = useState<Record<number, number>>({});
+    const [selectedVariant, setSelectedVariant] = useState<
+        Record<number, number>
+    >({});
     const [qty, setQty] = useState<Record<number, number>>({});
 
     const submitSearch = (e: React.FormEvent) => {
         e.preventDefault();
-        router.get(window.location.pathname, { q: query || undefined }, {
-            preserveState: true,
-            replace: true,
-        });
+        router.get(
+            window.location.pathname,
+            { q: query || undefined },
+            {
+                preserveState: true,
+                replace: true,
+            },
+        );
     };
 
     const filterByKategori = (id: number) => {
@@ -85,12 +96,17 @@ export default function StorefrontPage() {
     };
 
     const handleAddToCart = (product: Product) => {
-        const variant = product.variants.length > 0
-            ? product.variants[selectedVariant[product.id] ?? 0]
-            : null;
+        const variant =
+            product.variants.length > 0
+                ? product.variants[selectedVariant[product.id] ?? 0]
+                : null;
         const amount = qty[product.id] ?? 1;
 
-        const payload: { id_produk: number; jumlah_produk: number; variant_id?: number } = {
+        const payload: {
+            id_produk: number;
+            jumlah_produk: number;
+            variant_id?: number;
+        } = {
             id_produk: product.id,
             jumlah_produk: amount,
         };
@@ -101,7 +117,10 @@ export default function StorefrontPage() {
         router.post(addToCart(product.id).url, payload, {
             preserveScroll: true,
             onSuccess: () => setQty((prev) => ({ ...prev, [product.id]: 1 })),
-            onError: () => alert('Gagal menambahkan ke keranjang. Silakan login terlebih dahulu.'),
+            onError: () =>
+                alert(
+                    'Gagal menambahkan ke keranjang. Silakan login terlebih dahulu.',
+                ),
         });
     };
 
@@ -155,17 +174,14 @@ export default function StorefrontPage() {
                 </header>
 
                 <main className="mx-auto max-w-6xl px-6 py-6">
-                    <form
-                        onSubmit={submitSearch}
-                        className="relative mb-6"
-                    >
+                    <form onSubmit={submitSearch} className="relative mb-6">
                         <MagnifyingGlassIcon className="pointer-events-none absolute top-1/2 left-4 h-5 w-5 -translate-y-1/2 text-gray-400" />
                         <input
                             type="text"
                             value={query}
                             onChange={(e) => setQuery(e.target.value)}
                             placeholder="Cari produk di toko ini..."
-                            className="w-full rounded-2xl border border-gray-300 bg-white py-3 pr-4 pl-12 text-sm text-gray-900 shadow-sm transition-colors placeholder-gray-400 focus:border-blue-500 focus:ring-2 focus:ring-blue-500 dark:border-gray-700 dark:bg-gray-800 dark:text-gray-100 dark:focus:border-blue-500 dark:focus:ring-blue-500"
+                            className="w-full rounded-2xl border border-gray-300 bg-white py-3 pr-4 pl-12 text-sm text-gray-900 placeholder-gray-400 shadow-sm transition-colors focus:border-blue-500 focus:ring-2 focus:ring-blue-500 dark:border-gray-700 dark:bg-gray-800 dark:text-gray-100 dark:focus:border-blue-500 dark:focus:ring-blue-500"
                         />
                     </form>
 
@@ -186,7 +202,9 @@ export default function StorefrontPage() {
                                 <button
                                     key={kategori.id}
                                     type="button"
-                                    onClick={() => filterByKategori(kategori.id)}
+                                    onClick={() =>
+                                        filterByKategori(kategori.id)
+                                    }
                                     className={`rounded-full px-4 py-2 text-sm font-medium transition-colors ${
                                         selectedKategori === kategori.id
                                             ? 'bg-indigo-600 text-white shadow-sm'
@@ -201,9 +219,7 @@ export default function StorefrontPage() {
 
                     <div className="mb-4 text-sm text-gray-500 dark:text-gray-400">
                         {search && (
-                            <span>
-                                Hasil untuk &quot;{search}&quot; —{' '}
-                            </span>
+                            <span>Hasil untuk &quot;{search}&quot; — </span>
                         )}
                         {products.total} produk
                     </div>
@@ -219,9 +235,13 @@ export default function StorefrontPage() {
                             {products.data.map((product) => {
                                 const variant =
                                     product.variants.length > 0
-                                        ? product.variants[selectedVariant[product.id] ?? 0]
+                                        ? product.variants[
+                                              selectedVariant[product.id] ?? 0
+                                          ]
                                         : null;
-                                const variantStock = variant ? variant.stok : product.stok;
+                                const variantStock = variant
+                                    ? variant.stok
+                                    : product.stok;
                                 const amount = qty[product.id] ?? 1;
                                 const soldOut = variantStock <= 0;
 
@@ -246,11 +266,14 @@ export default function StorefrontPage() {
                                                 <h3 className="flex-1 truncate text-sm font-semibold text-gray-900 dark:text-gray-100">
                                                     {product.nama_produk}
                                                 </h3>
-                                                {product.stok > 0 && product.min_stok > 0 && product.stok <= product.min_stok && (
-                                                    <span className="shrink-0 rounded-full bg-amber-50 px-2 py-0.5 text-[10px] font-semibold text-amber-700 dark:bg-amber-900/40 dark:text-amber-300">
-                                                        Stok Menipis
-                                                    </span>
-                                                )}
+                                                {product.stok > 0 &&
+                                                    product.min_stok > 0 &&
+                                                    product.stok <=
+                                                        product.min_stok && (
+                                                        <span className="shrink-0 rounded-full bg-amber-50 px-2 py-0.5 text-[10px] font-semibold text-amber-700 dark:bg-amber-900/40 dark:text-amber-300">
+                                                            Stok Menipis
+                                                        </span>
+                                                    )}
                                             </div>
                                             {product.kategori && (
                                                 <p className="mt-0.5 text-xs text-gray-400 dark:text-gray-500">
@@ -260,35 +283,62 @@ export default function StorefrontPage() {
 
                                             {product.variants.length > 0 && (
                                                 <select
-                                                    value={selectedVariant[product.id] ?? 0}
+                                                    value={
+                                                        selectedVariant[
+                                                            product.id
+                                                        ] ?? 0
+                                                    }
                                                     onChange={(e) =>
-                                                        setSelectedVariant((prev) => ({
-                                                            ...prev,
-                                                            [product.id]: Number(e.target.value),
-                                                        }))
+                                                        setSelectedVariant(
+                                                            (prev) => ({
+                                                                ...prev,
+                                                                [product.id]:
+                                                                    Number(
+                                                                        e.target
+                                                                            .value,
+                                                                    ),
+                                                            }),
+                                                        )
                                                     }
                                                     className="mt-3 w-full rounded-xl border border-gray-300 bg-white px-3 py-2 text-xs text-gray-700 transition-colors focus:border-blue-500 focus:ring-2 focus:ring-blue-500 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-200 dark:focus:border-blue-500 dark:focus:ring-blue-500"
                                                 >
-                                                    {product.variants.map((v, idx) => (
-                                                        <option key={v.id} value={idx}>
-                                                            {v.name} —{' '}
-                                                            {formatRupiah(v.harga ?? product.harga)}
-                                                            {v.stok <= 0 ? ' (stok kosong)' : ''}
-                                                        </option>
-                                                    ))}
+                                                    {product.variants.map(
+                                                        (v, idx) => (
+                                                            <option
+                                                                key={v.id}
+                                                                value={idx}
+                                                            >
+                                                                {v.name} —{' '}
+                                                                {formatRupiah(
+                                                                    v.harga ??
+                                                                        product.harga,
+                                                                )}
+                                                                {v.stok <= 0
+                                                                    ? ' (stok kosong)'
+                                                                    : ''}
+                                                            </option>
+                                                        ),
+                                                    )}
                                                 </select>
                                             )}
 
                                             <div className="mt-auto pt-3">
                                                 <div className="flex items-end gap-2">
                                                     <p className="text-lg font-bold text-indigo-600 dark:text-indigo-400">
-                                                        {formatRupiah(product.display_price)}
+                                                        {formatRupiah(
+                                                            product.display_price,
+                                                        )}
                                                     </p>
-                                                    {product.harga_diskon !== null && product.harga_diskon > 0 && (
-                                                        <p className="text-xs text-gray-400 line-through">
-                                                            {formatRupiah(product.harga)}
-                                                        </p>
-                                                    )}
+                                                    {product.harga_diskon !==
+                                                        null &&
+                                                        product.harga_diskon >
+                                                            0 && (
+                                                            <p className="text-xs text-gray-400 line-through">
+                                                                {formatRupiah(
+                                                                    product.harga,
+                                                                )}
+                                                            </p>
+                                                        )}
                                                 </div>
 
                                                 {soldOut ? (
@@ -301,10 +351,23 @@ export default function StorefrontPage() {
                                                             <button
                                                                 type="button"
                                                                 onClick={() =>
-                                                                    setQty((prev) => ({
-                                                                        ...prev,
-                                                                        [product.id]: Math.max(1, (prev[product.id] ?? 1) - 1),
-                                                                    }))
+                                                                    setQty(
+                                                                        (
+                                                                            prev,
+                                                                        ) => ({
+                                                                            ...prev,
+                                                                            [product.id]:
+                                                                                Math.max(
+                                                                                    1,
+                                                                                    (prev[
+                                                                                        product
+                                                                                            .id
+                                                                                    ] ??
+                                                                                        1) -
+                                                                                        1,
+                                                                                ),
+                                                                        }),
+                                                                    )
                                                                 }
                                                                 className="px-2 py-2 text-gray-500 hover:text-gray-900 dark:text-gray-400 dark:hover:text-white"
                                                             >
@@ -316,10 +379,23 @@ export default function StorefrontPage() {
                                                             <button
                                                                 type="button"
                                                                 onClick={() =>
-                                                                    setQty((prev) => ({
-                                                                        ...prev,
-                                                                        [product.id]: Math.min(variantStock, (prev[product.id] ?? 1) + 1),
-                                                                    }))
+                                                                    setQty(
+                                                                        (
+                                                                            prev,
+                                                                        ) => ({
+                                                                            ...prev,
+                                                                            [product.id]:
+                                                                                Math.min(
+                                                                                    variantStock,
+                                                                                    (prev[
+                                                                                        product
+                                                                                            .id
+                                                                                    ] ??
+                                                                                        1) +
+                                                                                        1,
+                                                                                ),
+                                                                        }),
+                                                                    )
                                                                 }
                                                                 className="px-2 py-2 text-gray-500 hover:text-gray-900 dark:text-gray-400 dark:hover:text-white"
                                                             >
@@ -328,7 +404,11 @@ export default function StorefrontPage() {
                                                         </div>
                                                         <button
                                                             type="button"
-                                                            onClick={() => handleAddToCart(product)}
+                                                            onClick={() =>
+                                                                handleAddToCart(
+                                                                    product,
+                                                                )
+                                                            }
                                                             className="flex-1 rounded-xl bg-indigo-600 px-3 py-2 text-sm font-semibold text-white transition-colors hover:bg-indigo-700"
                                                         >
                                                             + Keranjang
@@ -350,13 +430,17 @@ export default function StorefrontPage() {
                                     key={i}
                                     type="button"
                                     disabled={!link.url}
-                                    onClick={() => link.url && loadPage(pageUrl(link.url))}
+                                    onClick={() =>
+                                        link.url && loadPage(pageUrl(link.url))
+                                    }
                                     className={`rounded-lg px-3 py-1.5 text-sm transition-colors ${
                                         link.active
                                             ? 'bg-indigo-600 font-semibold text-white'
                                             : 'text-gray-600 hover:bg-gray-100 dark:text-gray-300 dark:hover:bg-gray-700'
                                     } ${!link.url ? 'pointer-events-none opacity-50' : ''}`}
-                                    dangerouslySetInnerHTML={{ __html: link.label }}
+                                    dangerouslySetInnerHTML={{
+                                        __html: link.label,
+                                    }}
                                 />
                             ))}
                         </div>
@@ -364,7 +448,8 @@ export default function StorefrontPage() {
                 </main>
 
                 <footer className="border-t border-gray-200 py-8 text-center text-xs text-gray-400 dark:border-gray-800 dark:text-gray-500">
-                    © {new Date().getFullYear()} {outlet.nama_outlet} — Powered by HUBO
+                    © {new Date().getFullYear()} {outlet.nama_outlet} — Powered
+                    by HUBO
                 </footer>
             </div>
         </>

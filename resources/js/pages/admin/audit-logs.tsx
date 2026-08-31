@@ -1,4 +1,4 @@
-import { Head, router, usePage } from '@inertiajs/react';
+import { Head, router } from '@inertiajs/react';
 import { History, Search } from 'lucide-react';
 import type { FormEvent } from 'react';
 import AppLayout from '@/layouts/app-layout';

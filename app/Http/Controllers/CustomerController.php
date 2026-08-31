@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Models\AuditLog;
 use App\Models\Customer;
+use App\Models\Outlet;
 use App\Models\Role;
 use App\Services\AuditService;
 use App\Services\TenantService;
@@ -71,6 +72,8 @@ class CustomerController extends Controller
             'notes' => 'nullable|string',
         ]);
 
+        abort_if($this->outletIsNotInCompany($validated['outlet_id'] ?? null, $company->id), 422, 'Outlet tidak valid untuk tenant Anda.');
+
         $customer = Customer::create([
             'company_id' => $company->id,
             'outlet_id' => $validated['outlet_id'] ?? null,
@@ -107,6 +110,8 @@ class CustomerController extends Controller
             'outlet_id' => 'nullable|integer',
             'notes' => 'nullable|string',
         ]);
+
+        abort_if($this->outletIsNotInCompany($validated['outlet_id'] ?? null, $company->id), 422, 'Outlet tidak valid untuk tenant Anda.');
 
         $customer->update($validated);
 
@@ -152,5 +157,17 @@ class CustomerController extends Controller
         return $user->outlets()
             ->wherePivotIn('role_id', $roles)
             ->pluck('outlets.id');
+    }
+
+    private function outletIsNotInCompany(?int $outletId, int $companyId): bool
+    {
+        if ($outletId === null) {
+            return false;
+        }
+
+        return ! Outlet::query()
+            ->where('id', $outletId)
+            ->where('company_id', $companyId)
+            ->exists();
     }
 }

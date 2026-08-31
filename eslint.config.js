@@ -81,6 +81,7 @@ export default [
             'vite.config.ts',
             'resources/js/ziggy.js',
             'resources/js/actions/**',
+            'resources/js/routes/**',
         ],
     },
     prettier, // Turn off all rules that might conflict with Prettier

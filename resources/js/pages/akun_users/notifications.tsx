@@ -41,7 +41,10 @@ interface NotificationsPageProps extends InertiaPageProps {
     };
 }
 
-const typeMeta: Record<string, { title: string; icon: (cls: string) => React.ReactNode }> = {
+const typeMeta: Record<
+    string,
+    { title: string; icon: (cls: string) => React.ReactNode }
+> = {
     new_order: {
         title: 'Pesanan Baru',
         icon: (cls) => <ShoppingBagIcon className={cls} />,
@@ -61,10 +64,14 @@ const typeMeta: Record<string, { title: string; icon: (cls: string) => React.Rea
 };
 
 const typeColor: Record<string, string> = {
-    new_order: 'bg-indigo-50 text-indigo-600 dark:bg-indigo-900/40 dark:text-indigo-300',
-    order_status: 'bg-blue-50 text-blue-600 dark:bg-blue-900/40 dark:text-blue-300',
-    low_stock: 'bg-amber-50 text-amber-600 dark:bg-amber-900/40 dark:text-amber-300',
-    staff_request: 'bg-emerald-50 text-emerald-600 dark:bg-emerald-900/40 dark:text-emerald-300',
+    new_order:
+        'bg-indigo-50 text-indigo-600 dark:bg-indigo-900/40 dark:text-indigo-300',
+    order_status:
+        'bg-blue-50 text-blue-600 dark:bg-blue-900/40 dark:text-blue-300',
+    low_stock:
+        'bg-amber-50 text-amber-600 dark:bg-amber-900/40 dark:text-amber-300',
+    staff_request:
+        'bg-emerald-50 text-emerald-600 dark:bg-emerald-900/40 dark:text-emerald-300',
 };
 
 const breadcrumbs: BreadcrumbItem[] = [
@@ -77,7 +84,11 @@ export default function NotificationsPage() {
 
     const markRead = (item: NotificationItem) => {
         if (!item.read_at) {
-            router.post(`/notifikasi/${item.id}/read`, {}, { preserveScroll: true });
+            router.post(
+                `/notifikasi/${item.id}/read`,
+                {},
+                { preserveScroll: true },
+            );
         }
     };
 
@@ -126,9 +137,13 @@ export default function NotificationsPage() {
                         {paginator.data.map((item) => {
                             const meta = typeMeta[item.data.type ?? ''] ?? {
                                 title: 'Notifikasi',
-                                icon: (cls: string) => <BellIcon className={cls} />,
+                                icon: (cls: string) => (
+                                    <BellIcon className={cls} />
+                                ),
                             };
-                            const color = typeColor[item.data.type ?? ''] ?? typeColor.new_order;
+                            const color =
+                                typeColor[item.data.type ?? ''] ??
+                                typeColor.new_order;
                             return (
                                 <button
                                     key={item.id}
@@ -141,7 +156,9 @@ export default function NotificationsPage() {
                                     }`}
                                 >
                                     <div className="flex items-start gap-3">
-                                        <span className={`mt-0.5 flex h-10 w-10 shrink-0 items-center justify-center rounded-xl ${color}`}>
+                                        <span
+                                            className={`mt-0.5 flex h-10 w-10 shrink-0 items-center justify-center rounded-xl ${color}`}
+                                        >
                                             {meta.icon('h-5 w-5')}
                                         </span>
                                         <div className="min-w-0 flex-1">
@@ -155,7 +172,9 @@ export default function NotificationsPage() {
                                                     )}
                                                 </p>
                                                 <span className="shrink-0 text-xs text-gray-400 dark:text-gray-500">
-                                                    {new Date(item.created_at).toLocaleString('id-ID', {
+                                                    {new Date(
+                                                        item.created_at,
+                                                    ).toLocaleString('id-ID', {
                                                         day: 'numeric',
                                                         month: 'short',
                                                         hour: '2-digit',
@@ -163,7 +182,9 @@ export default function NotificationsPage() {
                                                     })}
                                                 </span>
                                             </div>
-                                            <p className={`mt-0.5 text-sm ${item.read_at ? 'text-gray-500 dark:text-gray-400' : 'text-gray-700 dark:text-gray-200'}`}>
+                                            <p
+                                                className={`mt-0.5 text-sm ${item.read_at ? 'text-gray-500 dark:text-gray-400' : 'text-gray-700 dark:text-gray-200'}`}
+                                            >
                                                 {item.data.message}
                                             </p>
                                         </div>

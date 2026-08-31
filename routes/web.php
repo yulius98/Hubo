@@ -21,6 +21,7 @@ use App\Http\Controllers\ProdukVariantController;
 use App\Http\Controllers\RequestRoleController;
 use App\Http\Controllers\RequestStaffController;
 use App\Http\Controllers\ReturnController;
+use App\Http\Controllers\ReviewController;
 use App\Http\Controllers\ShippingController;
 use App\Http\Controllers\StokController;
 use App\Http\Controllers\StorefrontController;
@@ -33,6 +34,9 @@ use Laravel\WorkOS\Http\Middleware\ValidateSessionWithWorkOS;
 
 Route::get('/', [WelcomeController::class, 'index'])->name('welcome');
 Route::get('produk/{produk}/detail', [ProdukController::class, 'show'])->name('produk.detail');
+Route::post('produk/{produk}/reviews', [ReviewController::class, 'store'])
+    ->middleware('auth')
+    ->name('produk.reviews.store');
 
 Route::middleware(['auth', ValidateSessionWithWorkOS::class])->group(function () {
 

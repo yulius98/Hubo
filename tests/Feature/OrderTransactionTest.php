@@ -85,8 +85,8 @@ it('creates an order with coupon and loyalty points from the user cart', functio
     expect($order->points_used)->toBe(2000);
     expect($order->points_discount)->toBe('200000.00');
     expect($order->discount)->toBe('250000.00');
-    expect($order->tax)->toBe('82500.00');
-    expect($order->total)->toBe('832500.00');
+    expect($order->tax)->toBe('74324.33');
+    expect($order->total)->toBe('824324.33');
     expect($order->customer_id)->toBe($customer->id);
     expect($order->outlet_id)->toBe($outlet->id);
 

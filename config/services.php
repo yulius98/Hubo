@@ -41,4 +41,17 @@ return [
         'redirect_url' => env('WORKOS_REDIRECT_URL'),
     ],
 
+    'rajaongkir' => [
+        'base_url' => env('RAJAONGKIR_BASE_URL', 'https://api.rajaongkir.com/starter'),
+    ],
+
+    'xendit' => [
+        'base_url' => env('XENDIT_BASE_URL', 'https://api.xendit.co'),
+    ],
+
+    'midtrans' => [
+        'sandbox_base_url' => env('MIDTRANS_SANDBOX_BASE_URL', 'https://app.sandbox.midtrans.com/api/v2'),
+        'production_base_url' => env('MIDTRANS_PRODUCTION_BASE_URL', 'https://app.midtrans.com/api/v2'),
+    ],
+
 ];

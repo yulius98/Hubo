@@ -1,10 +1,5 @@
 import { Head, Link, router, usePage } from '@inertiajs/react';
-import {
-    Pencil,
-    Plus,
-    ReceiptText,
-    Trash2,
-} from 'lucide-react';
+import { Pencil, Plus, ReceiptText, Trash2 } from 'lucide-react';
 import { useState } from 'react';
 import {
     Dialog,
@@ -79,9 +74,11 @@ const KATEGORI_OPTIONS = [
 const KATEGORI_BADGE: Record<string, string> = {
     sewa: 'bg-blue-100 text-blue-800 dark:bg-blue-900/40 dark:text-blue-300',
     gaji: 'bg-violet-100 text-violet-800 dark:bg-violet-900/40 dark:text-violet-300',
-    listrik: 'bg-amber-100 text-amber-800 dark:bg-amber-900/40 dark:text-amber-300',
+    listrik:
+        'bg-amber-100 text-amber-800 dark:bg-amber-900/40 dark:text-amber-300',
     air: 'bg-cyan-100 text-cyan-800 dark:bg-cyan-900/40 dark:text-cyan-300',
-    transport: 'bg-emerald-100 text-emerald-800 dark:bg-emerald-900/40 dark:text-emerald-300',
+    transport:
+        'bg-emerald-100 text-emerald-800 dark:bg-emerald-900/40 dark:text-emerald-300',
     lainnya: 'bg-gray-100 text-gray-700 dark:bg-gray-800 dark:text-gray-300',
 };
 
@@ -149,7 +146,10 @@ export default function Expenses({
         setModalOpen(true);
     };
 
-    const setField = <K extends keyof ExpenseForm>(key: K, value: ExpenseForm[K]) => {
+    const setField = <K extends keyof ExpenseForm>(
+        key: K,
+        value: ExpenseForm[K],
+    ) => {
         setForm((current) => ({ ...current, [key]: value }));
     };
 
@@ -355,7 +355,9 @@ export default function Expenses({
                                                     <button
                                                         type="button"
                                                         onClick={() =>
-                                                            handleDelete(expense)
+                                                            handleDelete(
+                                                                expense,
+                                                            )
                                                         }
                                                         className="inline-flex items-center gap-1 rounded-lg px-2.5 py-1.5 text-xs font-medium text-red-600 hover:bg-red-50 dark:text-red-400 dark:hover:bg-red-900/30"
                                                     >
@@ -411,7 +413,9 @@ export default function Expenses({
                 <DialogContent className="sm:max-w-lg">
                     <DialogHeader>
                         <DialogTitle>
-                            {editing ? 'Edit Pengeluaran' : 'Tambah Pengeluaran'}
+                            {editing
+                                ? 'Edit Pengeluaran'
+                                : 'Tambah Pengeluaran'}
                         </DialogTitle>
                         <DialogDescription>
                             {editing
@@ -445,7 +449,9 @@ export default function Expenses({
 
                         <div className="grid gap-3 sm:grid-cols-2">
                             <div className="grid gap-1.5">
-                                <label className={labelClass}>Jumlah (Rp)</label>
+                                <label className={labelClass}>
+                                    Jumlah (Rp)
+                                </label>
                                 <input
                                     type="number"
                                     min={0}
@@ -512,7 +518,9 @@ export default function Expenses({
                             onClick={submit}
                             className="inline-flex h-10 items-center justify-center rounded-xl bg-indigo-600 px-5 text-sm font-medium text-white shadow-sm transition hover:bg-indigo-700"
                         >
-                            {editing ? 'Simpan Perubahan' : 'Tambah Pengeluaran'}
+                            {editing
+                                ? 'Simpan Perubahan'
+                                : 'Tambah Pengeluaran'}
                         </button>
                     </DialogFooter>
                 </DialogContent>

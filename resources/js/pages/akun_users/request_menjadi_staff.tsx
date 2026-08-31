@@ -3,7 +3,7 @@ import { Head, router, useForm } from '@inertiajs/react';
 import type { SubmitEvent } from 'react';
 import React, { useState } from 'react';
 import AppLayout from '@/layouts/app-layout';
-import { req_staff } from '@/routes';
+import { req_staff, terima_staff, tolak_staff } from '@/routes';
 import type { BreadcrumbItem } from '@/types';
 
 interface Outlet {
@@ -127,7 +127,7 @@ export default function Request_Menjadi_Staff({
 
     const handleTerima = (id: number) => {
         router.post(
-            route('terima_staff', id),
+            terima_staff.url({ id }),
             {},
             { preserveState: true, preserveScroll: true },
         );
@@ -135,7 +135,7 @@ export default function Request_Menjadi_Staff({
 
     const handleTolak = (id: number) => {
         router.put(
-            route('tolak_staff', id),
+            tolak_staff.url({ id }),
             {},
             { preserveState: true, preserveScroll: true },
         );

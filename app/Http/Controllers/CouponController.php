@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Models\Coupon;
+use App\Models\Outlet;
 use App\Services\TenantService;
 use Illuminate\Http\Request;
 use Illuminate\Validation\Rule;
@@ -63,6 +64,8 @@ class CouponController extends Controller
             'outlet_id' => 'nullable|integer',
         ]);
 
+        abort_if($this->outletIsNotInCompany($validated['outlet_id'] ?? null, $company->id), 422, 'Outlet tidak valid untuk tenant Anda.');
+
         $coupon = Coupon::create([
             'company_id' => $company->id,
             'outlet_id' => $validated['outlet_id'] ?? null,
@@ -102,6 +105,8 @@ class CouponController extends Controller
             'outlet_id' => 'nullable|integer',
             'is_active' => 'boolean',
         ]);
+
+        abort_if($this->outletIsNotInCompany($validated['outlet_id'] ?? null, $company->id), 422, 'Outlet tidak valid untuk tenant Anda.');
 
         $coupon->update([
             'code' => mb_strtoupper($validated['code']),
@@ -144,5 +149,17 @@ class CouponController extends Controller
         $coupon->delete();
 
         return redirect()->back()->with('success', 'Kupon berhasil dihapus.');
+    }
+
+    private function outletIsNotInCompany(?int $outletId, int $companyId): bool
+    {
+        if ($outletId === null) {
+            return false;
+        }
+
+        return ! Outlet::query()
+            ->where('id', $outletId)
+            ->where('company_id', $companyId)
+            ->exists();
     }
 }

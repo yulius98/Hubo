@@ -2,10 +2,17 @@ import { Head, Link, router, usePage } from '@inertiajs/react';
 import { Eye, Package, Plus, Trash2, Truck, X } from 'lucide-react';
 import type { FormEvent } from 'react';
 import { useState } from 'react';
+import {
+    Dialog,
+    DialogContent,
+    DialogDescription,
+    DialogFooter,
+    DialogHeader,
+    DialogTitle,
+} from '@/components/ui/dialog';
 import AppLayout from '@/layouts/app-layout';
 import admin from '@/routes/admin';
 import type { BreadcrumbItem } from '@/types';
-import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 
 interface PurchaseOrderItem {
     id: number;
@@ -59,11 +66,11 @@ interface PurchaseOrdersProps {
     status: string;
 }
 
-interface FormItem {
+type FormItem = {
     produk_id: number;
     jumlah: number;
     harga_beli: number;
-}
+};
 
 const breadcrumbs: BreadcrumbItem[] = [
     {
@@ -102,11 +109,17 @@ const statusLabel = (status: string): string => {
 const statusBadgeClass = (status: string): string => {
     const classes: Record<string, string> = {
         draft: 'bg-amber-100 text-amber-800 dark:bg-amber-900/30 dark:text-amber-400',
-        submitted: 'bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-400',
-        received: 'bg-emerald-100 text-emerald-800 dark:bg-emerald-900/30 dark:text-emerald-400',
-        cancelled: 'bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-400',
+        submitted:
+            'bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-400',
+        received:
+            'bg-emerald-100 text-emerald-800 dark:bg-emerald-900/30 dark:text-emerald-400',
+        cancelled:
+            'bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-400',
     };
-    return classes[status] ?? 'bg-gray-100 text-gray-800 dark:bg-gray-700 dark:text-gray-300';
+    return (
+        classes[status] ??
+        'bg-gray-100 text-gray-800 dark:bg-gray-700 dark:text-gray-300'
+    );
 };
 
 const emptyForm = {
@@ -132,7 +145,12 @@ const statusFilters = [
     { value: 'cancelled', label: 'Dibatalkan' },
 ];
 
-export default function PurchaseOrders({ purchaseOrders, suppliers, products, status }: Readonly<PurchaseOrdersProps>) {
+export default function PurchaseOrders({
+    purchaseOrders,
+    suppliers,
+    products,
+    status,
+}: Readonly<PurchaseOrdersProps>) {
     const { flash } = usePage().props;
 
     const [dialogOpen, setDialogOpen] = useState(false);
@@ -149,11 +167,10 @@ export default function PurchaseOrders({ purchaseOrders, suppliers, products, st
         if (value) {
             params.status = value;
         }
-        router.get(
-            admin.purchaseOrders().url,
-            params,
-            { preserveState: true, replace: true },
-        );
+        router.get(admin.purchaseOrders().url, params, {
+            preserveState: true,
+            replace: true,
+        });
     };
 
     const openCreate = () => {
@@ -171,7 +188,11 @@ export default function PurchaseOrders({ purchaseOrders, suppliers, products, st
         setItems(items.filter((_, i) => i !== index));
     };
 
-    const updateItem = (index: number, field: keyof FormItem, value: number) => {
+    const updateItem = (
+        index: number,
+        field: keyof FormItem,
+        value: number,
+    ) => {
         const updated = [...items];
         updated[index] = { ...updated[index], [field]: value };
         if (field === 'produk_id') {
@@ -183,7 +204,10 @@ export default function PurchaseOrders({ purchaseOrders, suppliers, products, st
         setItems(updated);
     };
 
-    const itemsTotal = items.reduce((sum, item) => sum + item.jumlah * item.harga_beli, 0);
+    const itemsTotal = items.reduce(
+        (sum, item) => sum + item.jumlah * item.harga_beli,
+        0,
+    );
 
     const submit = (e: FormEvent) => {
         e.preventDefault();
@@ -193,21 +217,19 @@ export default function PurchaseOrders({ purchaseOrders, suppliers, products, st
             supplier_id: form.supplier_id,
             expected_date: form.expected_date || null,
             catatan: form.catatan || null,
-            items: items.filter((item) => item.produk_id > 0 && item.jumlah > 0),
+            items: items.filter(
+                (item) => item.produk_id > 0 && item.jumlah > 0,
+            ),
         };
 
-        router.post(
-            admin.purchaseOrders.store().url,
-            payload,
-            {
-                onSuccess: () => {
-                    setDialogOpen(false);
-                    setForm(emptyForm);
-                    setItems([{ ...emptyItem }]);
-                },
-                onFinish: () => setProcessing(false),
+        router.post(admin.purchaseOrders.store().url, payload, {
+            onSuccess: () => {
+                setDialogOpen(false);
+                setForm(emptyForm);
+                setItems([{ ...emptyItem }]);
             },
-        );
+            onFinish: () => setProcessing(false),
+        });
     };
 
     const confirmDelete = (po: PurchaseOrder) => {
@@ -296,7 +318,8 @@ export default function PurchaseOrders({ purchaseOrders, suppliers, products, st
                             type="button"
                             onClick={() => handleStatusFilter(filter.value)}
                             className={`rounded-xl px-4 py-2 text-sm font-medium transition-colors ${
-                                status === filter.value || (!status && filter.value === '')
+                                status === filter.value ||
+                                (!status && filter.value === '')
                                     ? 'bg-indigo-600 text-white shadow-sm'
                                     : 'bg-white text-gray-600 hover:bg-gray-100 dark:bg-gray-800 dark:text-gray-300 dark:hover:bg-gray-700/60'
                             }`}
@@ -357,7 +380,14 @@ export default function PurchaseOrders({ purchaseOrders, suppliers, products, st
                                         >
                                             <td className="px-5 py-3.5">
                                                 <Link
-                                                    href={admin.purchaseOrders.show({ purchaseOrder: po.id }).url}
+                                                    href={
+                                                        admin.purchaseOrders.show(
+                                                            {
+                                                                purchaseOrder:
+                                                                    po.id,
+                                                            },
+                                                        ).url
+                                                    }
                                                     className="font-medium text-indigo-600 hover:underline dark:text-indigo-400"
                                                 >
                                                     {po.po_number}
@@ -369,43 +399,65 @@ export default function PurchaseOrders({ purchaseOrders, suppliers, products, st
                                             <td className="px-5 py-3.5 text-sm whitespace-nowrap text-gray-600 dark:text-gray-400">
                                                 {po.items.length} item
                                             </td>
-                                            <td className="px-5 py-3.5 text-sm whitespace-nowrap font-medium text-gray-900 dark:text-gray-100">
+                                            <td className="px-5 py-3.5 text-sm font-medium whitespace-nowrap text-gray-900 dark:text-gray-100">
                                                 {formatRupiah(po.total)}
                                             </td>
                                             <td className="px-5 py-3.5 whitespace-nowrap">
-                                                <span className={`inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-medium ${statusBadgeClass(po.status)}`}>
+                                                <span
+                                                    className={`inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-medium ${statusBadgeClass(po.status)}`}
+                                                >
                                                     {statusLabel(po.status)}
                                                 </span>
                                             </td>
                                             <td className="px-5 py-3.5 text-sm whitespace-nowrap text-gray-600 dark:text-gray-400">
-                                                {po.expected_date ? formatWaktu(po.expected_date) : '—'}
+                                                {po.expected_date
+                                                    ? formatWaktu(
+                                                          po.expected_date,
+                                                      )
+                                                    : '—'}
                                             </td>
                                             <td className="px-5 py-3.5 whitespace-nowrap">
                                                 <div className="flex items-center gap-2">
                                                     <Link
-                                                        href={admin.purchaseOrders.show({ purchaseOrder: po.id }).url}
+                                                        href={
+                                                            admin.purchaseOrders.show(
+                                                                {
+                                                                    purchaseOrder:
+                                                                        po.id,
+                                                                },
+                                                            ).url
+                                                        }
                                                         className="rounded-lg px-3 py-1.5 text-xs font-medium text-indigo-600 hover:bg-indigo-50 dark:text-indigo-400 dark:hover:bg-indigo-900/30"
                                                     >
-                                                        <Eye className="inline h-3.5 w-3.5 mr-1" />
+                                                        <Eye className="mr-1 inline h-3.5 w-3.5" />
                                                         Detail
                                                     </Link>
-                                                    {po.status === 'submitted' && (
+                                                    {po.status ===
+                                                        'submitted' && (
                                                         <button
                                                             type="button"
-                                                            onClick={() => confirmReceive(po)}
+                                                            onClick={() =>
+                                                                confirmReceive(
+                                                                    po,
+                                                                )
+                                                            }
                                                             className="rounded-lg px-3 py-1.5 text-xs font-medium text-emerald-600 hover:bg-emerald-50 dark:text-emerald-400 dark:hover:bg-emerald-900/30"
                                                         >
-                                                            <Package className="inline h-3.5 w-3.5 mr-1" />
+                                                            <Package className="mr-1 inline h-3.5 w-3.5" />
                                                             Terima
                                                         </button>
                                                     )}
                                                     {po.status === 'draft' && (
                                                         <button
                                                             type="button"
-                                                            onClick={() => confirmDelete(po)}
+                                                            onClick={() =>
+                                                                confirmDelete(
+                                                                    po,
+                                                                )
+                                                            }
                                                             className="rounded-lg px-3 py-1.5 text-xs font-medium text-red-600 hover:bg-red-50 dark:text-red-400 dark:hover:bg-red-900/30"
                                                         >
-                                                            <Trash2 className="inline h-3.5 w-3.5 mr-1" />
+                                                            <Trash2 className="mr-1 inline h-3.5 w-3.5" />
                                                             Hapus
                                                         </button>
                                                     )}
@@ -461,25 +513,37 @@ export default function PurchaseOrders({ purchaseOrders, suppliers, products, st
                             Buat Purchase Order
                         </DialogTitle>
                         <DialogDescription className="text-sm text-gray-500 dark:text-gray-400">
-                            Isi formulir berikut untuk membuat purchase order baru.
+                            Isi formulir berikut untuk membuat purchase order
+                            baru.
                         </DialogDescription>
                     </DialogHeader>
 
                     <form onSubmit={submit} className="space-y-4">
                         <div>
-                            <label htmlFor="supplier_id" className="mb-1 block text-sm font-medium text-gray-700 dark:text-gray-300">
+                            <label
+                                htmlFor="supplier_id"
+                                className="mb-1 block text-sm font-medium text-gray-700 dark:text-gray-300"
+                            >
                                 Supplier <span className="text-red-500">*</span>
                             </label>
                             <select
                                 id="supplier_id"
                                 required
                                 value={form.supplier_id}
-                                onChange={(e) => setForm({ ...form, supplier_id: e.target.value })}
+                                onChange={(e) =>
+                                    setForm({
+                                        ...form,
+                                        supplier_id: e.target.value,
+                                    })
+                                }
                                 className={inputClass}
                             >
                                 <option value="">Pilih supplier</option>
                                 {suppliers.map((supplier) => (
-                                    <option key={supplier.id} value={supplier.id}>
+                                    <option
+                                        key={supplier.id}
+                                        value={supplier.id}
+                                    >
                                         {supplier.nama}
                                     </option>
                                 ))}
@@ -502,18 +566,33 @@ export default function PurchaseOrders({ purchaseOrders, suppliers, products, st
                             </div>
                             <div className="space-y-3">
                                 {items.map((item, index) => (
-                                    <div key={index} className="flex items-start gap-2">
+                                    <div
+                                        key={index}
+                                        className="flex items-start gap-2"
+                                    >
                                         <div className="flex-1">
                                             <select
                                                 required
                                                 value={item.produk_id}
-                                                onChange={(e) => updateItem(index, 'produk_id', Number(e.target.value))}
+                                                onChange={(e) =>
+                                                    updateItem(
+                                                        index,
+                                                        'produk_id',
+                                                        Number(e.target.value),
+                                                    )
+                                                }
                                                 className={inputClass}
                                             >
-                                                <option value={0}>Pilih produk</option>
+                                                <option value={0}>
+                                                    Pilih produk
+                                                </option>
                                                 {products.map((product) => (
-                                                    <option key={product.id} value={product.id}>
-                                                        {product.nama_produk} (Stok: {product.stok})
+                                                    <option
+                                                        key={product.id}
+                                                        value={product.id}
+                                                    >
+                                                        {product.nama_produk}{' '}
+                                                        (Stok: {product.stok})
                                                     </option>
                                                 ))}
                                             </select>
@@ -524,7 +603,13 @@ export default function PurchaseOrders({ purchaseOrders, suppliers, products, st
                                                 min={1}
                                                 required
                                                 value={item.jumlah}
-                                                onChange={(e) => updateItem(index, 'jumlah', Number(e.target.value))}
+                                                onChange={(e) =>
+                                                    updateItem(
+                                                        index,
+                                                        'jumlah',
+                                                        Number(e.target.value),
+                                                    )
+                                                }
                                                 className={inputClass}
                                                 placeholder="Qty"
                                             />
@@ -535,18 +620,28 @@ export default function PurchaseOrders({ purchaseOrders, suppliers, products, st
                                                 min={0}
                                                 required
                                                 value={item.harga_beli}
-                                                onChange={(e) => updateItem(index, 'harga_beli', Number(e.target.value))}
+                                                onChange={(e) =>
+                                                    updateItem(
+                                                        index,
+                                                        'harga_beli',
+                                                        Number(e.target.value),
+                                                    )
+                                                }
                                                 className={inputClass}
                                                 placeholder="Harga"
                                             />
                                         </div>
-                                        <div className="w-32 text-right text-sm font-medium leading-10 text-gray-700 dark:text-gray-300">
-                                            {formatRupiah(item.jumlah * item.harga_beli)}
+                                        <div className="w-32 text-right text-sm leading-10 font-medium text-gray-700 dark:text-gray-300">
+                                            {formatRupiah(
+                                                item.jumlah * item.harga_beli,
+                                            )}
                                         </div>
                                         {items.length > 1 && (
                                             <button
                                                 type="button"
-                                                onClick={() => removeItem(index)}
+                                                onClick={() =>
+                                                    removeItem(index)
+                                                }
                                                 className="mt-2 rounded-lg p-1.5 text-gray-400 hover:bg-red-50 hover:text-red-600 dark:hover:bg-red-900/30 dark:hover:text-red-400"
                                             >
                                                 <X className="h-4 w-4" />
@@ -563,27 +658,43 @@ export default function PurchaseOrders({ purchaseOrders, suppliers, products, st
                         </div>
 
                         <div>
-                            <label htmlFor="expected_date" className="mb-1 block text-sm font-medium text-gray-700 dark:text-gray-300">
+                            <label
+                                htmlFor="expected_date"
+                                className="mb-1 block text-sm font-medium text-gray-700 dark:text-gray-300"
+                            >
                                 Tanggal Diharapkan
                             </label>
                             <input
                                 id="expected_date"
                                 type="date"
                                 value={form.expected_date}
-                                onChange={(e) => setForm({ ...form, expected_date: e.target.value })}
+                                onChange={(e) =>
+                                    setForm({
+                                        ...form,
+                                        expected_date: e.target.value,
+                                    })
+                                }
                                 className={inputClass}
                             />
                         </div>
 
                         <div>
-                            <label htmlFor="catatan" className="mb-1 block text-sm font-medium text-gray-700 dark:text-gray-300">
+                            <label
+                                htmlFor="catatan"
+                                className="mb-1 block text-sm font-medium text-gray-700 dark:text-gray-300"
+                            >
                                 Catatan
                             </label>
                             <textarea
                                 id="catatan"
                                 rows={3}
                                 value={form.catatan}
-                                onChange={(e) => setForm({ ...form, catatan: e.target.value })}
+                                onChange={(e) =>
+                                    setForm({
+                                        ...form,
+                                        catatan: e.target.value,
+                                    })
+                                }
                                 className={`${inputClass} py-2.5`}
                                 placeholder="Catatan tambahan"
                             />
@@ -643,7 +754,10 @@ export default function PurchaseOrders({ purchaseOrders, suppliers, products, st
                 </DialogContent>
             </Dialog>
 
-            <Dialog open={receiveDialogOpen} onOpenChange={setReceiveDialogOpen}>
+            <Dialog
+                open={receiveDialogOpen}
+                onOpenChange={setReceiveDialogOpen}
+            >
                 <DialogContent className="max-w-md rounded-2xl">
                     <DialogHeader>
                         <DialogTitle className="text-lg font-semibold text-gray-900 dark:text-gray-100">

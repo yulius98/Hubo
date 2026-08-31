@@ -39,7 +39,9 @@ export default function ShippingSettings({
 
     const [apiKey, setApiKey] = useState(config.api_key);
     const [originCityId, setOriginCityId] = useState(config.origin_city_id);
-    const [originProvince, setOriginProvince] = useState(config.origin_province);
+    const [originProvince, setOriginProvince] = useState(
+        config.origin_province,
+    );
     const [apiKeyVisible, setApiKeyVisible] = useState(false);
 
     const hasChanges =
@@ -59,15 +61,13 @@ export default function ShippingSettings({
         );
     };
 
-    const inputClass =
-        'h-10 w-full rounded-xl border border-gray-200 bg-white px-3 text-sm text-gray-900 shadow-sm focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/30 dark:border-gray-700 dark:bg-gray-800 dark:text-gray-100';
     const labelClass = 'text-sm font-medium text-gray-700 dark:text-gray-300';
 
     return (
         <AppLayout breadcrumbs={breadcrumbs}>
             <Head title="Shipping API" />
 
-            <main className="max-w-4xl mx-auto p-4 sm:p-6 lg:p-8">
+            <main className="mx-auto max-w-4xl p-4 sm:p-6 lg:p-8">
                 <div className="mb-6 sm:mb-8">
                     <h1 className="flex flex-wrap items-center gap-3 text-2xl font-bold tracking-tight text-gray-900 sm:text-3xl dark:text-gray-100">
                         <Truck className="h-8 w-8 text-indigo-500" />
@@ -238,16 +238,16 @@ export default function ShippingSettings({
                             dengan ribuan kurir di Indonesia.
                         </li>
                         <li>
-                            Dapatkan API Key dengan mendaftar di
-                            rajaongkir.com (pakai Kurir/Pro).
+                            Dapatkan API Key dengan mendaftar di rajaongkir.com
+                            (pakai Kurir/Pro).
                         </li>
                         <li>
                             Origin City ID adalah kode kota pengirim, bisa
                             dicari melalui API atau dashboard RajaOngkir.
                         </li>
                         <li>
-                            Origin Province diisi nama provinsi tempat kota
-                            asal pengiriman berada.
+                            Origin Province diisi nama provinsi tempat kota asal
+                            pengiriman berada.
                         </li>
                     </ul>
                 </div>

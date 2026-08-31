@@ -144,6 +144,10 @@ class HandleInertiaRequests extends Middleware
                 'payment_url' => $request->session()->get('payment_url'),
             ],
             'locale' => $request->session()->get('locale', 'id'),
+            'shipping' => [
+                'unitWeightGram' => config('shipping.unit_weight_gram'),
+                'defaultDestinationCityId' => config('shipping.default_destination_city_id'),
+            ],
         ];
     }
 }

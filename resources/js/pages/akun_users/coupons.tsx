@@ -81,8 +81,11 @@ const breadcrumbs: BreadcrumbItem[] = [
 ];
 
 export default function CouponsPage() {
-    const { coupons: paginator, outlets, selectedOutletId } =
-        usePage<CouponsPageProps>().props;
+    const {
+        coupons: paginator,
+        outlets,
+        selectedOutletId,
+    } = usePage<CouponsPageProps>().props;
 
     const [editing, setEditing] = useState<Coupon | null>(null);
     const [showForm, setShowForm] = useState(false);
@@ -104,10 +107,12 @@ export default function CouponsPage() {
             type: coupon.type,
             value: String(coupon.value),
             min_purchase: String(coupon.min_purchase),
-            max_discount: coupon.max_discount !== null ? String(coupon.max_discount) : '',
+            max_discount:
+                coupon.max_discount !== null ? String(coupon.max_discount) : '',
             valid_from: coupon.valid_from ?? '',
             valid_to: coupon.valid_to ?? '',
-            usage_limit: coupon.usage_limit !== null ? String(coupon.usage_limit) : '',
+            usage_limit:
+                coupon.usage_limit !== null ? String(coupon.usage_limit) : '',
             outlet_id: coupon.outlet_id ?? '',
             is_active: coupon.is_active,
         });
@@ -123,10 +128,12 @@ export default function CouponsPage() {
             type: data.type,
             value: data.value === '' ? 0 : Number(data.value),
             min_purchase: Number(data.min_purchase),
-            max_discount: data.max_discount === '' ? null : Number(data.max_discount),
+            max_discount:
+                data.max_discount === '' ? null : Number(data.max_discount),
             valid_from: data.valid_from || null,
             valid_to: data.valid_to || null,
-            usage_limit: data.usage_limit === '' ? null : Number(data.usage_limit),
+            usage_limit:
+                data.usage_limit === '' ? null : Number(data.usage_limit),
             outlet_id: data.outlet_id === '' ? null : Number(data.outlet_id),
             is_active: data.is_active,
         }));
@@ -148,7 +155,11 @@ export default function CouponsPage() {
     };
 
     const toggle = (coupon: Coupon) => {
-        router.post(`/coupons/${coupon.id}/toggle`, {}, { preserveScroll: true });
+        router.post(
+            `/coupons/${coupon.id}/toggle`,
+            {},
+            { preserveScroll: true },
+        );
     };
 
     const destroy = (coupon: Coupon) => {
@@ -253,13 +264,19 @@ export default function CouponsPage() {
                                     }
                                     className="w-full rounded-xl border border-gray-300 bg-white px-4 py-2.5 text-gray-900 transition-colors focus:border-blue-500 focus:ring-2 focus:ring-blue-500 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-100 dark:focus:border-blue-500 dark:focus:ring-blue-500"
                                 >
-                                    <option value="percentage">Persentase (%)</option>
+                                    <option value="percentage">
+                                        Persentase (%)
+                                    </option>
                                     <option value="fixed">Nominal (Rp)</option>
                                 </select>
                             </div>
                             <div>
                                 <label className="mb-1.5 block text-sm font-medium text-gray-700 dark:text-gray-300">
-                                    Nilai {form.data.type === 'percentage' ? '(%)' : '(Rp)'} *
+                                    Nilai{' '}
+                                    {form.data.type === 'percentage'
+                                        ? '(%)'
+                                        : '(Rp)'}{' '}
+                                    *
                                 </label>
                                 <input
                                     type="number"
@@ -286,7 +303,10 @@ export default function CouponsPage() {
                                     min="0"
                                     value={form.data.min_purchase}
                                     onChange={(e) =>
-                                        form.setData('min_purchase', e.target.value)
+                                        form.setData(
+                                            'min_purchase',
+                                            e.target.value,
+                                        )
                                     }
                                     className="w-full rounded-xl border border-gray-300 bg-white px-4 py-2.5 text-gray-900 placeholder-gray-400 transition-colors focus:border-blue-500 focus:ring-2 focus:ring-blue-500 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-100 dark:focus:border-blue-500 dark:focus:ring-blue-500"
                                 />
@@ -300,7 +320,10 @@ export default function CouponsPage() {
                                     min="0"
                                     value={form.data.max_discount}
                                     onChange={(e) =>
-                                        form.setData('max_discount', e.target.value)
+                                        form.setData(
+                                            'max_discount',
+                                            e.target.value,
+                                        )
                                     }
                                     placeholder="Opsional"
                                     className="w-full rounded-xl border border-gray-300 bg-white px-4 py-2.5 text-gray-900 placeholder-gray-400 transition-colors focus:border-blue-500 focus:ring-2 focus:ring-blue-500 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-100 dark:focus:border-blue-500 dark:focus:ring-blue-500"
@@ -314,7 +337,10 @@ export default function CouponsPage() {
                                     type="date"
                                     value={form.data.valid_from}
                                     onChange={(e) =>
-                                        form.setData('valid_from', e.target.value)
+                                        form.setData(
+                                            'valid_from',
+                                            e.target.value,
+                                        )
                                     }
                                     className="w-full rounded-xl border border-gray-300 bg-white px-4 py-2.5 text-gray-900 transition-colors focus:border-blue-500 focus:ring-2 focus:ring-blue-500 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-100 dark:[color-scheme:dark]"
                                 />
@@ -341,7 +367,10 @@ export default function CouponsPage() {
                                     min="1"
                                     value={form.data.usage_limit}
                                     onChange={(e) =>
-                                        form.setData('usage_limit', e.target.value)
+                                        form.setData(
+                                            'usage_limit',
+                                            e.target.value,
+                                        )
                                     }
                                     placeholder="Tanpa batas"
                                     className="w-full rounded-xl border border-gray-300 bg-white px-4 py-2.5 text-gray-900 placeholder-gray-400 transition-colors focus:border-blue-500 focus:ring-2 focus:ring-blue-500 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-100 dark:focus:border-blue-500 dark:focus:ring-blue-500"
@@ -365,7 +394,10 @@ export default function CouponsPage() {
                                 >
                                     <option value="">Semua Outlet</option>
                                     {outlets.map((outlet) => (
-                                        <option key={outlet.id} value={outlet.id}>
+                                        <option
+                                            key={outlet.id}
+                                            value={outlet.id}
+                                        >
                                             {outlet.nama_outlet}
                                         </option>
                                     ))}
@@ -377,7 +409,10 @@ export default function CouponsPage() {
                                         type="checkbox"
                                         checked={form.data.is_active}
                                         onChange={(e) =>
-                                            form.setData('is_active', e.target.checked)
+                                            form.setData(
+                                                'is_active',
+                                                e.target.checked,
+                                            )
                                         }
                                         className="h-4 w-4 rounded border-gray-300 text-blue-600 focus:ring-blue-500"
                                     />
@@ -437,7 +472,11 @@ export default function CouponsPage() {
                                                 type="button"
                                                 onClick={() => toggle(coupon)}
                                                 className="rounded-lg p-1.5 text-gray-500 transition-colors hover:bg-amber-50 hover:text-amber-600 dark:text-gray-400 dark:hover:bg-amber-900/30 dark:hover:text-amber-300"
-                                                title={coupon.is_active ? 'Nonaktifkan' : 'Aktifkan'}
+                                                title={
+                                                    coupon.is_active
+                                                        ? 'Nonaktifkan'
+                                                        : 'Aktifkan'
+                                                }
                                             >
                                                 <PowerIcon className="h-4 w-4" />
                                             </button>
@@ -480,7 +519,9 @@ export default function CouponsPage() {
                                         <p>
                                             Min. belanja:{' '}
                                             <span className="font-medium">
-                                                {formatRupiah(coupon.min_purchase)}
+                                                {formatRupiah(
+                                                    coupon.min_purchase,
+                                                )}
                                             </span>
                                         </p>
                                         {coupon.max_discount !== null &&
@@ -488,7 +529,9 @@ export default function CouponsPage() {
                                                 <p>
                                                     Maks. diskon:{' '}
                                                     <span className="font-medium">
-                                                        {formatRupiah(coupon.max_discount)}
+                                                        {formatRupiah(
+                                                            coupon.max_discount,
+                                                        )}
                                                     </span>
                                                 </p>
                                             )}
@@ -501,7 +544,8 @@ export default function CouponsPage() {
                                                     : ' kali'}
                                             </span>
                                         </p>
-                                        {(coupon.valid_from || coupon.valid_to) && (
+                                        {(coupon.valid_from ||
+                                            coupon.valid_to) && (
                                             <p>
                                                 {coupon.valid_from &&
                                                     `${new Date(coupon.valid_from).toLocaleDateString('id-ID')}`}
@@ -509,7 +553,11 @@ export default function CouponsPage() {
                                                     coupon.valid_to &&
                                                     ' — '}
                                                 {coupon.valid_to &&
-                                                    new Date(coupon.valid_to).toLocaleDateString('id-ID')}
+                                                    new Date(
+                                                        coupon.valid_to,
+                                                    ).toLocaleDateString(
+                                                        'id-ID',
+                                                    )}
                                             </p>
                                         )}
                                     </div>

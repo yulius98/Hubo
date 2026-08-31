@@ -24,7 +24,13 @@ class WebhookController extends Controller
         $config = config('services.xendit.webhook_token', '');
         $storedToken = $config ?: ($this->getConfigValue('xendit', 'webhook_token') ?? '');
 
-        if ($storedToken && $token !== $storedToken) {
+        if (! $storedToken) {
+            Log::warning('Xendit webhook: callback token tidak dikonfigurasi');
+
+            return response()->json(['message' => 'Unauthorized'], 401);
+        }
+
+        if ($token !== $storedToken) {
             Log::warning('Xendit webhook: invalid token');
 
             return response()->json(['message' => 'Unauthorized'], 401);
@@ -88,9 +94,9 @@ class WebhookController extends Controller
             ?? config('services.midtrans.server_key', '');
 
         if (! $serverKey) {
-            Log::warning('Midtrans webhook: server key not configured, skipping signature verification');
+            Log::warning('Midtrans webhook: server key tidak dikonfigurasi, menolak permintaan');
 
-            return true;
+            return false;
         }
 
         $expectedSignature = hash('sha512', $orderId.$statusCode.$grossAmount.$serverKey);

@@ -1,4 +1,8 @@
-import { UserPlusIcon, PencilIcon, TrashIcon } from '@heroicons/react/24/outline';
+import {
+    UserPlusIcon,
+    PencilIcon,
+    TrashIcon,
+} from '@heroicons/react/24/outline';
 import type { PageProps as InertiaPageProps } from '@inertiajs/core';
 import { Head, Link, router, useForm, usePage } from '@inertiajs/react';
 import { useState } from 'react';
@@ -45,8 +49,11 @@ const breadcrumbs: BreadcrumbItem[] = [
 ];
 
 export default function CustomersPage() {
-    const { customers: paginator, outlets, selectedOutletId } =
-        usePage<CustomersPageProps>().props;
+    const {
+        customers: paginator,
+        outlets,
+        selectedOutletId,
+    } = usePage<CustomersPageProps>().props;
 
     const [editing, setEditing] = useState<Customer | null>(null);
     const [showForm, setShowForm] = useState(false);
@@ -206,7 +213,10 @@ export default function CustomersPage() {
                                 >
                                     <option value="">Semua Outlet</option>
                                     {outlets.map((outlet) => (
-                                        <option key={outlet.id} value={outlet.id}>
+                                        <option
+                                            key={outlet.id}
+                                            value={outlet.id}
+                                        >
                                             {outlet.nama_outlet}
                                         </option>
                                     ))}
@@ -283,8 +293,12 @@ export default function CustomersPage() {
                                         <th className="px-5 py-3">Nama</th>
                                         <th className="px-5 py-3">Kontak</th>
                                         <th className="px-5 py-3">Outlet</th>
-                                        <th className="px-5 py-3 text-right">Poin</th>
-                                        <th className="px-5 py-3 text-right">Aksi</th>
+                                        <th className="px-5 py-3 text-right">
+                                            Poin
+                                        </th>
+                                        <th className="px-5 py-3 text-right">
+                                            Aksi
+                                        </th>
                                     </tr>
                                 </thead>
                                 <tbody>
@@ -318,7 +332,10 @@ export default function CustomersPage() {
                                             <td className="px-5 py-3">
                                                 {customer.outlet ? (
                                                     <span className="rounded-full bg-blue-50 px-2.5 py-0.5 text-xs font-medium text-blue-700 dark:bg-blue-900/40 dark:text-blue-300">
-                                                        {customer.outlet.nama_outlet}
+                                                        {
+                                                            customer.outlet
+                                                                .nama_outlet
+                                                        }
                                                     </span>
                                                 ) : (
                                                     <span className="text-xs text-gray-400">
@@ -372,7 +389,9 @@ export default function CustomersPage() {
                                             ? 'bg-blue-600 font-semibold text-white'
                                             : 'text-gray-600 hover:bg-gray-100 dark:text-gray-300 dark:hover:bg-gray-700'
                                     } ${!link.url ? 'pointer-events-none opacity-50' : ''}`}
-                                    dangerouslySetInnerHTML={{ __html: link.label }}
+                                    dangerouslySetInnerHTML={{
+                                        __html: link.label,
+                                    }}
                                 />
                             ))}
                         </div>

@@ -25,6 +25,7 @@ class InvoiceController extends Controller
                 'shipping_cost' => $order->shipping_cost,
                 'discount' => $order->discount,
                 'tax' => $order->tax,
+                'tax_breakdown' => $order->tax_breakdown ?? [],
                 'total' => $order->total,
                 'payment_method' => $order->payment_method,
                 'shipping_address' => $order->shipping_address,
@@ -37,6 +38,9 @@ class InvoiceController extends Controller
                     'price' => $item->price,
                     'quantity' => $item->quantity,
                     'subtotal' => $item->subtotal,
+                    'tax' => $item->tax,
+                    'tax_rate' => $item->tax_rate,
+                    'tax_code' => $item->tax_code,
                 ]),
                 'payment' => $order->payment ? [
                     'payment_number' => $order->payment->payment_number,

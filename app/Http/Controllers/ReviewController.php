@@ -25,13 +25,25 @@ class ReviewController extends Controller
 
         abort_unless($hasPurchased, 403, 'Anda hanya dapat memberi ulasan untuk produk yang sudah dibeli.');
 
+        $orderId = $request->input('order_id');
+
+        if (! empty($orderId)) {
+            $ownsOrder = Order::query()
+                ->where('id', $orderId)
+                ->where('user_id', $request->user()->id)
+                ->whereHas('items', fn ($query) => $query->where('produk_id', $produk->id))
+                ->exists();
+
+            abort_unless($ownsOrder, 403, 'Order tidak valid untuk produk ini.');
+        }
+
         Review::updateOrCreate(
             [
                 'produk_id' => $produk->id,
                 'user_id' => $request->user()->id,
             ],
             [
-                'order_id' => $request->input('order_id'),
+                'order_id' => $orderId ?: null,
                 'rating' => $validated['rating'],
                 'review' => $validated['review'] ?? null,
             ]

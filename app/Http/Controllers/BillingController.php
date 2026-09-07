@@ -5,6 +5,8 @@ namespace App\Http\Controllers;
 use App\Models\Company;
 use App\Models\Subscription;
 use App\Models\SubscriptionInvoice;
+use App\Services\PaymentGatewayProcessor;
+use App\Services\PaymentGatewayService;
 use App\Services\SubscriptionBillingService;
 use App\Services\SubscriptionService;
 use App\Services\TenantService;
@@ -20,6 +22,8 @@ class BillingController extends Controller
         protected TenantService $tenants,
         protected SubscriptionService $subscriptions,
         protected SubscriptionBillingService $billing,
+        protected PaymentGatewayProcessor $paymentProcessor,
+        protected PaymentGatewayService $gateways,
     ) {}
 
     /**
@@ -72,8 +76,9 @@ class BillingController extends Controller
     }
 
     /**
-     * Simulate payment of a pending invoice so the billing flow can be
-     * completed in-app without a gateway (Phase 5 stand-in).
+     * Pay/initiate payment of a pending invoice. When a payment gateway is
+     * configured and active, redirect the user to the gateway payment URL;
+     * otherwise fall back to the in-app (test) flow.
      */
     public function payInvoice(Request $request): RedirectResponse
     {
@@ -91,6 +96,28 @@ class BillingController extends Controller
 
         if ($invoice->subscription->company_id !== $company->id) {
             abort(403, 'Anda tidak memiliki akses ke invoice ini.');
+        }
+
+        if ($invoice->status !== SubscriptionInvoice::STATUS_PENDING) {
+            return redirect()->back()->with('error', 'Invoice sudah tidak berstatus pending.');
+        }
+
+        $gateway = $this->gateways->activeGateway();
+
+        if ($gateway !== null && $this->gateways->isConfigured($gateway)) {
+            try {
+                $payment = $this->paymentProcessor->createSubscriptionPayment($invoice->fresh());
+
+                $paymentUrl = $this->paymentProcessor->getPaymentUrl($payment);
+
+                if ($paymentUrl === null) {
+                    throw new \RuntimeException('Gateway tidak mengembalikan URL pembayaran.');
+                }
+
+                return redirect()->back()->with('payment_url', $paymentUrl);
+            } catch (\Exception $e) {
+                return redirect()->back()->with('error', 'Gagal memproses pembayaran: '.$e->getMessage());
+            }
         }
 
         $this->billing->payInvoice($invoice->fresh());

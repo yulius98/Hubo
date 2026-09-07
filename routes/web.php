@@ -1,6 +1,8 @@
 <?php
 
+use App\Http\Controllers\AddressController;
 use App\Http\Controllers\BillingController;
+use App\Http\Controllers\BillingWebhookController;
 use App\Http\Controllers\CashierController;
 use App\Http\Controllers\CheckoutController;
 use App\Http\Controllers\CouponController;
@@ -13,6 +15,7 @@ use App\Http\Controllers\KelolaProdukController;
 use App\Http\Controllers\KeranjangBelanjaKasirController;
 use App\Http\Controllers\KeranjangBelanjaUserController;
 use App\Http\Controllers\NotificationController;
+use App\Http\Controllers\OnboardingController;
 use App\Http\Controllers\OrderController;
 use App\Http\Controllers\OutletController;
 use App\Http\Controllers\PaketController;
@@ -27,6 +30,7 @@ use App\Http\Controllers\StokController;
 use App\Http\Controllers\StorefrontController;
 use App\Http\Controllers\WebhookController;
 use App\Http\Controllers\WelcomeController;
+use App\Http\Controllers\WishlistController;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
 use Inertia\Inertia;
@@ -47,6 +51,14 @@ Route::middleware(['auth', ValidateSessionWithWorkOS::class])->group(function ()
     })->name('myprofile');
 
     Route::get('dashboard', [DashboardController::class, 'index'])->name('dashboard');
+
+    Route::get('onboarding', [OnboardingController::class, 'index'])->name('onboarding');
+    Route::post('onboarding/profile', [OnboardingController::class, 'saveProfile'])->name('onboarding.profile');
+    Route::post('onboarding/plan', [OnboardingController::class, 'savePlan'])->name('onboarding.plan');
+    Route::post('onboarding/outlet', [OnboardingController::class, 'saveOutlet'])->name('onboarding.outlet');
+    Route::post('onboarding/finish', [OnboardingController::class, 'saveFinish'])->name('onboarding.finish');
+    Route::post('onboarding/skip', [OnboardingController::class, 'skip'])->name('onboarding.skip');
+    Route::post('onboarding/dismiss', [OnboardingController::class, 'dismiss'])->name('onboarding.dismiss');
 
     Route::middleware('role:owner outlet')->group(function () {
         Route::get('paket', [PaketController::class, 'index'])->name('paket');
@@ -122,6 +134,9 @@ Route::middleware(['auth', ValidateSessionWithWorkOS::class])->group(function ()
 
     Route::post('produk/{produk}/keranjang-belanja', [KeranjangBelanjaUserController::class, 'store'])->name('cart.add');
 
+    Route::get('wishlist-saya', [WishlistController::class, 'index'])->name('wishlist');
+    Route::post('produk/{produk}/wishlist-toggle', [WishlistController::class, 'toggle'])->name('wishlist.toggle');
+
     Route::get('checkout', [CheckoutController::class, 'index'])->name('checkout');
     Route::post('checkout', [CheckoutController::class, 'store'])->middleware('throttle:checkout')->name('checkout.store');
     Route::post('api/shipping/cost', [ShippingController::class, 'calculateCost'])->middleware('throttle:checkout')->name('api.shipping.cost');
@@ -143,6 +158,11 @@ Route::middleware(['auth', ValidateSessionWithWorkOS::class])->group(function ()
     Route::post('returns/{return}/complete', [ReturnController::class, 'complete'])->name('returns.complete');
 
     Route::delete('pesanan-saya/{keranjang_belanja_user}', [KeranjangBelanjaUserController::class, 'destroy'])->name('pesanan_saya.delete');
+
+    Route::get('alamat-saya', [AddressController::class, 'index'])->name('user.addresses');
+    Route::post('alamat-saya', [AddressController::class, 'store'])->name('user.addresses.store');
+    Route::put('alamat-saya/{address}', [AddressController::class, 'update'])->name('user.addresses.update');
+    Route::delete('alamat-saya/{address}', [AddressController::class, 'destroy'])->name('user.addresses.destroy');
 
     Route::post('select-outlet', function (Request $request) {
         $outletId = (int) $request->input('outlet_id');
@@ -179,6 +199,10 @@ require __DIR__.'/admin.php';
 
 Route::post('api/webhooks/xendit', [WebhookController::class, 'xendit'])->middleware('throttle:webhooks')->name('webhooks.xendit');
 Route::post('api/webhooks/midtrans', [WebhookController::class, 'midtrans'])->middleware('throttle:webhooks')->name('webhooks.midtrans');
+
+// Webhook khusus invoice langganan (billing subskripsi SaaS) — fail-closed.
+Route::post('api/webhooks/billing/xendit', [BillingWebhookController::class, 'xendit'])->middleware('throttle:webhooks')->name('billing.webhook.xendit');
+Route::post('api/webhooks/billing/midtrans', [BillingWebhookController::class, 'midtrans'])->middleware('throttle:webhooks')->name('billing.webhook.midtrans');
 
 // Public storefront (catch-all): must stay last so specific routes win.
 Route::get('{slug}', [StorefrontController::class, 'index'])->middleware('throttle:storefront')->where('slug', '[a-z0-9_\-]+')->name('storefront');

@@ -5,6 +5,7 @@ use App\Models\Outlet;
 use App\Models\Produk;
 use App\Models\Transaksi;
 use App\Models\User;
+use Illuminate\Support\Carbon;
 use Inertia\Testing\AssertableInertia as Assert;
 
 function createDashboardProduk(User $user, Outlet $outlet, array $overrides = []): Produk
@@ -205,6 +206,71 @@ it('limits the kasir to their own transactions', function () {
             ->where('statistik.omset.total', 20000)
             ->where('recentTransaksis', [])
             ->where('karyawan', [])
+        );
+});
+
+it('builds a 13-month revenue trend with MoM, YoY and moving average for the owner', function () {
+    Carbon::setTestNow('2026-09-07 12:00:00');
+
+    $outlet = createOutlet();
+    $owner = attachUserToOutlet(createUserWithGlobalRole('owner outlet'), $outlet, 'owner outlet');
+    $produk = createDashboardProduk($owner, $outlet, ['harga' => 10000]);
+
+    createDashboardTransaksi($owner, $outlet, $produk, [
+        'tgl_transaksi' => '2026-09-05 10:00:00',
+        'jenis_transaksi' => 'OUT',
+        'jumlah_produk' => 4,
+    ]);
+    createDashboardTransaksi($owner, $outlet, $produk, [
+        'tgl_transaksi' => '2026-08-15 10:00:00',
+        'jenis_transaksi' => 'OUT',
+        'jumlah_produk' => 1,
+    ]);
+    createDashboardTransaksi($owner, $outlet, $produk, [
+        'tgl_transaksi' => '2025-09-20 10:00:00',
+        'jenis_transaksi' => 'OUT',
+        'jumlah_produk' => 2,
+    ]);
+
+    session(['selected_outlet_id' => $outlet->id]);
+
+    $this->actingAs($owner)
+        ->get(route('dashboard'))
+        ->assertOk()
+        ->assertInertia(fn (Assert $page) => $page
+            ->has('tren.labels', 13)
+            ->where('tren.labels.0', '2025-09')
+            ->where('tren.labels.12', '2026-09')
+            ->where('tren.data.0', 20000)
+            ->where('tren.data.11', 10000)
+            ->where('tren.data.12', 40000)
+            ->where('tren.moving_average.0', null)
+            ->where('tren.moving_average.1', null)
+            ->where('tren.moving_average.11', 3333.33)
+            ->where('tren.moving_average.12', 16666.67)
+            ->where('tren.mom', 300)
+            ->where('tren.yoy', 100)
+        );
+
+    Carbon::setTestNow();
+});
+
+it('does not expose the revenue trend to non-owner roles', function () {
+    $outlet = createOutlet();
+    $owner = attachUserToOutlet(createUserWithGlobalRole('owner outlet'), $outlet, 'owner outlet');
+    $admin = attachUserToOutlet(createUserWithGlobalRole('admin outlet'), $outlet, 'admin outlet');
+    $produk = createDashboardProduk($owner, $outlet, ['harga' => 10000]);
+
+    createDashboardTransaksi($owner, $outlet, $produk, ['jenis_transaksi' => 'OUT', 'jumlah_produk' => 2]);
+
+    session(['selected_outlet_id' => $outlet->id]);
+
+    $this->actingAs($admin)
+        ->get(route('dashboard'))
+        ->assertOk()
+        ->assertInertia(fn (Assert $page) => $page
+            ->where('role', 'admin outlet')
+            ->where('tren', null)
         );
 });
 

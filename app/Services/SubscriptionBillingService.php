@@ -2,10 +2,16 @@
 
 namespace App\Services;
 
+use App\Jobs\SendMail;
+use App\Mail\SubscriptionBillingReminderMail;
+use App\Mail\SubscriptionInvoicePaidMail;
 use App\Models\Company;
+use App\Models\Payment;
 use App\Models\Subscription;
 use App\Models\SubscriptionInvoice;
 use Illuminate\Support\Carbon;
+use Illuminate\Support\Facades\Log;
+use Illuminate\Validation\ValidationException;
 
 class SubscriptionBillingService
 {
@@ -82,6 +88,149 @@ class SubscriptionBillingService
         $invoice->markPaid();
 
         $this->markPeriodPaid($invoice->subscription);
+
+        try {
+            $invoice->loadMissing('subscription.company');
+
+            $recipient = $invoice->subscription?->company?->users()->orderBy('users.id')->first();
+
+            if ($recipient !== null) {
+                SendMail::dispatch(new SubscriptionInvoicePaidMail($invoice->fresh()), $recipient->email);
+            }
+        } catch (\Exception $e) {
+            Log::error("Failed to queue subscription invoice paid email for {$invoice->invoice_number}: {$e->getMessage()}");
+        }
+    }
+
+    /**
+     * Settle a subscription invoice payment confirmed via webhook.
+     */
+    public function settlePayment(Payment $payment): void
+    {
+        $invoice = $payment->subscriptionInvoice?->fresh();
+
+        if ($invoice === null) {
+            return;
+        }
+
+        if ($invoice->status === SubscriptionInvoice::STATUS_PAID) {
+            return;
+        }
+
+        $this->payInvoice($invoice);
+    }
+
+    /**
+     * Send reminders for invoices that are about to fall due and mark any
+     * invoice that has already passed its due date as overdue, suspending the
+     * tenant when that happens.
+     *
+     * @return array{reminder_sent: int, overdue: int}
+     */
+    public function processReminders(): array
+    {
+        $counts = ['reminder_sent' => 0, 'overdue' => 0];
+        $now = Carbon::now();
+
+        SubscriptionInvoice::query()
+            ->where('status', SubscriptionInvoice::STATUS_PENDING)
+            ->whereNotNull('period_end')
+            ->with('subscription.company')
+            ->chunk(100, function ($invoices) use (&$counts, $now): void {
+                foreach ($invoices as $invoice) {
+                    $due = Carbon::parse($invoice->period_end);
+
+                    if ($now->greaterThan($due)) {
+                        $this->markOverdue($invoice);
+
+                        $counts['overdue']++;
+
+                        continue;
+                    }
+
+                    $reminderSentAt = $invoice->metadata['reminder_sent_at'] ?? null;
+                    $withinGraceMinutes = (int) config('billing.reminder_advance_days', 3) * 1440;
+
+                    if ($reminderSentAt === null && $now->diffInMinutes($due) <= $withinGraceMinutes) {
+                        $this->sendReminder($invoice);
+                        $counts['reminder_sent']++;
+                    }
+                }
+            });
+
+        return $counts;
+    }
+
+    /**
+     * Whether a tenant may still run core transactions (new orders).
+     */
+    public function tenantCanTransact(?Company $company): bool
+    {
+        if ($company === null) {
+            return false;
+        }
+
+        return $company->isActive() && ! $company->isSuspended();
+    }
+
+    /**
+     * Abort order creation when the tenant is overdue/expired so the account
+     * cannot keep transacting without an active subscription.
+     */
+    public function assertTenantCanTransact(?Company $company): void
+    {
+        if ($this->tenantCanTransact($company)) {
+            return;
+        }
+
+        throw ValidationException::withMessages([
+            'billing' => 'Langganan Anda tidak aktif. Silakan selesaikan pembayaran tagihan di halaman Billing untuk melanjutkan transaksi.',
+        ]);
+    }
+
+    /**
+     * Mark a pending invoice as overdue and suspend the tenant.
+     */
+    public function markOverdue(SubscriptionInvoice $invoice): void
+    {
+        $invoice->update(['status' => SubscriptionInvoice::STATUS_OVERDUE]);
+
+        $subscription = $invoice->subscription;
+
+        if ($subscription !== null && in_array($subscription->status, [
+            Subscription::STATUS_TRIAL,
+            Subscription::STATUS_ACTIVE,
+            Subscription::STATUS_PAST_DUE,
+        ], true)) {
+            $this->expire($subscription);
+        }
+
+        $this->suspendCompany($invoice->subscription?->company);
+    }
+
+    /**
+     * Send a billing reminder email for an invoice (once), tracked in the
+     * invoice metadata.
+     */
+    private function sendReminder(SubscriptionInvoice $invoice): void
+    {
+        $recipient = $invoice->subscription?->company?->users()->orderBy('users.id')->first();
+
+        if ($recipient === null) {
+            return;
+        }
+
+        try {
+            SendMail::dispatch(new SubscriptionBillingReminderMail($invoice->fresh()), $recipient->email);
+
+            $invoice->update([
+                'metadata' => array_merge($invoice->metadata ?? [], [
+                    'reminder_sent_at' => Carbon::now()->toDateTimeString(),
+                ]),
+            ]);
+        } catch (\Exception $e) {
+            Log::error("Failed to send billing reminder for {$invoice->invoice_number}: {$e->getMessage()}");
+        }
     }
 
     /**

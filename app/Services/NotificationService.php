@@ -2,6 +2,7 @@
 
 namespace App\Services;
 
+use App\Events\LowStockAlert;
 use App\Models\Company;
 use App\Models\Produk;
 use App\Models\User;
@@ -9,6 +10,7 @@ use App\Notifications\LowStockNotification;
 use Illuminate\Contracts\Notifications\Dispatcher as NotificationDispatcher;
 use Illuminate\Notifications\Notification;
 use Illuminate\Support\Collection;
+use Illuminate\Support\Facades\Log;
 
 class NotificationService
 {
@@ -74,5 +76,11 @@ class NotificationService
         }
 
         $this->notifyCompanyStaff($company, new LowStockNotification($produk));
+
+        try {
+            LowStockAlert::dispatch($produk);
+        } catch (\Exception $e) {
+            Log::error("Failed to broadcast low stock alert for {$produk->id}: {$e->getMessage()}");
+        }
     }
 }

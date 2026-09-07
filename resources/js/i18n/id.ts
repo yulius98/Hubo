@@ -6,6 +6,7 @@ const id: Record<string, string> = {
     'nav.profil': 'Profil',
     'nav.my_profile': 'Profile Saya',
     'nav.my_orders': 'Pesanan Saya',
+    'nav.wishlist': 'Wishlist',
     'nav.logout': 'Keluar',
     'nav.hi': 'Hai, {name}!',
 
@@ -22,6 +23,7 @@ const id: Record<string, string> = {
     'produk.buy': 'Beli',
     'produk.stock': 'Stok',
     'produk.quantity': 'Jumlah',
+    'produk.wishlist': 'Simpan ke wishlist',
     'produk.rating': 'Rating',
     'produk.stock_available': 'Tersedia',
     'produk.stock_empty': 'Habis',

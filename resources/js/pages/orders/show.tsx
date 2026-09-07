@@ -49,7 +49,15 @@ interface OrderDetail {
     shipped_at: string | null;
     paid_at: string | null;
     completed_at: string | null;
+    cancelled_at: string | null;
     created_at: string;
+    estimated_delivery_at: string | null;
+    timeline: Array<{
+        key: string;
+        label: string;
+        time: string | null;
+        reached: boolean;
+    }>;
     items: OrderItem[];
     payment: Payment | null;
     returns?: Array<{ id: number; return_number: string; status: string }>;
@@ -117,20 +125,6 @@ const statusIcon = (status: string) => {
     }
 };
 
-const statusSteps = [
-    { key: 'pending', label: 'Dibuat' },
-    { key: 'awaiting_payment', label: 'Menunggu Pembayaran' },
-    { key: 'paid', label: 'Dibayar' },
-    { key: 'processing', label: 'Diproses' },
-    { key: 'shipped', label: 'Dikirim' },
-    { key: 'completed', label: 'Selesai' },
-];
-
-const getStepIndex = (status: string): number => {
-    const idx = statusSteps.findIndex((s) => s.key === status);
-    return idx >= 0 ? idx : 0;
-};
-
 const paymentStatusBadgeClass = (status: string): string => {
     switch (status) {
         case 'success':
@@ -190,9 +184,6 @@ export default function OrderShow({ order }: Readonly<OrderShowProps>) {
     const { flash } = usePage().props as {
         flash?: { success?: string; error?: string; payment_url?: string };
     };
-    const currentStep = getStepIndex(order.status);
-    const isCancelled = ['cancelled', 'expired'].includes(order.status);
-
     return (
         <AppLayout breadcrumbs={breadcrumbs}>
             <Head title={`Pesanan ${order.order_number}`} />
@@ -258,62 +249,61 @@ export default function OrderShow({ order }: Readonly<OrderShowProps>) {
                     </div>
                 )}
 
-                {!isCancelled && (
-                    <div className="mb-8 rounded-2xl border border-gray-200 bg-white p-5 shadow-sm dark:border-gray-700 dark:bg-gray-800">
-                        <h2 className="mb-4 text-sm font-semibold text-gray-800 dark:text-gray-100">
-                            Status Pesanan
-                        </h2>
-                        <div className="flex items-center justify-between">
-                            {statusSteps.map((step, idx) => {
-                                const isActive = idx === currentStep;
-                                const isCompleted = idx < currentStep;
-
-                                return (
-                                    <div
-                                        key={step.key}
-                                        className="flex flex-1 items-center"
-                                    >
-                                        <div className="flex flex-col items-center">
-                                            <div
-                                                className={`flex h-8 w-8 items-center justify-center rounded-full text-xs font-bold transition ${
-                                                    isCompleted
-                                                        ? 'bg-emerald-500 text-white'
-                                                        : isActive
-                                                          ? 'bg-indigo-600 text-white ring-4 ring-indigo-100 dark:ring-indigo-900/50'
-                                                          : 'bg-gray-200 text-gray-500 dark:bg-gray-700 dark:text-gray-400'
-                                                }`}
-                                            >
-                                                {isCompleted ? (
-                                                    <CheckCircle className="h-4 w-4" />
-                                                ) : (
-                                                    idx + 1
-                                                )}
-                                            </div>
-                                            <p
-                                                className={`mt-1.5 hidden text-center text-[10px] font-medium sm:block ${
-                                                    isActive || isCompleted
-                                                        ? 'text-gray-800 dark:text-gray-200'
-                                                        : 'text-gray-400 dark:text-gray-500'
-                                                }`}
-                                            >
-                                                {step.label}
-                                            </p>
-                                        </div>
-                                        {idx < statusSteps.length - 1 && (
-                                            <div
-                                                className={`mx-1 h-0.5 flex-1 transition ${
-                                                    idx < currentStep
-                                                        ? 'bg-emerald-500'
-                                                        : 'bg-gray-200 dark:bg-gray-700'
-                                                }`}
-                                            />
-                                        )}
+                <div className="mb-8 rounded-2xl border border-gray-200 bg-white p-5 shadow-sm dark:border-gray-700 dark:bg-gray-800">
+                    <h2 className="mb-4 flex items-center gap-2 text-sm font-semibold text-gray-800 dark:text-gray-100">
+                        <Truck className="h-4 w-4 text-indigo-500" />
+                        Status Pengiriman
+                    </h2>
+                    {order.timeline && order.timeline.length > 0 ? (
+                        <ol className="relative space-y-6 pl-1">
+                            {order.timeline.map((step, idx, steps) => (
+                                <li
+                                    key={step.key}
+                                    className="relative flex items-start gap-4"
+                                >
+                                    {idx < steps.length - 1 && (
+                                        <span
+                                            className="absolute top-7 left-[9px] h-full w-0.5 bg-gray-200 dark:bg-gray-700"
+                                            aria-hidden
+                                        />
+                                    )}
+                                    <span className="relative z-10 flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-indigo-600 ring-4 ring-indigo-50 dark:bg-indigo-500 dark:ring-indigo-900/40">
+                                        <CheckCircle className="h-3 w-3 text-white" />
+                                    </span>
+                                    <div className="pt-0.5">
+                                        <p className="text-sm font-semibold text-gray-900 dark:text-gray-100">
+                                            {step.label}
+                                        </p>
+                                        <p className="text-xs text-gray-500 dark:text-gray-400">
+                                            {step.time
+                                                ? formatTanggal(step.time)
+                                                : 'Menunggu'}
+                                        </p>
                                     </div>
-                                );
-                            })}
-                        </div>
-                    </div>
-                )}
+                                </li>
+                            ))}
+                            {order.estimated_delivery_at && (
+                                <li className="relative flex items-start gap-4">
+                                    <span className="relative z-10 flex h-5 w-5 shrink-0 items-center justify-center rounded-full border-2 border-dashed border-amber-400 bg-amber-50 dark:bg-amber-900/30">
+                                        <Clock className="h-3 w-3 text-amber-500" />
+                                    </span>
+                                    <div className="pt-0.5">
+                                        <p className="text-sm font-semibold text-amber-700 dark:text-amber-400">
+                                            Perkiraan Tiba
+                                        </p>
+                                        <p className="text-xs text-gray-500 dark:text-gray-400">
+                                            {formatTanggal(order.estimated_delivery_at)}
+                                        </p>
+                                    </div>
+                                </li>
+                            )}
+                        </ol>
+                    ) : (
+                        <p className="text-sm text-gray-500 dark:text-gray-400">
+                            Belum ada riwayat status.
+                        </p>
+                    )}
+                </div>
 
                 <div className="grid grid-cols-1 gap-6 lg:grid-cols-3">
                     <div className="space-y-6 lg:col-span-2">
@@ -526,6 +516,19 @@ export default function OrderShow({ order }: Readonly<OrderShowProps>) {
                                         </p>
                                     </div>
                                 )}
+                                {order.estimated_delivery_at &&
+                                    !['cancelled', 'expired'].includes(
+                                        order.status,
+                                    ) && (
+                                        <div>
+                                            <p className="text-xs font-medium text-gray-500 dark:text-gray-400">
+                                                Perkiraan Tiba
+                                            </p>
+                                            <p className="text-gray-900 dark:text-gray-100">
+                                                {formatTanggal(order.estimated_delivery_at)}
+                                            </p>
+                                        </div>
+                                    )}
                             </div>
                         </div>
 

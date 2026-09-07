@@ -26,9 +26,10 @@ class BillingController extends Controller
         $invoices = SubscriptionInvoice::query()
             ->with(['subscription.plan:id,name,slug,price_monthly', 'subscription.company:id,name'])
             ->when($status !== '', fn ($query) => $query->where('status', $status))
-            ->when($search !== '', fn ($query) => $query
-                ->where('invoice_number', 'like', "%{$search}%")
-                ->orWhereHas('subscription.company', fn ($q) => $q->where('name', 'like', "%{$search}%")))
+            ->when($search !== '', fn ($query) => $query->where(function ($group) use ($search) {
+                $group->where('invoice_number', 'like', "%{$search}%")
+                    ->orWhereHas('subscription.company', fn ($q) => $q->where('name', 'like', "%{$search}%"));
+            }))
             ->latest()
             ->paginate(15)
             ->withQueryString();

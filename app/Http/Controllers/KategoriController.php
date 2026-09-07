@@ -81,6 +81,8 @@ class KategoriController extends Controller
             'kategori' => 'required|string|max:255',
         ]);
 
+        $validated['id_user'] = Auth::id();
+
         $outletIds = array_values(array_unique($validated['outlet_ids'] ?? []));
 
         if (! empty($outletIds)) {
@@ -180,6 +182,8 @@ class KategoriController extends Controller
             'kategori' => 'required|string|max:255',
 
         ]);
+
+        $validated['id_user'] = Auth::id();
 
         $this->authorize('update', $kategori);
 

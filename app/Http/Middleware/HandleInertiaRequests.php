@@ -4,6 +4,7 @@ namespace App\Http\Middleware;
 
 use App\Models\KeranjangBelanjaUser;
 use App\Models\RequestRole;
+use App\Services\OnboardingService;
 use App\Services\SubscriptionService;
 use App\Services\TenantService;
 use Illuminate\Http\Request;
@@ -14,6 +15,7 @@ class HandleInertiaRequests extends Middleware
     public function __construct(
         protected TenantService $tenants,
         protected SubscriptionService $subscriptions,
+        protected OnboardingService $onboarding,
     ) {}
 
     /**
@@ -50,11 +52,13 @@ class HandleInertiaRequests extends Middleware
         $pendingRequestCount = 0;
         $pendingRequestList = [];
         $cartCount = 0;
+        $wishlistCount = 0;
         $unreadNotificationCount = 0;
         $isSuperAdmin = false;
         $tenant = null;
         $plan = null;
         $usage = null;
+        $needsOnboarding = false;
 
         if ($user) {
             $user->load('role');
@@ -65,6 +69,8 @@ class HandleInertiaRequests extends Middleware
             $company = $this->tenants->resolveForUser($user);
 
             if ($company !== null) {
+                $needsOnboarding = $this->onboarding->needsFor($company, $request);
+
                 $activePlan = $this->subscriptions->plan($company);
 
                 $tenant = $company->only('id', 'name', 'slug', 'status');
@@ -106,6 +112,8 @@ class HandleInertiaRequests extends Middleware
                 ->where('status', 'pending')
                 ->sum('jumlah_produk');
 
+            $wishlistCount = (int) $user->wishlist()->count();
+
             $unreadNotificationCount = $user->unreadNotifications()->count();
 
             $outlets = $user->outlets()->orderBy('outlets.nama_outlet')->get(['outlets.id', 'outlets.nama_outlet']);
@@ -133,11 +141,16 @@ class HandleInertiaRequests extends Middleware
             'pendingRequestCount' => $pendingRequestCount,
             'pendingRequestList' => $pendingRequestList,
             'cartCount' => $cartCount,
+            'wishlistCount' => $wishlistCount,
             'unreadNotificationCount' => $unreadNotificationCount,
             'isSuperAdmin' => $isSuperAdmin,
             'tenant' => $tenant,
             'plan' => $plan,
             'usage' => $usage,
+            'onboarding' => [
+                'needs' => $needsOnboarding,
+                'step' => $needsOnboarding ? $this->onboarding->step($request) : 0,
+            ],
             'flash' => [
                 'success' => $request->session()->get('success'),
                 'error' => $request->session()->get('error'),
@@ -147,6 +160,12 @@ class HandleInertiaRequests extends Middleware
             'shipping' => [
                 'unitWeightGram' => config('shipping.unit_weight_gram'),
                 'defaultDestinationCityId' => config('shipping.default_destination_city_id'),
+            ],
+            'broadcast' => [
+                'enabled' => config('broadcasting.default') === 'pusher'
+                    && filled(config('broadcasting.connections.pusher.key')),
+                'key' => config('broadcasting.connections.pusher.key'),
+                'cluster' => config('broadcasting.connections.pusher.options.cluster'),
             ],
         ];
     }

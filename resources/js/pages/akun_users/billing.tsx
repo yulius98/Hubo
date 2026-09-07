@@ -1,5 +1,6 @@
 import { Head, router, usePage } from '@inertiajs/react';
-import { CreditCard, FileText, Wallet } from 'lucide-react';
+import { CreditCard, ExternalLink, FileText, Wallet } from 'lucide-react';
+import { useEffect } from 'react';
 import AppLayout from '@/layouts/app-layout';
 import { billing } from '@/routes';
 import { pay as payRoute } from '@/routes/billing';
@@ -58,6 +59,8 @@ const statusBadge = (status: string): string => {
             return 'bg-emerald-100 text-emerald-800 dark:bg-emerald-900/40 dark:text-emerald-300';
         case 'pending':
             return 'bg-amber-100 text-amber-800 dark:bg-amber-900/40 dark:text-amber-300';
+        case 'overdue':
+            return 'bg-red-100 text-red-800 dark:bg-red-900/40 dark:text-red-300';
         default:
             return 'bg-gray-100 text-gray-700 dark:bg-gray-800 dark:text-gray-300';
     }
@@ -69,6 +72,8 @@ const statusLabel = (status: string): string => {
             return 'Dibayar';
         case 'pending':
             return 'Menunggu';
+        case 'overdue':
+            return 'Terlambat';
         default:
             return 'Gagal';
     }
@@ -80,6 +85,16 @@ export default function Billing({
     invoices,
 }: Readonly<BillingPageProps>) {
     const { flash } = usePage().props;
+
+    const paymentUrl =
+        typeof flash?.payment_url === 'string' ? flash.payment_url : null;
+
+    useEffect(() => {
+        if (paymentUrl) {
+            window.open(paymentUrl, '_blank', 'noopener,noreferrer');
+            router.reload({ only: ['flash'] });
+        }
+    }, [paymentUrl]);
 
     const payInvoice = (invoiceId: number) => {
         router.post(
@@ -238,8 +253,9 @@ export default function Billing({
                                                                 invoice.id,
                                                             )
                                                         }
-                                                        className="rounded-lg px-3 py-1.5 text-xs font-medium text-indigo-600 hover:bg-indigo-50 dark:text-indigo-400 dark:hover:bg-indigo-900/30"
+                                                        className="inline-flex items-center gap-1 rounded-lg px-3 py-1.5 text-xs font-medium text-indigo-600 hover:bg-indigo-50 dark:text-indigo-400 dark:hover:bg-indigo-900/30"
                                                     >
+                                                        <ExternalLink className="h-3.5 w-3.5" />
                                                         Bayar
                                                     </button>
                                                 )}

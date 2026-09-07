@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\CompanySetting;
 use App\Models\Kategori;
 use App\Models\Outlet;
 use App\Models\Produk;
@@ -52,6 +53,7 @@ class StorefrontController extends Controller
             ->withQueryString();
 
         $products->getCollection()->transform(fn (Produk $produk) => $produk
+            ->makeHidden(['harga_beli', 'margin', 'min_stok', 'ppn', 'tax'])
             ->setAttribute(
                 'display_price',
                 $produk->variants->firstWhere('is_active', true)?->harga
@@ -59,12 +61,29 @@ class StorefrontController extends Controller
                     ?? (float) $produk->harga
             ));
 
+        $companyId = $outlet->company?->id;
+
+        $taxDefault = $companyId !== null
+            ? (string) (CompanySetting::get($companyId, CompanySetting::KEY_TAX_PERCENT) ?? '11')
+            : '11';
+
+        $user = $request->user();
+        $wishlistIds = $user !== null
+            ? $user->wishlist()
+                ->where('produks.id_outlet', $outlet->id)
+                ->pluck('produks.id')
+                ->all()
+            : [];
+
         return Inertia::render('storefront/index', [
-            'outlet' => $outlet->only('id', 'nama_outlet', 'slug', 'gambar', 'alamat_outlet', 'kota', 'telp'),
+            'outlet' => $outlet->only('id', 'nama_outlet', 'slug', 'gambar', 'logo', 'banner', 'jam_buka', 'mata_uang', 'alamat_outlet', 'kota', 'telp'),
             'kategoris' => $kategoris,
             'products' => $products,
             'search' => $search,
             'selectedKategori' => $kategoriId,
+            'tax_default' => $taxDefault,
+            'wishlist_ids' => $wishlistIds,
+            'is_user_authenticated' => $user !== null,
         ]);
     }
 }

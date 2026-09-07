@@ -4,6 +4,7 @@ import { StrictMode } from 'react';
 import { createRoot } from 'react-dom/client';
 import '../css/app.css';
 import GlobalPageLoading from './components/global-page-loading';
+import RealtimeNotifications from './components/realtime-notifications';
 import { initializeTheme } from './hooks/use-appearance';
 
 const appName = import.meta.env.VITE_APP_NAME || 'Laravel';
@@ -22,6 +23,7 @@ createInertiaApp({
             <StrictMode>
                 <GlobalPageLoading />
                 <App {...props} />
+                <RealtimeNotifications />
             </StrictMode>,
         );
     },

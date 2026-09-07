@@ -13,6 +13,7 @@ import {
     Home,
     LayoutGrid,
     List,
+    MapPin,
     Package,
     PackagePlus,
     ReceiptText,
@@ -59,6 +60,7 @@ import {
     req_staff,
 } from '@/routes';
 import admin from '@/routes/admin';
+import { addresses as userAddresses } from '@/routes/user';
 import type { NavItem } from '@/types';
 import AppLogo from './app-logo';
 
@@ -146,9 +148,15 @@ const mainNavItems: NavItem[] = [
         href: paket(),
         icon: Gem,
     },
+
+    {
+        title: 'Alamat Saya',
+        href: userAddresses(),
+        icon: MapPin,
+    },
 ];
 
-const menuUtamaTitles = ['Home', 'Profile', 'Dashboard', 'Buka Outlet'];
+const menuUtamaTitles = ['Home', 'Profile', 'Dashboard', 'Buka Outlet', 'Alamat Saya'];
 
 const manajemenTitles = [
     'Kelola Kategori',
@@ -249,6 +257,7 @@ export function AppSidebar({
                 'Buka Layanan Kasir',
                 'Notifikasi',
                 'Paket Saya',
+                'Alamat Saya',
             ].includes(item.title);
         } else if (hasAdminRole) {
             return [
@@ -260,6 +269,7 @@ export function AppSidebar({
                 'Pelanggan',
                 'Voucher',
                 'Notifikasi',
+                'Alamat Saya',
             ].includes(item.title);
         } else if (hasKasirRole) {
             return [
@@ -269,11 +279,16 @@ export function AppSidebar({
                 'Buka Outlet',
                 'Request Menjadi Karyawan',
                 'Buka Layanan Kasir',
+                'Alamat Saya',
             ].includes(item.title);
         } else if (isSuperAdmin) {
-            return ['Home', 'Profile', 'Dashboard', 'Buka Outlet'].includes(
-                item.title,
-            );
+            return [
+                'Home',
+                'Profile',
+                'Dashboard',
+                'Buka Outlet',
+                'Alamat Saya',
+            ].includes(item.title);
         } else {
             return [
                 'Home',
@@ -281,6 +296,7 @@ export function AppSidebar({
                 'Dashboard',
                 'Buka Outlet',
                 'Request Menjadi Karyawan',
+                'Alamat Saya',
             ].includes(item.title);
         }
     });

@@ -23,4 +23,9 @@ return [
     */
     'default_destination_city_id' => env('SHIPPING_DEFAULT_CITY_ID', '152'),
 
+    /*
+    | Perkiraan lama pengiriman (hari) yang ditampilkan pada timeline track order.
+    */
+    'estimated_days' => (int) env('SHIPPING_ESTIMATED_DAYS', 3),
+
 ];

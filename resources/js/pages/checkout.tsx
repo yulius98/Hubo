@@ -27,6 +27,19 @@ interface CartItem {
     subtotal: number;
 }
 
+interface Address {
+    id: number;
+    label: string | null;
+    nama_penerima: string;
+    no_hp: string;
+    provinsi_id: string | null;
+    provinsi: string | null;
+    kota_id: string | null;
+    kota: string | null;
+    alamat: string;
+    is_default: boolean;
+}
+
 interface CheckoutProps {
     cartItems: CartItem[];
     subtotal: number;
@@ -34,6 +47,7 @@ interface CheckoutProps {
     total: number;
     active_gateway: string | null;
     shipping_configured: boolean;
+    addresses: Address[];
     user_points_balance: number;
     min_redeem_points: number;
     point_value: number;
@@ -119,6 +133,8 @@ function Building2Icon({ className }: { className?: string }) {
 export default function Checkout({
     cartItems,
     subtotal,
+    tax,
+    addresses,
     active_gateway,
     shipping_configured,
     user_points_balance,
@@ -154,10 +170,17 @@ export default function Checkout({
     >([]);
     const [shippingLoading, setShippingLoading] = useState(false);
     const [shippingError, setShippingError] = useState('');
+    const [selectedAddressId, setSelectedAddressId] = useState<number | ''>(
+        '',
+    );
     const [selectedShipping, setSelectedShipping] = useState<{
         service: string;
         cost: number;
     } | null>(null);
+
+    const selectedAddress = addresses.find(
+        (a) => a.id === selectedAddressId,
+    );
 
     const fetchShippingCost = async () => {
         if (!data.courier) {
@@ -170,8 +193,11 @@ export default function Checkout({
         setShippingOptions([]);
         setSelectedShipping(null);
 
+        const cityId =
+            selectedAddress?.kota_id || data.shipping_destination_city_id || defaultDestinationCityId;
+
         setData('shipping_courier_code', data.courier);
-        setData('shipping_destination_city_id', defaultDestinationCityId);
+        setData('shipping_destination_city_id', cityId);
 
         try {
             const totalWeight = cartItems.reduce(
@@ -188,9 +214,7 @@ export default function Checkout({
                     ),
                 },
                 body: JSON.stringify({
-                    destination_city_id:
-                        data.shipping_destination_city_id ||
-                        defaultDestinationCityId,
+                    destination_city_id: cityId,
                     weight: totalWeight,
                     courier: data.courier,
                 }),
@@ -229,6 +253,27 @@ export default function Checkout({
         setData('courier', service);
     };
 
+    const selectAddress = (id: number | '') => {
+        setSelectedAddressId(id);
+        setSelectedShipping(null);
+        setShippingOptions([]);
+        setShippingError('');
+
+        const address = addresses.find((a) => a.id === id);
+
+        if (address) {
+            const parts = [
+                address.nama_penerima,
+                address.no_hp,
+                address.alamat,
+                [address.kota, address.provinsi].filter(Boolean).join(', '),
+            ].filter(Boolean);
+
+            setData('shipping_address', parts.join('\n'));
+            setData('shipping_destination_city_id', address.kota_id ?? '');
+        }
+    };
+
     const shippingCost = selectedShipping?.cost ?? 0;
 
     const maxAffordablePoints = Math.max(
@@ -246,9 +291,9 @@ export default function Checkout({
     const pointsDiscount = pointsRedeemed * point_value;
 
     const discountTotal = Math.min(pointsDiscount, subtotal);
-    const taxablePreview = subtotal - discountTotal;
-    const taxPreview = taxablePreview * 0.11;
-    const orderTotal = taxablePreview + taxPreview + shippingCost;
+    const discountRatio = subtotal > 0 ? discountTotal / subtotal : 0;
+    const taxPreview = Math.max(0, tax * (1 - discountRatio));
+    const orderTotal = subtotal - discountTotal + taxPreview + shippingCost;
 
     const submit = () => {
         post('/checkout');
@@ -290,6 +335,48 @@ export default function Checkout({
                                 <MapPin className="h-5 w-5 text-indigo-500" />
                                 Alamat Pengiriman
                             </h2>
+                            {addresses.length > 0 && (
+                                <>
+                                    <label className="mb-1 block text-sm font-medium text-gray-700 dark:text-gray-300">
+                                        Pilih alamat tersimpan
+                                    </label>
+                                    <div className="mb-1 flex items-center gap-2">
+                                        <select
+                                            value={selectedAddressId}
+                                            onChange={(e) =>
+                                                selectAddress(
+                                                    e.target.value === ''
+                                                        ? ''
+                                                        : Number(
+                                                              e.target.value,
+                                                          ),
+                                                )
+                                            }
+                                            className={inputClass}
+                                        >
+                                            <option value="">
+                                                {addresses.some(
+                                                    (a) => a.is_default,
+                                                )
+                                                    ? 'Gunakan alamat utama'
+                                                    : 'Pilih alamat...'}
+                                            </option>
+                                            {addresses.map((a) => (
+                                                <option
+                                                    key={a.id}
+                                                    value={a.id}
+                                                >
+                                                    {a.label || a.nama_penerima}
+                                                    {a.is_default
+                                                        ? ' (Utama)'
+                                                        : ''}
+                                                    {a.kota ? ` — ${a.kota}` : ''}
+                                                </option>
+                                            ))}
+                                        </select>
+                                    </div>
+                                </>
+                            )}
                             <textarea
                                 value={data.shipping_address}
                                 onChange={(e) =>

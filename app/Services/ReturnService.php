@@ -6,6 +6,7 @@ use App\Models\Order;
 use App\Models\OrderItem;
 use App\Models\OrderReturn;
 use App\Models\Payment;
+use App\Models\ProductVariant;
 use App\Models\Produk;
 use App\Models\Transaksi;
 use Illuminate\Support\Facades\DB;
@@ -124,25 +125,32 @@ class ReturnService
         }
 
         DB::transaction(function () use ($return) {
-            $return->load('items');
+            $return->load(['items.orderItem', 'order']);
 
             foreach ($return->items as $item) {
-                Produk::where('id', $item->produk_id)
-                    ->increment('stok', $item->quantity);
-
                 $produk = Produk::find($item->produk_id);
+
+                $orderItem = $item->orderItem;
+
+                if ($orderItem !== null && $orderItem->variant_id !== null) {
+                    ProductVariant::where('id', $orderItem->variant_id)
+                        ->increment('stok', $item->quantity);
+                } else {
+                    Produk::where('id', $item->produk_id)
+                        ->increment('stok', $item->quantity);
+                }
 
                 $transaksi = Transaksi::create([
                     'tgl_transaksi' => now(),
                     'id_user' => $return->order->user_id,
                     'id_outlet' => $return->order->outlet_id,
-                    'id_kategori' => $produk->id_kategori ?? 1,
+                    'id_kategori' => $produk?->id_kategori ?? 1,
                     'id_produk' => $item->produk_id,
                     'jenis_transaksi' => 'IN',
                     'jumlah_produk' => $item->quantity,
                     'keterangan' => "Retur #{$return->return_number}",
-                    'harga_beli' => $produk->harga_beli,
-                    'harga_jual' => $item->orderItem->price,
+                    'harga_beli' => $produk?->harga_beli ?? 0,
+                    'harga_jual' => $orderItem?->price ?? 0,
                 ]);
 
                 $this->metering->recordTransaction($transaksi);

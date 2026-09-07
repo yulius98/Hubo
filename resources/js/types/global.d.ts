@@ -44,6 +44,12 @@ export type UsageShared = {
     staff: number;
 };
 
+declare global {
+    interface Window {
+        Pusher?: unknown;
+    }
+}
+
 declare module '@inertiajs/core' {
     interface PageProps extends InertiaPageProps {
         auth: Auth;
@@ -54,10 +60,24 @@ declare module '@inertiajs/core' {
         pendingRequestCount?: number;
         pendingRequestList?: PendingRequestListItem[];
         cartCount?: number;
+        wishlistCount?: number;
         isSuperAdmin?: boolean;
         tenant?: TenantShared | null;
         plan?: PlanShared | null;
         usage?: UsageShared | null;
-        flash?: { success?: string; error?: string };
+        onboarding?: {
+            needs: boolean;
+            step: number;
+        };
+        broadcast?: {
+            enabled: boolean;
+            key: string | null;
+            cluster: string | null;
+        };
+flash?: {
+            success?: string;
+            error?: string;
+            payment_url?: string;
+        };
     }
 }

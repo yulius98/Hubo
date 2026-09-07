@@ -58,7 +58,8 @@ it('blocks authenticated requests once the tenant is suspended', function () {
 it('lets a tenant operate again once it is activated', function () {
     $company = Company::factory()->create(['status' => 'active']);
     $owner = createUserWithGlobalRole('owner outlet');
+    // A bare tenant without any outlet is guided through the onboarding wizard.
     $owner->update(['company_id' => $company->id]);
 
-    $this->actingAs($owner)->get(route('dashboard'))->assertOk();
+    $this->actingAs($owner)->get(route('dashboard'))->assertRedirect(route('onboarding'));
 });

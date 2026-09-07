@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Http\Requests\CheckoutRequest;
 use App\Models\Customer;
 use App\Models\KeranjangBelanjaUser;
+use App\Models\Produk;
 use App\Models\ShippingConfig;
 use App\Models\User;
 use App\Services\LoyaltyService;
@@ -13,6 +14,7 @@ use App\Services\PaymentGatewayProcessor;
 use App\Services\PaymentGatewayService;
 use App\Services\ShippingService;
 use App\Services\TaxService;
+use App\Services\TenantService;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
@@ -74,15 +76,29 @@ class CheckoutController extends Controller
         $tax = (float) collect($cartItems)->sum('tax');
         $total = $subtotal + $tax;
 
-        $customer = Customer::query()
-            ->where('user_id', $user->id)
-            ->orWhere('email', $user->email)
-            ->first();
+        $company = app(TenantService::class)->resolveForUser($user);
+
+        $customer = $company !== null
+            ? Customer::query()
+                ->where('company_id', $company->id)
+                ->where(fn ($query) => $query->where('user_id', $user->id)->orWhere('email', $user->email))
+                ->first()
+            : null;
 
         $pointsBalance = $customer?->points ?? 0;
 
         $activeGateway = $this->gateways->activeGateway();
         $shippingConfigured = ShippingConfig::isConfigured();
+
+        $addresses = $user->addresses()
+            ->orderByDesc('is_default')
+            ->orderByDesc('created_at')
+            ->get(['id', 'label', 'nama_penerima', 'no_hp', 'provinsi_id', 'provinsi', 'kota_id', 'kota', 'alamat', 'is_default']);
+
+        $defaultShippingAddress = (string) (Produk::query()
+            ->whereIn('id', collect($cartItems)->pluck('id_produk'))
+            ->with('outlet:id,alamat_pengiriman_default')
+            ->first()?->outlet?->alamat_pengiriman_default ?? '');
 
         return Inertia::render('checkout', [
             'cartItems' => $cartItems,
@@ -91,6 +107,8 @@ class CheckoutController extends Controller
             'total' => $total,
             'active_gateway' => $activeGateway,
             'shipping_configured' => $shippingConfigured,
+            'addresses' => $addresses,
+            'default_shipping_address' => $defaultShippingAddress,
             'user_points_balance' => (int) $pointsBalance,
             'min_redeem_points' => LoyaltyService::MIN_REDEEM,
             'point_value' => LoyaltyService::POINT_VALUE,
@@ -156,12 +174,6 @@ class CheckoutController extends Controller
             return 0.0;
         }
 
-        $cost = (float) ($validated['shipping_cost'] ?? 0);
-
-        if ($cost <= 0) {
-            return 0.0;
-        }
-
         $courierCode = (string) ($validated['shipping_courier_code'] ?? '');
         $destinationCityId = (string) ($validated['shipping_destination_city_id'] ?? '');
         $service = (string) ($validated['courier'] ?? '');
@@ -171,6 +183,8 @@ class CheckoutController extends Controller
                 'shipping_cost' => 'Metode pengiriman tidak valid.',
             ]);
         }
+
+        $cost = (float) ($validated['shipping_cost'] ?? 0);
 
         $weightGram = $user === null
             ? 0

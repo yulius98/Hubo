@@ -5,6 +5,7 @@ namespace App\Models;
 use Database\Factories\UserFactory;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\SoftDeletes;
 use Illuminate\Foundation\Auth\User as Authenticatable;
@@ -81,6 +82,20 @@ class User extends Authenticatable
     public function keranjangbelanjakasir(): HasMany
     {
         return $this->hasMany(KeranjangBelanjaKasir::class, 'id_user');
+    }
+
+    public function addresses(): HasMany
+    {
+        return $this->hasMany(Address::class);
+    }
+
+    /**
+     * Products saved to the user's wishlist.
+     */
+    public function wishlist(): BelongsToMany
+    {
+        return $this->belongsToMany(Produk::class, 'produk_user')
+            ->withTimestamps();
     }
 
     public function outlets()

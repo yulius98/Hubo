@@ -2,6 +2,7 @@ import { Head, router } from '@inertiajs/react';
 import {
     Banknote,
     ClipboardList,
+    LineChart,
     PackageCheck,
     Store,
     TrendingDown,
@@ -55,6 +56,14 @@ interface RecentTransaksi {
     user: string;
 }
 
+interface TrenData {
+    labels: string[];
+    data: number[];
+    moving_average: (number | null)[];
+    mom: number | null;
+    yoy: number | null;
+}
+
 interface EmptyState {
     title: string;
     message: string;
@@ -70,6 +79,7 @@ interface DashboardProps {
     topProduk: ProdukRanking[];
     kurangLaku: ProdukRanking[];
     recentTransaksis: RecentTransaksi[];
+    tren?: TrenData | null;
     emptyState?: EmptyState | null;
 }
 
@@ -335,6 +345,137 @@ function PeriodSelector({
     );
 }
 
+const shortMonth = [
+    'Jan',
+    'Feb',
+    'Mar',
+    'Apr',
+    'Mei',
+    'Jun',
+    'Jul',
+    'Agu',
+    'Sep',
+    'Okt',
+    'Nov',
+    'Des',
+];
+
+const formatMonthLabel = (value: string): string => {
+    const [year, month] = value.split('-');
+
+    return `${shortMonth[Number(month) - 1]} ${year.slice(2)}`;
+};
+
+function TrenSection({ tren }: Readonly<{ tren: TrenData }>) {
+    const max = Math.max(...tren.data, 1);
+    const chartHeight = 160;
+    const barWidth = 22;
+    const barGap = 10;
+    const step = barWidth + barGap;
+    const chartWidth = tren.data.length * step;
+    const lastIndex = tren.data.length - 1;
+
+    const maPoints = tren.moving_average.flatMap((ma, index) =>
+        ma === null
+            ? []
+            : `${index * step + barWidth / 2},${chartHeight - (ma / max) * chartHeight}`,
+    );
+
+    return (
+        <div className="rounded-2xl border border-gray-200 bg-white shadow-sm dark:border-gray-700 dark:bg-gray-800">
+            <div className="flex flex-wrap items-center justify-between gap-3 border-b border-gray-200 px-5 py-3.5 dark:border-gray-700">
+                <h2 className="flex items-center gap-2 text-base font-semibold text-gray-800 dark:text-gray-100">
+                    <LineChart className="h-5 w-5 text-indigo-500" />
+                    Tren Penjualan
+                </h2>
+                <div className="flex flex-wrap items-center gap-2">
+                    {tren.mom !== null && (
+                        <span
+                            className={`inline-flex items-center gap-1 rounded-full px-2.5 py-0.5 text-xs font-semibold ${
+                                tren.mom >= 0
+                                    ? 'bg-emerald-50 text-emerald-700 dark:bg-emerald-900/40 dark:text-emerald-300'
+                                    : 'bg-red-50 text-red-700 dark:bg-red-900/40 dark:text-red-300'
+                            }`}
+                        >
+                            {tren.mom >= 0 ? (
+                                <TrendingUp className="h-3.5 w-3.5" />
+                            ) : (
+                                <TrendingDown className="h-3.5 w-3.5" />
+                            )}
+                            MoM {tren.mom >= 0 ? '+' : ''}
+                            {tren.mom}%
+                        </span>
+                    )}
+                    {tren.yoy !== null && (
+                        <span
+                            className={`inline-flex items-center gap-1 rounded-full px-2.5 py-0.5 text-xs font-semibold ${
+                                tren.yoy >= 0
+                                    ? 'bg-emerald-50 text-emerald-700 dark:bg-emerald-900/40 dark:text-emerald-300'
+                                    : 'bg-red-50 text-red-700 dark:bg-red-900/40 dark:text-red-300'
+                            }`}
+                        >
+                            {tren.yoy >= 0 ? (
+                                <TrendingUp className="h-3.5 w-3.5" />
+                            ) : (
+                                <TrendingDown className="h-3.5 w-3.5" />
+                            )}
+                            YoY {tren.yoy >= 0 ? '+' : ''}
+                            {tren.yoy}%
+                        </span>
+                    )}
+                </div>
+            </div>
+
+            <div className="px-5 py-5">
+                <div className="overflow-x-auto">
+                    <div className="flex items-end gap-1.5" style={{ width: chartWidth }}>
+                        {tren.data.map((value, index) => (
+                            <div
+                                key={tren.labels[index]}
+                                className="flex flex-col items-center"
+                                style={{ width: barWidth }}
+                            >
+                                <div
+                                    className={`w-full rounded-t ${index === lastIndex ? 'bg-gradient-to-t from-indigo-600 to-blue-400' : 'bg-indigo-200 dark:bg-indigo-800/60'}`}
+                                    style={{
+                                        height: `${Math.max((value / max) * chartHeight, 2)}px`,
+                                    }}
+                                />
+                            </div>
+                        ))}
+                    </div>
+                    <svg
+                        width={chartWidth}
+                        height={chartHeight}
+                        style={{ marginTop: `-${chartHeight}px` }}
+                    >
+                        {maPoints.length > 1 && (
+                            <polyline
+                                points={maPoints.join(' ')}
+                                fill="none"
+                                stroke="#f59e0b"
+                                strokeWidth={2}
+                                vectorEffect="non-scaling-stroke"
+                            />
+                        )}
+                    </svg>
+                </div>
+
+                <div className="mt-1 flex items-center justify-between text-[11px] text-gray-400 dark:text-gray-500">
+                    <span>{formatMonthLabel(tren.labels[0])}</span>
+                    <span className="inline-flex items-center gap-1.5">
+                        <span className="inline-block h-1.5 w-3 rounded-full bg-indigo-300 dark:bg-indigo-700" />
+                        Omset
+                        <span className="inline-block h-0.5 w-3 rounded-full bg-amber-500" />
+                        Rata-rata 3B
+                    </span>
+                    <span>{formatMonthLabel(tren.labels[lastIndex])}</span>
+                </div>
+            </div>
+        </div>
+    );
+}
+
 function KaryawanSection({ karyawan }: Readonly<{ karyawan: Karyawan[] }>) {
     return (
         <div className="overflow-hidden rounded-2xl border border-gray-200 bg-white shadow-sm dark:border-gray-700 dark:bg-gray-800">
@@ -567,6 +708,7 @@ export default function Dashboard({
     topProduk = [],
     kurangLaku = [],
     recentTransaksis = [],
+    tren = null,
     emptyState,
 }: Readonly<DashboardProps>) {
     const [periode, setPeriode] = useState<Periode>(initialPeriode);
@@ -713,6 +855,12 @@ export default function Dashboard({
                                     />
                                 ),
                         )}
+                    </div>
+                )}
+
+                {isOwner && tren && (
+                    <div className="mt-8">
+                        <TrenSection tren={tren} />
                     </div>
                 )}
 

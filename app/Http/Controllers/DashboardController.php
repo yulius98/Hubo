@@ -6,7 +6,10 @@ use App\Models\Outlet;
 use App\Models\Role;
 use App\Models\Transaksi;
 use App\Models\User;
+use App\Services\OnboardingService;
+use App\Services\TenantService;
 use Illuminate\Database\Eloquent\Collection;
+use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\DB;
@@ -23,10 +26,16 @@ class DashboardController extends Controller
      * Display the dashboard for the selected outlet, filtered by the user's
      * role within that outlet.
      */
-    public function index(Request $request): Response
+    public function index(Request $request): Response|RedirectResponse
     {
         $user = $request->user();
         $selectedOutletId = (int) $request->session()->get('selected_outlet_id', 0);
+
+        $company = app(TenantService::class)->resolveForUser($user);
+
+        if (app(OnboardingService::class)->needsFor($company, $request)) {
+            return redirect()->route('onboarding');
+        }
 
         [$outlet, $role] = $this->resolveOutletContext($user, $selectedOutletId);
 
@@ -68,6 +77,7 @@ class DashboardController extends Controller
             'topProduk' => [],
             'kurangLaku' => [],
             'recentTransaksis' => [],
+            'tren' => null,
         ];
 
         if (in_array($role, ['owner outlet', 'admin outlet'], true)) {
@@ -78,6 +88,7 @@ class DashboardController extends Controller
             $payload['karyawan'] = $this->karyawan($outlet);
             $payload['topProduk'] = $this->productRanking($outlet, 'desc');
             $payload['kurangLaku'] = $this->productRanking($outlet, 'asc');
+            $payload['tren'] = $this->buildTren($outlet);
         }
 
         return Inertia::render('akun_users/dashboard', $payload);
@@ -303,6 +314,69 @@ class DashboardController extends Controller
             ->all();
     }
 
+    /**
+     * Forecast-oriented revenue trend: monthly omset for the last twelve
+     * months plus the current month, a trailing three-month moving average,
+     * and MoM and YoY percentage changes.
+     *
+     * @return array{labels: list<string>, data: list<float>, moving_average: list<float|null>, mom: float|null, yoy: float|null}
+     */
+    private function buildTren(Outlet $outlet): array
+    {
+        $start = Carbon::now()->subMonths(12)->startOfMonth();
+        $months = 13;
+
+        $monthExpr = match (DB::getDriverName()) {
+            'pgsql' => "to_char(tgl_transaksi, 'YYYY-MM')",
+            'mysql' => "DATE_FORMAT(tgl_transaksi, '%Y-%m')",
+            default => "strftime('%Y-%m', tgl_transaksi)",
+        };
+
+        $rows = Transaksi::query()
+            ->join('produks', 'transaksis.id_produk', '=', 'produks.id')
+            ->where('transaksis.id_outlet', $outlet->id)
+            ->where('transaksis.jenis_transaksi', 'OUT')
+            ->where('transaksis.tgl_transaksi', '>=', $start)
+            ->selectRaw($monthExpr.' as month')
+            ->selectRaw('SUM(transaksis.jumlah_produk * CASE WHEN produks.diskon = ? THEN produks.harga_diskon ELSE produks.harga END) as omset', ['yes'])
+            ->groupBy('month')
+            ->orderBy('month')
+            ->pluck('omset', 'month')
+            ->toArray();
+
+        $labels = collect(range(0, $months - 1))
+            ->map(fn (int $i) => Carbon::now()->startOfMonth()->subMonths($months - 1 - $i)->format('Y-m'))
+            ->all();
+
+        $data = array_map(
+            fn (string $label) => (float) ($rows[$label] ?? 0),
+            $labels,
+        );
+
+        $movingAverage = array_map(
+            fn (int $i) => $i < 2
+                ? null
+                : (float) round(array_sum(array_slice($data, $i - 2, 3)) / 3, 2),
+            range(0, $months - 1),
+        );
+
+        $mom = $data[$months - 2] > 0
+            ? (float) round((($data[$months - 1] - $data[$months - 2]) / $data[$months - 2]) * 100, 1)
+            : null;
+
+        $yoy = $data[0] > 0
+            ? (float) round((($data[$months - 1] - $data[0]) / $data[0]) * 100, 1)
+            : null;
+
+        return [
+            'labels' => $labels,
+            'data' => $data,
+            'moving_average' => $movingAverage,
+            'mom' => $mom,
+            'yoy' => $yoy,
+        ];
+    }
+
     private function renderEmptyState(string $title = 'Pilih Outlet Terlebih Dahulu', string $message = 'Untuk melihat dashboard, silakan pilih outlet aktif terlebih dahulu pada menu Outlet Aktif di sidebar.'): Response
     {
         return Inertia::render('akun_users/dashboard', [
@@ -315,6 +389,7 @@ class DashboardController extends Controller
             'topProduk' => [],
             'kurangLaku' => [],
             'recentTransaksis' => [],
+            'tren' => null,
             'emptyState' => [
                 'title' => $title,
                 'message' => $message,

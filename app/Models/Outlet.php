@@ -16,13 +16,26 @@ class Outlet extends Model
 
     protected $fillable = [
         'gambar',
+        'logo',
+        'banner',
         'nama_outlet',
         'slug',
         'alamat_outlet',
         'kota',
         'telp',
+        'jam_buka',
+        'mata_uang',
+        'alamat_pengiriman_default',
         'company_id',
     ];
+
+    protected function casts(): array
+    {
+        return [
+            'jam_buka' => 'string',
+            'mata_uang' => 'string',
+        ];
+    }
 
     public function company(): BelongsTo
     {

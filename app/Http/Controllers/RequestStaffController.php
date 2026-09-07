@@ -24,7 +24,7 @@ class RequestStaffController extends Controller
             abort(403, 'Unauthorized.');
         }
 
-        $outlet = Outlet::with('owner:id,name,email')->orderBy('nama_outlet')->get();
+        $outlet = Outlet::with('owner:id,name')->orderBy('nama_outlet')->get();
         $jmlOutlet = $outlet->count();
         $statusreq = RequestRole::with([
             'owner:id,name',

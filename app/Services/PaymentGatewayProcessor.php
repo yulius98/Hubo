@@ -2,12 +2,13 @@
 
 namespace App\Services;
 
+use App\Jobs\SendMail;
 use App\Mail\OrderPaidMail;
 use App\Models\Order;
 use App\Models\Payment;
+use App\Models\SubscriptionInvoice;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Log;
-use Illuminate\Support\Facades\Mail;
 
 class PaymentGatewayProcessor
 {
@@ -38,11 +39,15 @@ class PaymentGatewayProcessor
         ]);
 
         try {
-            match ($gateway) {
-                'xendit' => $this->processXendit($payment, $order, $config),
-                'midtrans' => $this->processMidtrans($payment, $order, $config),
-                default => null,
-            };
+            $context = [
+                'customer_name' => $order->user->name,
+                'customer_email' => $order->user->email,
+                'description' => "Order {$order->order_number}",
+                'redirect_url' => url("/orders/{$order->id}"),
+                'payment_methods' => $this->getXenditPaymentMethods($order->payment_method),
+            ];
+
+            $this->processGateway($payment, $gateway, $config, $context);
         } catch (\Exception $e) {
             Log::error("Payment gateway error for order {$order->order_number}: {$e->getMessage()}");
 
@@ -56,9 +61,74 @@ class PaymentGatewayProcessor
     }
 
     /**
-     * Process payment via Xendit Invoice API.
+     * Create a payment for a subscription invoice via the active gateway.
      */
-    private function processXendit(Payment $payment, Order $order, array $config): void
+    public function createSubscriptionPayment(SubscriptionInvoice $invoice): Payment
+    {
+        $gateway = $this->gateways->activeGateway();
+
+        if (! $gateway) {
+            throw new \RuntimeException('Tidak ada payment gateway yang aktif.');
+        }
+
+        $config = $this->gateways->config($gateway);
+
+        $payment = Payment::create([
+            'subscription_invoice_id' => $invoice->id,
+            'payment_number' => Payment::generatePaymentNumber(),
+            'gateway' => $gateway,
+            'payment_method' => 'subscription',
+            'amount' => $invoice->amount,
+            'status' => 'pending',
+        ]);
+
+        try {
+            $company = $invoice->subscription?->company;
+            $billingUser = $company?->users()->orderBy('users.id')->first();
+
+            $context = [
+                'customer_name' => $billingUser?->name ?? $company?->name ?? 'Langganan Hubo',
+                'customer_email' => $billingUser?->email,
+                'description' => "Invoice langganan {$invoice->invoice_number}",
+                'redirect_url' => url('/billing'),
+                'payment_methods' => [],
+            ];
+
+            $this->processGateway($payment, $gateway, $config, $context);
+        } catch (\Exception $e) {
+            Log::error("Payment gateway error for invoice {$invoice->invoice_number}: {$e->getMessage()}");
+
+            $payment->update([
+                'status' => 'failed',
+                'gateway_response' => ['error' => $e->getMessage()],
+            ]);
+        }
+
+        return $payment->fresh();
+    }
+
+    /**
+     * Dispatch a payment record to the matching gateway implementation.
+     *
+     * @param  array<string, mixed>  $config
+     * @param  array<string, mixed>  $context
+     */
+    private function processGateway(Payment $payment, string $gateway, array $config, array $context): void
+    {
+        match ($gateway) {
+            'xendit' => $this->processXendit($payment, $config, $context),
+            'midtrans' => $this->processMidtrans($payment, $config, $context),
+            default => null,
+        };
+    }
+
+    /**
+     * Process payment via Xendit Invoice API.
+     *
+     * @param  array<string, mixed>  $config
+     * @param  array<string, mixed>  $context
+     */
+    private function processXendit(Payment $payment, array $config, array $context): void
     {
         $secretKey = $config['secret_key'] ?? null;
 
@@ -74,15 +144,15 @@ class PaymentGatewayProcessor
             ->post("{$baseUrl}/v2/invoices", [
                 'external_id' => $payment->payment_number,
                 'amount' => (float) $payment->amount,
-                'description' => "Order {$order->order_number}",
+                'description' => $context['description'] ?? 'Pembayaran Hubo',
                 'invoice_duration' => 86400,
                 'customer' => [
-                    'given_names' => $order->user->name,
-                    'email' => $order->user->email,
+                    'given_names' => $context['customer_name'] ?? 'Pelanggan',
+                    'email' => $context['customer_email'] ?? '',
                 ],
-                'success_redirect_url' => url("/orders/{$order->id}"),
-                'failure_redirect_url' => url("/orders/{$order->id}"),
-                'payment_methods' => $this->getXenditPaymentMethods($order->payment_method),
+                'success_redirect_url' => $context['redirect_url'] ?? url('/'),
+                'failure_redirect_url' => $context['redirect_url'] ?? url('/'),
+                'payment_methods' => $context['payment_methods'] ?? [],
             ]);
 
         if ($response->successful()) {
@@ -103,8 +173,11 @@ class PaymentGatewayProcessor
 
     /**
      * Process payment via Midtrans Snap API.
+     *
+     * @param  array<string, mixed>  $config
+     * @param  array<string, mixed>  $context
      */
-    private function processMidtrans(Payment $payment, Order $order, array $config): void
+    private function processMidtrans(Payment $payment, array $config, array $context): void
     {
         $serverKey = $config['server_key'] ?? null;
 
@@ -124,11 +197,11 @@ class PaymentGatewayProcessor
                     'gross_amount' => (float) $payment->amount,
                 ],
                 'customer_details' => [
-                    'first_name' => $order->user->name,
-                    'email' => $order->user->email,
+                    'first_name' => $context['customer_name'] ?? 'Pelanggan',
+                    'email' => $context['customer_email'] ?? '',
                 ],
                 'callbacks' => [
-                    'finish' => url("/orders/{$order->id}"),
+                    'finish' => $context['redirect_url'] ?? url('/'),
                 ],
                 'expiry' => [
                     'unit' => 'day',
@@ -184,8 +257,8 @@ class PaymentGatewayProcessor
         $status = $payload['status'] ?? null;
 
         match ($status) {
-            'PAID' => $this->markPaid($payment, $payload),
-            'EXPIRED' => $this->markExpired($payment),
+            'PAID' => $this->markPaidOrSettle($payment, $payload),
+            'EXPIRED' => $this->markExpiredOrSettle($payment),
             default => null,
         };
     }
@@ -211,10 +284,86 @@ class PaymentGatewayProcessor
         $fraudStatus = $payload['fraud_status'] ?? null;
 
         if ($statusCode === '200' && $fraudStatus === 'accept') {
-            $this->markPaid($payment, $payload);
+            $this->markPaidOrSettle($payment, $payload);
         } elseif (in_array($statusCode, ['400', '406', '407', '408', '409'], true)) {
-            $this->markExpired($payment);
+            $this->markExpiredOrSettle($payment);
         }
+    }
+
+    /**
+     * Mark a payment as paid. When the payment belongs to a subscription
+     * invoice, settle the invoice instead of an order.
+     */
+    private function markPaidOrSettle(Payment $payment, array $response): void
+    {
+        if ($payment->subscription_invoice_id !== null) {
+            $this->settleSubscriptionPayment($payment, $response);
+
+            return;
+        }
+
+        $this->markPaid($payment, $response);
+    }
+
+    /**
+     * Mark a payment as expired. Subscription payments are marked expired
+     * without touching an order.
+     */
+    private function markExpiredOrSettle(Payment $payment): void
+    {
+        if ($payment->subscription_invoice_id !== null) {
+            $this->markExpiredOnly($payment);
+
+            return;
+        }
+
+        $this->markExpired($payment);
+    }
+
+    /**
+     * Settle a subscription invoice payment: record the payment and mark the
+     * invoice as paid via the billing service.
+     */
+    private function settleSubscriptionPayment(Payment $payment, array $response): void
+    {
+        if ($payment->status === 'success') {
+            Log::info("Payment {$payment->payment_number} already marked as paid, skipping.");
+
+            return;
+        }
+
+        $payment->update([
+            'status' => 'success',
+            'gateway_response' => array_merge(
+                $payment->gateway_response ?? [],
+                $response
+            ),
+            'paid_at' => now(),
+        ]);
+
+        try {
+            $invoice = $payment->subscriptionInvoice?->fresh();
+
+            if ($invoice !== null) {
+                app(SubscriptionBillingService::class)->payInvoice($invoice);
+            }
+        } catch (\Exception $e) {
+            Log::error("Failed to settle subscription invoice payment {$payment->payment_number}: {$e->getMessage()}");
+        }
+    }
+
+    /**
+     * Mark a payment as expired without touching the related order.
+     */
+    private function markExpiredOnly(Payment $payment): void
+    {
+        if ($payment->status === 'expired' || $payment->status === 'success') {
+            Log::info("Payment {$payment->payment_number} already in terminal state ({$payment->status}), skipping.");
+
+            return;
+        }
+
+        $payment->update(['status' => 'expired']);
     }
 
     /**
@@ -242,10 +391,9 @@ class PaymentGatewayProcessor
 
         try {
             $payment->order->loadMissing('items');
-            Mail::to($payment->order->user->email)
-                ->send(new OrderPaidMail($payment->order));
+            SendMail::dispatch(new OrderPaidMail($payment->order), $payment->order->user->email);
         } catch (\Exception $e) {
-            Log::error("Failed to send order paid email: {$e->getMessage()}");
+            Log::error("Failed to queue order paid email: {$e->getMessage()}");
         }
     }
 

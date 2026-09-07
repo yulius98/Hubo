@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Events\StaffRequestUpdated;
 use App\Models\Outlet;
 use App\Models\RequestRole;
 use App\Models\Role;
@@ -9,6 +10,7 @@ use App\Models\User;
 use App\Notifications\StaffRequestNotification;
 use App\Services\SubscriptionService;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Log;
 use Inertia\Inertia;
 
 class RequestRoleController extends Controller
@@ -78,6 +80,12 @@ class RequestRoleController extends Controller
 
         $user->notify(new StaffRequestNotification($data_staf->outlet, 'accepted'));
 
+        try {
+            StaffRequestUpdated::dispatch($data_staf->outlet, 'accepted');
+        } catch (\Exception $e) {
+            Log::error("Failed to broadcast staff request accepted for outlet {$data_staf->outlet_id}: {$e->getMessage()}");
+        }
+
         return redirect()->back()->with('success', 'Request berhasil dikirim');
 
     }
@@ -94,6 +102,12 @@ class RequestRoleController extends Controller
 
         $user = User::find($data_staf->user_id);
         $user?->notify(new StaffRequestNotification($data_staf->outlet, 'rejected'));
+
+        try {
+            StaffRequestUpdated::dispatch($data_staf->outlet, 'rejected');
+        } catch (\Exception $e) {
+            Log::error("Failed to broadcast staff request rejected for outlet {$data_staf->outlet_id}: {$e->getMessage()}");
+        }
 
         return redirect()->back()->with('success', 'Request berhasil ditolak');
 

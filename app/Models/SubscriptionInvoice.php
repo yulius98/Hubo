@@ -5,6 +5,7 @@ namespace App\Models;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\HasOne;
 
 class SubscriptionInvoice extends Model
 {
@@ -15,6 +16,8 @@ class SubscriptionInvoice extends Model
     public const STATUS_PAID = 'paid';
 
     public const STATUS_FAILED = 'failed';
+
+    public const STATUS_OVERDUE = 'overdue';
 
     /**
      * The attributes that are mass assignable.
@@ -46,6 +49,11 @@ class SubscriptionInvoice extends Model
     public function subscription(): BelongsTo
     {
         return $this->belongsTo(Subscription::class);
+    }
+
+    public function payment(): HasOne
+    {
+        return $this->hasOne(Payment::class);
     }
 
     public static function generateInvoiceNumber(): string

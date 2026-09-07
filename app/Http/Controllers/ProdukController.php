@@ -201,6 +201,8 @@ class ProdukController extends Controller
             'reviews.user:id,name',
         ]);
 
+        $produk->makeHidden(['harga_beli', 'margin', 'min_stok', 'ppn', 'tax']);
+
         $produk->setAttribute('effective_stok', $produk->effectiveStock());
 
         $reviews = $produk->reviews
@@ -217,8 +219,11 @@ class ProdukController extends Controller
         $userId = Auth::id();
         $myReview = null;
         $canReview = false;
+        $isWishlisted = false;
 
         if ($userId !== null) {
+            $isWishlisted = $produk->wishlistedBy()->whereKey($userId)->exists();
+
             $my = $produk->reviews->firstWhere('user_id', $userId);
 
             if ($my !== null) {
@@ -242,6 +247,7 @@ class ProdukController extends Controller
             'review_count' => count($reviews),
             'can_review' => $canReview,
             'my_review' => $myReview,
+            'is_wishlisted' => $isWishlisted,
         ]);
     }
 
@@ -296,6 +302,12 @@ class ProdukController extends Controller
         $validated['min_stok'] = (int) ($validated['min_stok'] ?? 0);
 
         $this->authorize('update', $produk);
+
+        if ((int) $validated['id_outlet'] !== (int) $produk->id_outlet) {
+            $targetOutlet = Outlet::find($validated['id_outlet']);
+            abort_if($targetOutlet === null, 403, 'Outlet tujuan tidak ditemukan.');
+            $this->authorize('create', [Produk::class, $targetOutlet]);
+        }
 
         if ($request->hasFile('gambar')) {
             // Hapus gambar lama jika ada

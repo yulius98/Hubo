@@ -2,6 +2,8 @@
 
 namespace App\Services;
 
+use App\Events\OrderCreated;
+use App\Jobs\SendMail;
 use App\Mail\OrderConfirmedMail;
 use App\Mail\OrderShippedMail;
 use App\Models\Company;
@@ -19,7 +21,6 @@ use App\Notifications\NewOrderNotification;
 use App\Notifications\OrderStatusNotification;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
-use Illuminate\Support\Facades\Mail;
 use Illuminate\Validation\ValidationException;
 
 class OrderService
@@ -30,6 +31,7 @@ class OrderService
         protected NotificationService $notifications,
         protected TenantService $tenants,
         protected UsageMeteringService $metering,
+        protected SubscriptionBillingService $billing,
     ) {}
 
     /**
@@ -45,7 +47,13 @@ class OrderService
         ?string $couponCode = null,
         int $points = 0,
     ): Order {
-        return DB::transaction(function () use ($userId, $shippingAddress, $notes, $paymentMethod, $shippingCost, $courier, $couponCode, $points) {
+        $user = auth()->user() ?? User::find($userId);
+        $company = $this->tenants->resolveForUser($user);
+        abort_unless($company !== null, 422, 'Tenant tidak ditemukan.');
+
+        $this->billing->assertTenantCanTransact($company);
+
+        $order = DB::transaction(function () use ($userId, $shippingAddress, $notes, $paymentMethod, $shippingCost, $courier, $couponCode, $points, $user, $company) {
             $cartItems = KeranjangBelanjaUser::query()
                 ->where('id_user', $userId)
                 ->where('status', 'pending')
@@ -110,10 +118,6 @@ class OrderService
                 ];
             }
 
-            $user = auth()->user() ?? User::find($userId);
-            $company = app(TenantService::class)->resolveForUser($user);
-            abort_unless($company !== null, 422, 'Tenant tidak ditemukan.');
-
             $customer = $this->resolveCustomer($user, $company, $outletId);
 
             $couponDiscount = 0;
@@ -164,11 +168,7 @@ class OrderService
             }
 
             foreach ($cartItems as $cartItem) {
-                if ($cartItem->variant) {
-                    $cartItem->variant->decrement('stok', $cartItem->jumlah_produk);
-                } else {
-                    $cartItem->produk->decrement('stok', $cartItem->jumlah_produk);
-                }
+                $this->lockAndDecrementStock($cartItem, $cartItem->id_produk, $cartItem->variant_id, $cartItem->jumlah_produk);
                 $cartItem->update(['status' => 'done']);
             }
 
@@ -180,26 +180,34 @@ class OrderService
                 $this->loyalty->applyRedemption($customer, $order, $pointsUsed, $pointsDiscount);
             }
 
-            $order->load('items.produk');
-
-            try {
-                Mail::to($order->user->email)->send(new OrderConfirmedMail($order));
-            } catch (\Exception $e) {
-                Log::error("Failed to send order confirmed email: {$e->getMessage()}");
-            }
-
-            try {
-                $this->notifications->notifyCompanyStaff($company, new NewOrderNotification($order));
-            } catch (\Exception $e) {
-                Log::error("Failed to notify company staff: {$e->getMessage()}");
-            }
-
-            $this->notifyLowStockProducts();
-
             $this->metering->recordOrder($order);
 
             return $order;
         });
+
+        $order->load('items.produk');
+
+        try {
+            SendMail::dispatch(new OrderConfirmedMail($order), $order->user->email);
+        } catch (\Exception $e) {
+            Log::error("Failed to queue order confirmed email: {$e->getMessage()}");
+        }
+
+        try {
+            $this->notifications->notifyCompanyStaff($company, new NewOrderNotification($order));
+        } catch (\Exception $e) {
+            Log::error("Failed to notify company staff: {$e->getMessage()}");
+        }
+
+        try {
+            OrderCreated::dispatch($order);
+        } catch (\Exception $e) {
+            Log::error("Failed to broadcast order created for {$order->order_number}: {$e->getMessage()}");
+        }
+
+        $this->notifyLowStockProducts($company);
+
+        return $order->fresh();
     }
 
     /**
@@ -236,7 +244,12 @@ class OrderService
         int $points = 0,
         ?string $paymentMethod = 'cash',
     ): Order {
-        return DB::transaction(function () use ($userId, $outletId, $customerId, $couponCode, $points, $paymentMethod) {
+        $user = User::find($userId);
+        $company = $this->companyOfOutlet($outletId);
+
+        $this->billing->assertTenantCanTransact($company);
+
+        $order = DB::transaction(function () use ($userId, $outletId, $customerId, $couponCode, $points, $paymentMethod, $company) {
             $cartItems = KeranjangBelanjaKasir::query()
                 ->where('id_user', $userId)
                 ->where('status', 'pending')
@@ -299,9 +312,6 @@ class OrderService
                 ];
             }
 
-            $user = User::find($userId);
-            $company = $this->companyOfOutlet($outletId);
-
             $selectedCustomerId = $cartItems->firstWhere('customer_id', '!=', null)?->customer_id
                 ?? (isset($customerId) ? $customerId : null);
 
@@ -362,11 +372,7 @@ class OrderService
             }
 
             foreach ($cartItems as $cartItem) {
-                if ($cartItem->variant) {
-                    $cartItem->variant->decrement('stok', $cartItem->jumlah_produk);
-                } else {
-                    $cartItem->produk->decrement('stok', $cartItem->jumlah_produk);
-                }
+                $this->lockAndDecrementStock($cartItem, $cartItem->id_produk, $cartItem->variant_id, $cartItem->jumlah_produk);
                 $cartItem->update(['status' => 'done']);
             }
 
@@ -384,23 +390,66 @@ class OrderService
                 Log::error("Failed to award loyalty points: {$e->getMessage()}");
             }
 
-            try {
-                $this->notifications->notifyCompanyStaff($order->outlet?->company, new OrderStatusNotification($order));
-            } catch (\Exception $e) {
-                Log::error("Failed to notify company staff: {$e->getMessage()}");
-            }
-
-            $this->notifyLowStockProducts();
-
             $this->metering->recordOrder($order);
 
             return $order;
         });
+
+        try {
+            $this->notifications->notifyCompanyStaff($company, new OrderStatusNotification($order));
+        } catch (\Exception $e) {
+            Log::error("Failed to notify company staff: {$e->getMessage()}");
+        }
+
+        try {
+            OrderCreated::dispatch($order);
+        } catch (\Exception $e) {
+            Log::error("Failed to broadcast order created for {$order->order_number}: {$e->getMessage()}");
+        }
+
+        $this->notifyLowStockProducts($company);
+
+        return $order->fresh();
     }
 
     private function companyOfOutlet(int $outletId): ?Company
     {
         return Outlet::query()->with('company')->find($outletId)?->company;
+    }
+
+    /**
+     * Lock the product (or variant) row inside the open transaction, re-check
+     * the available stock, then decrement it to prevent overselling when two
+     * checkouts race for the same product.
+     */
+    private function lockAndDecrementStock(object $cartItem, int $produkId, ?int $variantId, int $quantity): void
+    {
+        if ($variantId !== null) {
+            $variant = ProductVariant::query()->lockForUpdate()->find($variantId);
+
+            if ($variant === null || $variant->stok < $quantity) {
+                $namaVariant = $cartItem->variant?->nama ?? 'varian';
+                $sisaStok = $variant?->stok ?? 0;
+
+                throw ValidationException::withMessages([
+                    'cart' => "Stok varian \"{$namaVariant}\" tidak mencukupi. Tersisa {$sisaStok}.",
+                ]);
+            }
+
+            $variant->decrement('stok', $quantity);
+        } else {
+            $produk = Produk::query()->lockForUpdate()->find($produkId);
+
+            if ($produk === null || $produk->stok < $quantity) {
+                $sisaStok = $produk?->stok ?? 0;
+
+                throw ValidationException::withMessages([
+                    'cart' => "Stok produk tidak mencukupi. Tersisa {$sisaStok}.",
+                ]);
+            }
+
+            $produk->decrement('stok', $quantity);
+        }
     }
 
     /**
@@ -448,12 +497,15 @@ class OrderService
     }
 
     /**
-     * Scan for newly low-stock products and notify owners/admins.
+     * Scan the company's products for newly low-stock items and notify owners/admins.
      */
-    private function notifyLowStockProducts(): void
+    private function notifyLowStockProducts(Company $company): void
     {
         try {
+            $outletIds = $company->outlets()->pluck('outlets.id');
+
             $products = Produk::query()
+                ->whereIn('id_outlet', $outletIds)
                 ->where('min_stok', '>', 0)
                 ->with('variants', 'outlet.company')
                 ->get();
@@ -473,7 +525,7 @@ class OrderService
     {
         try {
             match ($newStatus) {
-                'shipped' => Mail::to($order->user->email)->send(new OrderShippedMail($order)),
+                'shipped' => SendMail::dispatch(new OrderShippedMail($order), $order->user->email),
                 default => null,
             };
         } catch (\Exception $e) {
@@ -572,7 +624,11 @@ class OrderService
             }
         }
 
-        $this->notifyLowStockProducts();
+        $company = $order->outlet?->company;
+
+        if ($company !== null) {
+            $this->notifyLowStockProducts($company);
+        }
     }
 
     /**

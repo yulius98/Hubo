@@ -6,6 +6,7 @@ const en: Record<string, string> = {
     'nav.profil': 'Profile',
     'nav.my_profile': 'My Profile',
     'nav.my_orders': 'My Orders',
+    'nav.wishlist': 'Wishlist',
     'nav.logout': 'Logout',
     'nav.hi': 'Hi, {name}!',
 
@@ -22,6 +23,7 @@ const en: Record<string, string> = {
     'produk.buy': 'Buy',
     'produk.stock': 'Stock',
     'produk.quantity': 'Quantity',
+    'produk.wishlist': 'Add to wishlist',
     'produk.rating': 'Rating',
     'produk.stock_available': 'Available',
     'produk.stock_empty': 'Out of Stock',

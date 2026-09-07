@@ -44,7 +44,7 @@ class StokController extends Controller
         }
 
         $produks = Produk::query()
-            ->with('kategori:id,kategori')
+            ->with('kategori:id,kategori', 'variants')
             ->when($outlet, fn ($query) => $query->where('id_outlet', $outlet->id))
             ->when(! $outlet, fn ($query) => $query->whereIn('id_outlet', $accessibleOutlets))
             ->orderBy('nama_produk')
@@ -81,22 +81,22 @@ class StokController extends Controller
             'keterangan' => 'nullable|string|max:255',
         ]);
 
-        $produk = Produk::query()->lockForUpdate()->findOrFail($validated['id_produk']);
-        $outlet = $produk->outlet;
+        return DB::transaction(function () use ($validated, $request) {
+            $produk = Produk::query()->lockForUpdate()->findOrFail($validated['id_produk']);
+            $outlet = $produk->outlet;
 
-        abort_if($outlet === null, 403, 'Outlet tidak ditemukan.');
-        $this->authorize('create', [Transaksi::class, $outlet]);
+            abort_if($outlet === null, 403, 'Outlet tidak ditemukan.');
+            $this->authorize('create', [Transaksi::class, $outlet]);
 
-        $sign = $validated['jenis_transaksi'] === 'IN' ? 1 : -1;
-        $newStok = $produk->stok + ($sign * (int) $validated['jumlah_produk']);
+            $sign = $validated['jenis_transaksi'] === 'IN' ? 1 : -1;
+            $newStok = $produk->stok + ($sign * (int) $validated['jumlah_produk']);
 
-        if ($newStok < 0) {
-            throw ValidationException::withMessages([
-                'jumlah_produk' => "Stok tidak mencukupi. Stok saat ini: {$produk->stok}.",
-            ]);
-        }
+            if ($newStok < 0) {
+                throw ValidationException::withMessages([
+                    'jumlah_produk' => "Stok tidak mencukupi. Stok saat ini: {$produk->stok}.",
+                ]);
+            }
 
-        DB::transaction(function () use ($produk, $validated, $request, $newStok) {
             $produk->update(['stok' => $newStok]);
 
             $transaksi = Transaksi::create([
@@ -111,9 +111,9 @@ class StokController extends Controller
             ]);
 
             $this->metering->recordTransaction($transaksi);
-        });
 
-        return redirect()->back()->with('success', 'Stok berhasil diperbarui');
+            return redirect()->back()->with('success', 'Stok berhasil diperbarui');
+        });
     }
 
     /**
@@ -123,22 +123,22 @@ class StokController extends Controller
     {
         $this->authorize('delete', $transaksi);
 
-        $produk = Produk::query()->lockForUpdate()->findOrFail($transaksi->id_produk);
+        return DB::transaction(function () use ($transaksi) {
+            $produk = Produk::query()->lockForUpdate()->findOrFail($transaksi->id_produk);
 
-        $sign = $transaksi->jenis_transaksi === 'IN' ? 1 : -1;
-        $newStok = $produk->stok - ($sign * $transaksi->jumlah_produk);
+            $sign = $transaksi->jenis_transaksi === 'IN' ? 1 : -1;
+            $newStok = $produk->stok - ($sign * $transaksi->jumlah_produk);
 
-        if ($newStok < 0) {
-            throw ValidationException::withMessages([
-                'jumlah_produk' => 'Stok tidak boleh negatif saat membatalkan mutasi.',
-            ]);
-        }
+            if ($newStok < 0) {
+                throw ValidationException::withMessages([
+                    'jumlah_produk' => 'Stok tidak boleh negatif saat membatalkan mutasi.',
+                ]);
+            }
 
-        DB::transaction(function () use ($produk, $transaksi, $newStok) {
             $produk->update(['stok' => $newStok]);
             $transaksi->delete();
-        });
 
-        return redirect()->back()->with('success', 'Mutasi stok berhasil dibatalkan');
+            return redirect()->back()->with('success', 'Mutasi stok berhasil dibatalkan');
+        });
     }
 }

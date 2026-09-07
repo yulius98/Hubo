@@ -21,10 +21,11 @@ class AuditLogController extends Controller
         $logs = AuditLog::query()
             ->with(['user:id,name,email'])
             ->when($event !== '', fn ($query) => $query->where('event', $event))
-            ->when($search !== '', fn ($query) => $query
-                ->where('description', 'like', "%{$search}%")
-                ->orWhereHas('user', fn ($q) => $q->where('name', 'like', "%{$search}%"))
-                ->orWhere('auditable_type', 'like', "%{$search}%"))
+            ->when($search !== '', fn ($query) => $query->where(function ($group) use ($search) {
+                $group->where('description', 'like', "%{$search}%")
+                    ->orWhereHas('user', fn ($q) => $q->where('name', 'like', "%{$search}%"))
+                    ->orWhere('auditable_type', 'like', "%{$search}%");
+            }))
             ->latest()
             ->limit(300)
             ->get()

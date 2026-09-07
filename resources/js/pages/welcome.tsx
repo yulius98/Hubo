@@ -288,6 +288,10 @@ export default function WelcomePage(props: Readonly<Props>) {
     );
 
     useEffect(() => {
+        if (products.length === 0) {
+            return;
+        }
+
         const interval = setInterval(() => {
             setIndex((prev) => (prev + 1) % products.length);
         }, 4500);

@@ -63,6 +63,65 @@ class OrderController extends Controller
 
         $order->load(['items.produk', 'payment', 'returns']);
 
+        $status = $order->status;
+
+        $relativeTimeline = [
+            [
+                'key' => 'dipesan',
+                'label' => 'Pesanan Dibuat',
+                'time' => $order->created_at?->toISOString(),
+                'reached' => true,
+            ],
+            [
+                'key' => 'dibayar',
+                'label' => 'Pembayaran Dikonfirmasi',
+                'time' => $order->paid_at?->toISOString(),
+                'reached' => $order->paid_at !== null,
+            ],
+            [
+                'key' => 'diproses',
+                'label' => 'Pesanan Diproses',
+                'time' => $order->paid_at?->toISOString(),
+                'reached' => in_array($status, ['processing', 'shipped', 'completed'], true),
+            ],
+            [
+                'key' => 'dikirim',
+                'label' => 'Pesanan Dikirim',
+                'time' => $order->shipped_at?->toISOString(),
+                'reached' => $order->shipped_at !== null,
+            ],
+            [
+                'key' => 'selesai',
+                'label' => 'Pesanan Selesai',
+                'time' => $order->completed_at?->toISOString(),
+                'reached' => $order->completed_at !== null,
+            ],
+        ];
+
+        $timeline = collect($relativeTimeline)->filter(fn (array $step) => $step['reached']);
+
+        if ($status === 'cancelled' || $status === 'expired') {
+            $timeline->push([
+                'key' => 'dibatalkan',
+                'label' => 'Pesanan '.(strtolower($status) === 'cancelled' ? 'Dibatalkan' : 'Kedaluwarsa'),
+                'time' => $order->cancelled_at?->toISOString(),
+                'reached' => true,
+            ]);
+        }
+
+        if ($order->returns->isNotEmpty()) {
+            $timeline->push([
+                'key' => 'pengembalian',
+                'label' => 'Pengajuan Pengembalian',
+                'time' => null,
+                'reached' => true,
+            ]);
+        }
+
+        $estimatedDeliveryAt = ($order->paid_at ?? $order->created_at)
+            ?->copy()
+            ->addDays((int) config('shipping.estimated_days'));
+
         return Inertia::render('orders/show', [
             'order' => [
                 'id' => $order->id,
@@ -83,7 +142,10 @@ class OrderController extends Controller
                 'shipped_at' => $order->shipped_at?->toISOString(),
                 'paid_at' => $order->paid_at?->toISOString(),
                 'completed_at' => $order->completed_at?->toISOString(),
+                'cancelled_at' => $order->cancelled_at?->toISOString(),
                 'created_at' => $order->created_at->toISOString(),
+                'estimated_delivery_at' => $estimatedDeliveryAt?->toISOString(),
+                'timeline' => $timeline->values(),
                 'items' => $order->items->map(fn ($item) => [
                     'id' => $item->id,
                     'product_name' => $item->product_name,

@@ -4,6 +4,7 @@ import {
     BarChart3,
     Download,
     DollarSign,
+    Loader,
     TrendingUp,
 } from 'lucide-react';
 import AppLayout from '@/layouts/app-layout';
@@ -167,6 +168,25 @@ export default function Reports({
                         <Download className="h-4 w-4" />
                         PDF
                     </a>
+                    <button
+                        type="button"
+                        onClick={() =>
+                            router.post(
+                                admin.reports.exportAsync().url,
+                                {
+                                    format: 'xlsx',
+                                    start_date: filters.start_date,
+                                    end_date: filters.end_date,
+                                    outlet_id: filters.outlet_id,
+                                },
+                                { preserveScroll: true },
+                            )
+                        }
+                        className="inline-flex items-center gap-2 rounded-xl px-4 py-2 text-sm font-medium text-indigo-600 hover:bg-indigo-50 dark:text-indigo-400 dark:hover:bg-indigo-950/40"
+                    >
+                        <Loader className="h-4 w-4" />
+                        Ekspor Async
+                    </button>
                 </div>
 
                 {flash?.success && (

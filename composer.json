@@ -19,6 +19,7 @@
         "laravel/wayfinder": "^0.1.9",
         "laravel/workos": "^0.6.0",
         "maatwebsite/excel": "^4.0",
+        "pusher/pusher-php-server": "^7.3",
         "tightenco/ziggy": "^2.6"
     },
     "require-dev": {

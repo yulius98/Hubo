@@ -12,6 +12,7 @@ import {
     UserCircle,
     PackageSearch,
     ShoppingCart,
+    Heart,
     Languages,
 } from 'lucide-react';
 import { useCallback, useState } from 'react';
@@ -26,7 +27,7 @@ import {
 } from '@/components/ui/dropdown-menu';
 import { useAppearance } from '@/hooks/use-appearance';
 import { t } from '@/i18n';
-import { homepage, login, logout, myprofile, pesanan_saya } from '@/routes';
+import { homepage, login, logout, myprofile, pesanan_saya, wishlist } from '@/routes';
 import type { User } from '@/types/auth';
 
 type Section = 'home' | 'kategori' | 'produk';
@@ -42,10 +43,11 @@ export default function StoreNavbar({
     activeSection,
     onSectionClick,
 }: Readonly<Props>) {
-    const { auth, locale, cartCount, flash } = usePage().props as unknown as {
+    const { auth, locale, cartCount, wishlistCount, flash } = usePage().props as unknown as {
         auth: { user: User | null };
         locale: string;
         cartCount: number;
+        wishlistCount: number;
         flash?: { success?: string; error?: string };
     };
     const user = auth?.user ?? null;
@@ -88,6 +90,10 @@ export default function StoreNavbar({
             router.visit(pesanan_saya());
         }
     }, [ordersLoading]);
+
+    const handleWishlistClick = useCallback(() => {
+        router.visit(wishlist());
+    }, []);
 
     const sectionClass = (section: Section) =>
         `cursor-pointer text-sm font-medium transition ${
@@ -147,7 +153,21 @@ export default function StoreNavbar({
                         </div>
 
                         {user ? (
-                            <DropdownMenu>
+                            <>
+                                <button
+                                    type="button"
+                                    onClick={handleWishlistClick}
+                                    className="relative rounded-full p-2 text-blue-100 transition hover:bg-blue-500/20 hover:text-white"
+                                    title={t('nav.wishlist', locale)}
+                                >
+                                    <Heart size={20} />
+                                    {wishlistCount > 0 && (
+                                        <span className="absolute -top-0.5 -right-0.5 inline-flex h-5 min-w-5 items-center justify-center rounded-full bg-rose-500 px-1.5 text-[10px] font-bold text-white">
+                                            {wishlistCount}
+                                        </span>
+                                    )}
+                                </button>
+                                <DropdownMenu>
                                 <DropdownMenuTrigger asChild>
                                     <button
                                         type="button"
@@ -232,6 +252,18 @@ export default function StoreNavbar({
                                             </span>
                                         )}
                                     </DropdownMenuItem>
+                                    <DropdownMenuItem
+                                        onClick={handleWishlistClick}
+                                        className="cursor-pointer"
+                                    >
+                                        <Heart className="mr-2" size={18} />
+                                        {t('nav.wishlist', locale)}
+                                        {wishlistCount > 0 && (
+                                            <span className="ml-auto inline-flex h-5 min-w-5 items-center justify-center rounded-full bg-rose-500 px-1.5 text-[10px] font-bold text-white">
+                                                {wishlistCount}
+                                            </span>
+                                        )}
+                                    </DropdownMenuItem>
                                     <DropdownMenuSeparator />
                                     <DropdownMenuItem asChild>
                                         <Link
@@ -245,6 +277,7 @@ export default function StoreNavbar({
                                     </DropdownMenuItem>
                                 </DropdownMenuContent>
                             </DropdownMenu>
+                            </>
                         ) : (
                             <button
                                 type="button"

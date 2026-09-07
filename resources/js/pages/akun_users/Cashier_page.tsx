@@ -1,5 +1,5 @@
 import { router } from '@inertiajs/react';
-import React, { useState, useEffect, useCallback, useMemo } from 'react';
+import React, { useState, useEffect, useCallback, useMemo, useRef } from 'react';
 import TopBarKasir from '@/components/TopBarKasir';
 
 interface Variant {
@@ -102,6 +102,7 @@ export default function CashierPage({
     const [strukData, setStrukData] = useState<StrukData | null>(null);
     const [prevOutletId, setPrevOutletId] = useState(outlet.id);
     const [prevKeranjang, setPrevKeranjang] = useState(keranjang);
+    const submitting = useRef(false);
 
     const totalPrice = useMemo(
         () =>
@@ -270,6 +271,12 @@ export default function CashierPage({
     );
 
     const handleBayar = useCallback(() => {
+        if (submitting.current) {
+            return;
+        }
+
+        submitting.current = true;
+
         const user = localStorage.getItem('user_name') || 'Kasir';
 
         const struk: StrukData = {
@@ -305,6 +312,9 @@ export default function CashierPage({
                     preserveState: true,
                     onSuccess: () => setStokBelanja([]),
                     onError: () => setError('Gagal memproses pembayaran'),
+                    onFinish: () => {
+                        submitting.current = false;
+                    },
                 },
             );
         } catch {

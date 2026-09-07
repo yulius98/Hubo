@@ -8,6 +8,7 @@ import {
     MapPin,
     Minus,
     Plus,
+    Heart,
 } from 'lucide-react';
 import { useMemo, useState } from 'react';
 import LoadingOverlay from '@/components/loading-overlay';
@@ -17,6 +18,7 @@ import { t } from '@/i18n';
 import { homepage, login } from '@/routes';
 import { add as addToCart } from '@/routes/cart';
 import { store as productReviewsStore } from '@/routes/produk/reviews';
+import { toggle as toggleWishlist } from '@/routes/wishlist';
 
 interface Outlet {
     nama_outlet: string;
@@ -61,17 +63,20 @@ interface Props {
     review_count: number;
     can_review: boolean;
     my_review: MyReview | null;
+    is_wishlisted: boolean;
 }
 
 export default function ProductDetail(props: Readonly<Props>) {
-    const { product, user, reviews, review_count, can_review, my_review } = props;
+    const { product, user, reviews, review_count, can_review, my_review, is_wishlisted } = props;
     const { locale } = usePage().props as unknown as { locale: string };
     const { resolvedAppearance } = useAppearance();
     const isDark = resolvedAppearance === 'dark';
     const [loading, setLoading] = useState(false);
     const [buyLoading, setBuyLoading] = useState(false);
+    const [wishlistLoading, setWishlistLoading] = useState(false);
     const [jumlah, setJumlah] = useState(1);
     const [hoverRating, setHoverRating] = useState(0);
+    const [wishlisted, setWishlisted] = useState<boolean>(is_wishlisted ?? false);
     const reviewForm = useForm({
         rating: my_review?.rating ?? 0,
         review: my_review?.review ?? '',
@@ -186,6 +191,30 @@ export default function ProductDetail(props: Readonly<Props>) {
             }
         }
         return stars;
+    };
+
+    const handleWishlistToggle = () => {
+        if (!user) {
+            setLoading(true);
+            router.visit(login());
+            return;
+        }
+
+        if (wishlistLoading) {
+            return;
+        }
+
+        setWishlistLoading(true);
+
+        router.post(
+            toggleWishlist.url({ produk: product.id }),
+            undefined,
+            {
+                preserveScroll: true,
+                onSuccess: () => setWishlisted((prev) => !prev),
+                onFinish: () => setWishlistLoading(false),
+            },
+        );
     };
 
     const handleReviewSubmit = (e: React.FormEvent) => {
@@ -366,21 +395,44 @@ export default function ProductDetail(props: Readonly<Props>) {
                         </div>
 
                         {/* Price */}
-                        <div className="rounded-xl bg-blue-900/20 p-4">
-                            {product.harga_diskon ? (
-                                <div className="flex flex-col gap-1">
-                                    <span className="text-sm text-blue-400 line-through">
+                        <div className="flex items-center justify-between gap-4 rounded-xl bg-blue-900/20 p-4">
+                            <div className="flex flex-col gap-1">
+                                {product.harga_diskon ? (
+                                    <>
+                                        <span className="text-sm text-blue-400 line-through">
+                                            {formatRupiah(product.harga)}
+                                        </span>
+                                        <span className="text-2xl font-bold text-cyan-300 md:text-3xl">
+                                            {formatRupiah(product.harga_diskon)}
+                                        </span>
+                                    </>
+                                ) : (
+                                    <span className="text-2xl font-bold text-cyan-300 md:text-3xl">
                                         {formatRupiah(product.harga)}
                                     </span>
-                                    <span className="text-2xl font-bold text-cyan-300 md:text-3xl">
-                                        {formatRupiah(product.harga_diskon)}
-                                    </span>
-                                </div>
-                            ) : (
-                                <span className="text-2xl font-bold text-cyan-300 md:text-3xl">
-                                    {formatRupiah(product.harga)}
-                                </span>
-                            )}
+                                )}
+                            </div>
+                            <motion.button
+                                whileHover={{ scale: 1.08 }}
+                                whileTap={{ scale: 0.92 }}
+                                onClick={handleWishlistToggle}
+                                disabled={wishlistLoading}
+                                title={t('produk.wishlist', locale)}
+                                className={`flex h-12 w-12 cursor-pointer items-center justify-center rounded-full border transition disabled:cursor-not-allowed disabled:opacity-50 ${
+                                    wishlisted
+                                        ? 'border-rose-500/60 bg-rose-500/20 text-rose-400'
+                                        : 'border-blue-400/30 bg-blue-900/20 text-blue-200 hover:border-rose-400 hover:text-rose-300'
+                                }`}
+                            >
+                                <Heart
+                                    size={24}
+                                    className={
+                                        wishlisted
+                                            ? 'fill-rose-400 text-rose-400'
+                                            : ''
+                                    }
+                                />
+                            </motion.button>
                         </div>
 
                         {/* Divider */}

@@ -245,3 +245,8 @@ npm run types && npm run lint && npm run build
 - **Fase 6.3 (E2)** butuh akun Pusher/aplikasi broadcasting; tanpa itu fitur berjalan di modus fallback (tidak memblokir).
 - **Fase 6.3 (E4)** wajib sebelum A11 (ekspor besar-besaran) & G10 (seed massal) untuk mencegah request timeout.
 - Semua keputusan nilai default dapat diubah lewat `.env` tanpa mengubah kode.
+
+
+
+
+sekarang pastikan sekali lagi semua kode pada aplikasi ini sudah benar sehingga aplikasi dapat berjalan dengan noemal tidak ada bug dan error serta sudah bebas dari segala kerentanan keamanan serta memiliki performance yang sangat bagus delay kurang dari 1 detik

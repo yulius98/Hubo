@@ -6,8 +6,10 @@ import {
 } from '@heroicons/react/24/outline';
 import type { PageProps as InertiaPageProps } from '@inertiajs/core';
 import { Head, router, usePage } from '@inertiajs/react';
+import { Heart } from 'lucide-react';
 import { useState } from 'react';
 import { add as addToCart } from '@/routes/cart';
+import { toggle as toggleWishlist } from '@/routes/wishlist';
 
 interface Variant {
     id: number;
@@ -52,6 +54,8 @@ interface StorefrontPageProps extends InertiaPageProps {
     };
     search: string;
     selectedKategori: number;
+    wishlist_ids: number[];
+    is_user_authenticated: boolean;
 }
 
 export const formatRupiah = (value: number) =>
@@ -62,7 +66,7 @@ export const formatRupiah = (value: number) =>
     }).format(value);
 
 export default function StorefrontPage() {
-    const { outlet, kategoris, products, search, selectedKategori } =
+    const { outlet, kategoris, products, search, selectedKategori, wishlist_ids, is_user_authenticated } =
         usePage<StorefrontPageProps>().props;
 
     const [query, setQuery] = useState(search);
@@ -93,6 +97,17 @@ export default function StorefrontPage() {
 
     const loadPage = (link: string) => {
         router.get(link, {}, { preserveState: true, preserveScroll: true });
+    };
+
+    const handleToggleWishlist = (productId: number) => {
+        if (!is_user_authenticated) {
+            router.visit('/login');
+            return;
+        }
+
+        router.post(toggleWishlist.url({ produk: productId }), undefined, {
+            preserveScroll: true,
+        });
     };
 
     const handleAddToCart = (product: Product) => {
@@ -248,9 +263,9 @@ export default function StorefrontPage() {
                                 return (
                                     <div
                                         key={product.id}
-                                        className="flex flex-col overflow-hidden rounded-2xl border border-gray-200 bg-white shadow-sm transition-shadow hover:shadow-md dark:border-gray-700 dark:bg-gray-800"
+                                        className="relative flex flex-col overflow-hidden rounded-2xl border border-gray-200 bg-white shadow-sm transition-shadow hover:shadow-md dark:border-gray-700 dark:bg-gray-800"
                                     >
-                                        {product.gambar ? (
+{product.gambar ? (
                                             <img
                                                 src={`/${product.gambar}`}
                                                 alt={product.nama_produk}
@@ -261,6 +276,36 @@ export default function StorefrontPage() {
                                                 <ShoppingBagIcon className="h-10 w-10 text-gray-300 dark:text-gray-600" />
                                             </div>
                                         )}
+                                        <button
+                                            type="button"
+                                            onClick={() =>
+                                                handleToggleWishlist(product.id)
+                                            }
+                                            className={`absolute top-3 right-3 z-10 flex h-9 w-9 cursor-pointer items-center justify-center rounded-full bg-white/90 shadow-sm backdrop-blur transition hover:scale-110 dark:bg-gray-800/90 ${
+                                                wishlist_ids?.includes(
+                                                    product.id,
+                                                )
+                                                    ? 'text-rose-500'
+                                                    : 'text-gray-400 hover:text-rose-500'
+                                            }`}
+                                            title={
+                                                wishlist_ids?.includes(
+                                                    product.id,
+                                                )
+                                                    ? 'Hapus dari wishlist'
+                                                    : 'Simpan ke wishlist'
+                                            }
+                                        >
+                                            <Heart
+                                                className={`h-4.5 w-4.5 ${
+                                                    wishlist_ids?.includes(
+                                                        product.id,
+                                                    )
+                                                        ? 'fill-rose-500'
+                                                        : ''
+                                                }`}
+                                            />
+                                        </button>
                                         <div className="flex flex-1 flex-col p-4">
                                             <div className="flex items-start justify-between gap-2">
                                                 <h3 className="flex-1 truncate text-sm font-semibold text-gray-900 dark:text-gray-100">

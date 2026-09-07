@@ -30,10 +30,27 @@ class DashboardController extends Controller
             ->sum('plans.price_monthly');
 
         $recentTenants = Company::with(['subscription.plan:id,name,slug,price_monthly'])
+            ->withCount(['outlets', 'users'])
             ->latest()
             ->limit(10)
-            ->get()
-            ->map(fn (Company $company) => $this->tenantSummary($company))
+            ->get();
+
+        $companyIds = $recentTenants->pluck('id');
+
+        $revenues = DB::table('transaksis')
+            ->join('produks', 'transaksis.id_produk', '=', 'produks.id')
+            ->join('outlets', 'transaksis.id_outlet', '=', 'outlets.id')
+            ->where('transaksis.jenis_transaksi', 'OUT')
+            ->whereIn('outlets.company_id', $companyIds)
+            ->groupBy('outlets.company_id')
+            ->select(
+                'outlets.company_id',
+                DB::raw('COALESCE(SUM(transaksis.jumlah_produk * produks.harga), 0) as total')
+            )
+            ->pluck('total', 'company_id');
+
+        $recentTenants = $recentTenants
+            ->map(fn (Company $company) => $this->tenantSummary($company, (float) ($revenues[$company->id] ?? 0)))
             ->values()
             ->all();
 
@@ -57,7 +74,7 @@ class DashboardController extends Controller
     /**
      * @return array<string, mixed>
      */
-    private function tenantSummary(Company $company): array
+    private function tenantSummary(Company $company, float $totalRevenue = 0): array
     {
         $plan = $company->subscription?->plan;
 
@@ -68,16 +85,10 @@ class DashboardController extends Controller
             'status' => $company->status,
             'plan' => $plan?->name ?? '—',
             'plan_slug' => $plan?->slug ?? null,
-            'outlet_count' => (int) $company->outlets()->count(),
-            'user_count' => (int) $company->users()->count(),
+            'outlet_count' => (int) $company->outlets_count,
+            'user_count' => (int) $company->users_count,
             'created_at' => $company->created_at,
-            'total_revenue' => (float) DB::table('transaksis')
-                ->join('produks', 'transaksis.id_produk', '=', 'produks.id')
-                ->join('outlets', 'transaksis.id_outlet', '=', 'outlets.id')
-                ->where('outlets.company_id', $company->id)
-                ->where('transaksis.jenis_transaksi', 'OUT')
-                ->select(DB::raw('COALESCE(SUM(transaksis.jumlah_produk * produks.harga), 0)'))
-                ->value('COALESCE(SUM(transaksis.jumlah_produk * produks.harga), 0)'),
+            'total_revenue' => $totalRevenue,
         ];
     }
 }

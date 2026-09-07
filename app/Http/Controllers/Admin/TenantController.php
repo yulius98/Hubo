@@ -25,6 +25,7 @@ class TenantController extends Controller
 
         $tenants = Company::query()
             ->with(['subscription.plan:id,name,slug,price_monthly'])
+            ->withCount(['outlets', 'users'])
             ->when($search !== '', fn ($query) => $query
                 ->where('name', 'like', "%{$search}%")
                 ->orWhere('slug', 'like', "%{$search}%"))
@@ -42,8 +43,8 @@ class TenantController extends Controller
                 'status' => $company->status,
                 'plan' => $company->subscription?->plan?->name ?? '—',
                 'plan_slug' => $company->subscription?->plan?->slug ?? null,
-                'outlet_count' => (int) $company->outlets()->count(),
-                'user_count' => (int) $company->users()->count(),
+                'outlet_count' => (int) $company->outlets_count,
+                'user_count' => (int) $company->users_count,
                 'created_at' => $company->created_at,
             ]
         );

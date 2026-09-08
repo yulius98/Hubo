@@ -97,6 +97,32 @@ it('completes the wizard creating an outlet, tenant and trial subscription', fun
         ->assertOk();
 });
 
+it('swaps the plan when the tenant already has a subscription', function () {
+    $user = createUserWithGlobalRole('owner outlet');
+    $company = Company::factory()->create();
+    $user->update(['company_id' => $company->id]);
+
+    $gratis = Plan::where('slug', 'gratis')->first();
+    $company->subscriptions()->create([
+        'plan_id' => $gratis->id,
+        'status' => Subscription::STATUS_ACTIVE,
+        'starts_at' => now(),
+        'current_period_start' => now(),
+        'current_period_end' => now()->addMonth(),
+    ]);
+
+    $standard = Plan::where('slug', 'standard')->first();
+
+    $this->actingAs($user)
+        ->post(route('onboarding.plan'), ['plan_id' => $standard->id])
+        ->assertRedirect(route('onboarding'));
+
+    $company->refresh();
+
+    expect($company->subscription()->first()->plan->slug)->toBe('standard')
+        ->and(Subscription::where('company_id', $company->id)->where('status', Subscription::STATUS_CANCELLED)->count())->toBe(1);
+});
+
 it('allows skipping the current step and dismissing the wizard without blocking access', function () {
     $user = createUserWithGlobalRole('owner outlet');
     $company = Company::factory()->create();

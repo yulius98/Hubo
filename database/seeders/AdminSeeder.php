@@ -26,14 +26,18 @@ class AdminSeeder extends Seeder
 
         $password = (string) config('seed.admin_password');
 
-        $user = User::updateOrCreate(
-            ['email' => $email],
-            [
-                'name' => (string) config('seed.admin_name', 'Admin Hubo'),
-                'email_verified_at' => now(),
-                'password' => trim($password) !== '' ? Hash::make($password) : null,
-            ]
-        );
+        $attrs = [
+            'name' => (string) config('seed.admin_name', 'Admin Hubo'),
+            'email_verified_at' => now(),
+        ];
+
+        // Only set the password when a new one is provided; otherwise keep the
+        // existing password so re-seeding never locks out or resets an account.
+        if (trim($password) !== '') {
+            $attrs['password'] = Hash::make($password);
+        }
+
+        $user = User::updateOrCreate(['email' => $email], $attrs);
 
         $user->role()->syncWithoutDetaching([
             Role::where('role', 'super admin')->firstOrFail()->id,

@@ -72,7 +72,7 @@ class TenantSeeder extends Seeder
                 'name' => $name,
                 'password' => Hash::make($password),
                 'email_verified_at' => now(),
-                'workos_id' => 'demo-'.Str::lower(Str::random(10)),
+                'workos_id' => 'demo-'.md5($email),
             ]
         );
     }

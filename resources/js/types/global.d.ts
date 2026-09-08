@@ -77,7 +77,11 @@ declare module '@inertiajs/core' {
 flash?: {
             success?: string;
             error?: string;
+            warning?: string;
             payment_url?: string;
+            apiToken?: string;
+            apiTokenName?: string;
+            twoFaRecoveryCodes?: string[];
         };
     }
 }

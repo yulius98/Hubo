@@ -10,6 +10,7 @@ use Illuminate\Foundation\Bus\Dispatchable;
 use Illuminate\Mail\Mailable;
 use Illuminate\Queue\InteractsWithQueue;
 use Illuminate\Queue\SerializesModels;
+use Illuminate\Support\Str;
 
 class SendMail implements ShouldBeUnique, ShouldQueue
 {
@@ -21,6 +22,12 @@ class SendMail implements ShouldBeUnique, ShouldQueue
 
     public int $timeout = 300;
 
+    /**
+     * Keep the unique lock short: it guards against duplicate retries while a
+     * mail is in flight, not against legitimately repeated mailings.
+     */
+    public int $uniqueFor = 300;
+
     public function __construct(public Mailable $mailable, public ?string $recipient = null) {}
 
     /**
@@ -29,7 +36,15 @@ class SendMail implements ShouldBeUnique, ShouldQueue
      */
     public function uniqueId(): string
     {
-        return get_class($this->mailable).':'.($this->recipient ?? $this->mailable->to[0]['address'] ?? 'unknown');
+        $recipient = $this->recipient ?? $this->mailable->to[0]['address'] ?? null;
+
+        // Without a concrete recipient every anonymous mail would collide
+        // under the unique lock, silently dropping valid jobs.
+        if ($recipient === null) {
+            return get_class($this->mailable).':'.Str::random(16);
+        }
+
+        return get_class($this->mailable).':'.$recipient;
     }
 
     /**

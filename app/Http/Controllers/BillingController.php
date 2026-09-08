@@ -2,7 +2,9 @@
 
 namespace App\Http\Controllers;
 
+use App\Http\Requests\PayInvoiceRequest;
 use App\Models\Company;
+use App\Models\Payment;
 use App\Models\Subscription;
 use App\Models\SubscriptionInvoice;
 use App\Services\PaymentGatewayProcessor;
@@ -11,8 +13,8 @@ use App\Services\SubscriptionBillingService;
 use App\Services\SubscriptionService;
 use App\Services\TenantService;
 use Illuminate\Http\RedirectResponse;
-use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Log;
 use Inertia\Inertia;
 use Inertia\Response;
 
@@ -80,11 +82,9 @@ class BillingController extends Controller
      * configured and active, redirect the user to the gateway payment URL;
      * otherwise fall back to the in-app (test) flow.
      */
-    public function payInvoice(Request $request): RedirectResponse
+    public function payInvoice(PayInvoiceRequest $request): RedirectResponse
     {
-        $validated = $request->validate([
-            'invoice_id' => 'required|exists:subscription_invoices,id',
-        ]);
+        $validated = $request->validated();
 
         $company = $this->requireCompany();
 
@@ -106,7 +106,21 @@ class BillingController extends Controller
 
         if ($gateway !== null && $this->gateways->isConfigured($gateway)) {
             try {
-                $payment = $this->paymentProcessor->createSubscriptionPayment($invoice->fresh());
+                // Reuse an active gateway payment instead of creating a new one
+                // on every "Bayar" click.
+                $payment = Payment::query()
+                    ->where('subscription_invoice_id', $invoice->id)
+                    ->whereIn('status', ['pending', 'processing'])
+                    ->latest()
+                    ->first();
+
+                if ($payment === null || $this->paymentProcessor->getPaymentUrl($payment) === null) {
+                    if ($payment !== null) {
+                        $payment->update(['status' => 'failed']);
+                    }
+
+                    $payment = $this->paymentProcessor->createSubscriptionPayment($invoice->fresh());
+                }
 
                 $paymentUrl = $this->paymentProcessor->getPaymentUrl($payment);
 
@@ -116,7 +130,11 @@ class BillingController extends Controller
 
                 return redirect()->back()->with('payment_url', $paymentUrl);
             } catch (\Exception $e) {
-                return redirect()->back()->with('error', 'Gagal memproses pembayaran: '.$e->getMessage());
+                Log::error("Pembayaran invoice langganan gagal ({$invoice->invoice_number}): {$e->getMessage()}", [
+                    'exception' => $e,
+                ]);
+
+                return redirect()->back()->with('error', 'Gagal memproses pembayaran. Silakan coba beberapa saat lagi.');
             }
         }
 

@@ -5,8 +5,11 @@ import { Button } from '@/components/ui/button';
 import { Separator } from '@/components/ui/separator';
 import { useCurrentUrl } from '@/hooks/use-current-url';
 import { cn, toUrl } from '@/lib/utils';
+import { index as apiTokensIndex } from '@/routes/api-tokens';
 import { edit as editAppearance } from '@/routes/appearance';
+import { index as dataIndex } from '@/routes/data';
 import { edit } from '@/routes/profile';
+import { security } from '@/routes/settings';
 import { index as tenantSettingsIndex } from '@/routes/tenant-settings';
 import type { NavItem } from '@/types';
 
@@ -25,11 +28,26 @@ export default function SettingsLayout({ children }: PropsWithChildren) {
             href: editAppearance(),
             icon: null,
         },
+        {
+            title: 'Keamanan',
+            href: security(),
+            icon: null,
+        },
         ...(tenant
             ? [
                   {
                       title: 'Usaha',
                       href: tenantSettingsIndex(),
+                      icon: null,
+                  },
+                  {
+                      title: 'API Integrations',
+                      href: apiTokensIndex(),
+                      icon: null,
+                  },
+                  {
+                      title: 'Data',
+                      href: dataIndex(),
                       icon: null,
                   },
               ]

@@ -108,9 +108,14 @@ class PaymentGatewayService
 
     /**
      * The default webhook URL the gateway should call into this application.
+     * Pass `$billing = true` to target the subscription-invoice webhook family.
      */
-    public function defaultWebhookUrl(string $gateway): string
+    public function defaultWebhookUrl(string $gateway, bool $billing = false): string
     {
-        return rtrim((string) config('app.url'), '/')."/api/webhooks/{$gateway}";
+        $path = $billing
+            ? "/api/webhooks/billing/{$gateway}"
+            : "/api/webhooks/{$gateway}";
+
+        return rtrim((string) config('app.url'), '/').$path;
     }
 }

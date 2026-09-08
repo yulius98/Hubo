@@ -110,6 +110,7 @@ it('marks the invoice paid when a valid Xendit billing webhook arrives', functio
         ->postJson(route('billing.webhook.xendit'), [
             'external_id' => $payment->payment_number,
             'status' => 'PAID',
+            'amount' => 149000,
         ])
         ->assertOk()
         ->assertJson(['status' => 'ok']);
@@ -162,6 +163,7 @@ it('settles an invoice via a valid Midtrans billing webhook and rejects bad sign
         'order_id' => $payment->payment_number,
         'status_code' => $statusCode,
         'gross_amount' => $grossAmount,
+        'transaction_status' => 'settlement',
         'fraud_status' => 'accept',
         'signature_key' => $signature,
     ])->assertOk();
@@ -258,6 +260,135 @@ it('falls back to the in-app flow when no gateway is configured', function () {
 
     expect($invoice->fresh()->status)->toBe(SubscriptionInvoice::STATUS_PAID);
     expect($subscription->fresh()->status)->toBe(Subscription::STATUS_ACTIVE);
+});
+
+it('reactivates an expired company when an overdue invoice is paid via webhook', function () {
+    activateXenditGateway();
+
+    $subscription = seededBillingSubscription();
+    $invoice = settleTrialIntoInvoice($subscription);
+
+    $company = $subscription->company;
+    $company->update(['status' => Company::STATUS_EXPIRED]);
+
+    $payment = Payment::create([
+        'subscription_invoice_id' => $invoice->id,
+        'payment_number' => Payment::generatePaymentNumber(),
+        'gateway' => 'xendit',
+        'payment_method' => 'subscription',
+        'amount' => 149000,
+        'status' => 'processing',
+    ]);
+
+    $config = PaymentGatewayConfig::where('gateway', 'xendit')->value('config');
+
+    $this->withHeader('x-callback-token', $config['webhook_token'])
+        ->postJson(route('billing.webhook.xendit'), [
+            'external_id' => $payment->payment_number,
+            'status' => 'PAID',
+            'amount' => 149000,
+        ])
+        ->assertOk();
+
+    expect($company->fresh()->status)->toBe(Company::STATUS_ACTIVE);
+    expect($subscription->fresh()->status)->toBe(Subscription::STATUS_ACTIVE);
+    expect($invoice->fresh()->status)->toBe(SubscriptionInvoice::STATUS_PAID);
+});
+
+it('does not reactivate a cancelled subscription on a late payment', function () {
+    activateXenditGateway();
+
+    $subscription = seededBillingSubscription();
+    $invoice = settleTrialIntoInvoice($subscription);
+    $subscription->update(['status' => Subscription::STATUS_CANCELLED]);
+
+    $payment = Payment::create([
+        'subscription_invoice_id' => $invoice->id,
+        'payment_number' => Payment::generatePaymentNumber(),
+        'gateway' => 'xendit',
+        'payment_method' => 'subscription',
+        'amount' => 149000,
+        'status' => 'processing',
+    ]);
+
+    $config = PaymentGatewayConfig::where('gateway', 'xendit')->value('config');
+
+    $this->withHeader('x-callback-token', $config['webhook_token'])
+        ->postJson(route('billing.webhook.xendit'), [
+            'external_id' => $payment->payment_number,
+            'status' => 'PAID',
+            'amount' => 149000,
+        ])
+        ->assertOk();
+
+    expect($invoice->fresh()->status)->toBe(SubscriptionInvoice::STATUS_PAID);
+    expect($subscription->fresh()->status)->toBe(Subscription::STATUS_CANCELLED);
+});
+
+it('refuses to settle a webhook whose amount does not match the payment', function () {
+    activateXenditGateway();
+
+    $subscription = seededBillingSubscription();
+    $invoice = settleTrialIntoInvoice($subscription);
+
+    $payment = Payment::create([
+        'subscription_invoice_id' => $invoice->id,
+        'payment_number' => Payment::generatePaymentNumber(),
+        'gateway' => 'xendit',
+        'payment_method' => 'subscription',
+        'amount' => 149000,
+        'status' => 'processing',
+    ]);
+
+    $config = PaymentGatewayConfig::where('gateway', 'xendit')->value('config');
+
+    $this->withHeader('x-callback-token', $config['webhook_token'])
+        ->postJson(route('billing.webhook.xendit'), [
+            'external_id' => $payment->payment_number,
+            'status' => 'PAID',
+            'amount' => 1000,
+        ])
+        ->assertOk();
+
+    expect($payment->fresh()->status)->toBe('processing');
+    expect($invoice->fresh()->status)->toBe(SubscriptionInvoice::STATUS_PENDING);
+});
+
+it('does not create duplicate gateway payments for the same invoice', function () {
+    activateXenditGateway();
+
+    $subscription = seededBillingSubscription();
+    $invoice = settleTrialIntoInvoice($subscription);
+
+    Http::fake([
+        'https://api.xendit.co/*' => Http::response([
+            'id' => 'inv_dup',
+            'invoice_url' => 'https://checkout.xendit.co/web/inv-dup',
+            'status' => 'PENDING',
+        ], 200),
+    ]);
+
+    $owner = User::where('company_id', $subscription->company_id)->first();
+
+    $this->actingAs($owner)->post(route('billing.pay'), ['invoice_id' => $invoice->id]);
+    $this->actingAs($owner)->post(route('billing.pay'), ['invoice_id' => $invoice->id]);
+
+    expect(Payment::where('subscription_invoice_id', $invoice->id)->count())->toBe(1);
+});
+
+it('leaves a tenant untouched during the grace period', function () {
+    $subscription = seededBillingSubscription();
+    $invoice = settleTrialIntoInvoice($subscription);
+
+    config(['billing.grace_days' => 5]);
+    CarbonImmutable::setTestNow($invoice->period_end->copy()->addDays(2));
+
+    $counts = app(SubscriptionBillingService::class)->processReminders();
+
+    expect($counts['overdue'])->toBe(0);
+    expect($invoice->fresh()->status)->toBe(SubscriptionInvoice::STATUS_PENDING);
+    expect($subscription->fresh()->status)->toBe(Subscription::STATUS_PAST_DUE);
+    expect($subscription->company->fresh()->status)->toBe(Company::STATUS_ACTIVE);
 });
 
 afterEach(function (): void {

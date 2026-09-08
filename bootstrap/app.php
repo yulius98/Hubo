@@ -1,6 +1,8 @@
 <?php
 
+use App\Http\Middleware\ApiTokenAbility;
 use App\Http\Middleware\EnsureQuota;
+use App\Http\Middleware\EnsureTwoFactorEnabled;
 use App\Http\Middleware\EnsureUserHasRole;
 use App\Http\Middleware\HandleAppearance;
 use App\Http\Middleware\HandleInertiaRequests;
@@ -17,6 +19,8 @@ use Symfony\Component\HttpKernel\Exception\HttpException;
 return Application::configure(basePath: dirname(__DIR__))
     ->withRouting(
         web: __DIR__.'/../routes/web.php',
+        api: __DIR__.'/../routes/api.php',
+        apiPrefix: 'api/v1',
         commands: __DIR__.'/../routes/console.php',
         health: '/up',
     )
@@ -30,11 +34,13 @@ return Application::configure(basePath: dirname(__DIR__))
         $middleware->alias([
             'role' => EnsureUserHasRole::class,
             'quota' => EnsureQuota::class,
+            'api.ability' => ApiTokenAbility::class,
         ]);
 
         $middleware->web(append: [
             HandleAppearance::class,
             SetTenantContext::class,
+            EnsureTwoFactorEnabled::class,
             HandleInertiaRequests::class,
             AddLinkHeadersForPreloadedAssets::class,
         ]);

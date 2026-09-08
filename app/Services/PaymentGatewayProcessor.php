@@ -44,6 +44,7 @@ class PaymentGatewayProcessor
                 'customer_email' => $order->user->email,
                 'description' => "Order {$order->order_number}",
                 'redirect_url' => url("/orders/{$order->id}"),
+                'webhook_url' => $this->gateways->defaultWebhookUrl($gateway, false),
                 'payment_methods' => $this->getXenditPaymentMethods($order->payment_method),
             ];
 
@@ -91,6 +92,7 @@ class PaymentGatewayProcessor
                 'customer_email' => $billingUser?->email,
                 'description' => "Invoice langganan {$invoice->invoice_number}",
                 'redirect_url' => url('/billing'),
+                'webhook_url' => $this->gateways->defaultWebhookUrl($gateway, true),
                 'payment_methods' => [],
             ];
 
@@ -138,7 +140,8 @@ class PaymentGatewayProcessor
 
         $baseUrl = rtrim((string) ($config['base_url'] ?? config('services.xendit.base_url', 'https://api.xendit.co')), '/');
 
-        $webhookUrl = $config['webhook_url'] ?? $this->gateways->defaultWebhookUrl('xendit');
+        $webhookUrl = $context['webhook_url']
+            ?? ($config['webhook_url'] ?? $this->gateways->defaultWebhookUrl('xendit', false));
 
         $response = Http::withBasicAuth($secretKey, '')
             ->post("{$baseUrl}/v2/invoices", [
@@ -153,6 +156,7 @@ class PaymentGatewayProcessor
                 'success_redirect_url' => $context['redirect_url'] ?? url('/'),
                 'failure_redirect_url' => $context['redirect_url'] ?? url('/'),
                 'payment_methods' => $context['payment_methods'] ?? [],
+                'callback_url' => $webhookUrl,
             ]);
 
         if ($response->successful()) {
@@ -280,12 +284,30 @@ class PaymentGatewayProcessor
             return;
         }
 
-        $statusCode = $payload['status_code'] ?? null;
+        $transactionStatus = $payload['transaction_status'] ?? null;
         $fraudStatus = $payload['fraud_status'] ?? null;
+        $statusCode = $payload['status_code'] ?? null;
 
-        if ($statusCode === '200' && $fraudStatus === 'accept') {
+        // Settle on capture (fraud approved) or settlement; anything still in
+        // fraud review / pending must not mark the payment as paid.
+        $settled = match ($transactionStatus) {
+            'settlement' => true,
+            'capture' => $fraudStatus !== 'challenge',
+            default => false,
+        };
+
+        if ($settled) {
             $this->markPaidOrSettle($payment, $payload);
-        } elseif (in_array($statusCode, ['400', '406', '407', '408', '409'], true)) {
+
+            return;
+        }
+
+        $failed = match ($transactionStatus) {
+            'deny', 'expire', 'cancel' => true,
+            default => in_array($statusCode, ['400', '406', '407', '408', '409'], true),
+        };
+
+        if ($failed) {
             $this->markExpiredOrSettle($payment);
         }
     }
@@ -296,6 +318,12 @@ class PaymentGatewayProcessor
      */
     private function markPaidOrSettle(Payment $payment, array $response): void
     {
+        if (! $this->webhookAmountMatches($payment, $response)) {
+            Log::warning("Payment {$payment->payment_number} amount mismatch in webhook notification, refusing to settle.");
+
+            return;
+        }
+
         if ($payment->subscription_invoice_id !== null) {
             $this->settleSubscriptionPayment($payment, $response);
 
@@ -303,6 +331,23 @@ class PaymentGatewayProcessor
         }
 
         $this->markPaid($payment, $response);
+    }
+
+    /**
+     * Whether the webhook-reported amount matches the recorded payment,
+     * protecting against mismatched/forged notifications.
+     *
+     * @param  array<string, mixed>  $response
+     */
+    private function webhookAmountMatches(Payment $payment, array $response): bool
+    {
+        $amount = $response['amount'] ?? $response['gross_amount'] ?? null;
+
+        if ($amount === null) {
+            return false;
+        }
+
+        return abs((float) $amount - (float) $payment->amount) < 0.01;
     }
 
     /**

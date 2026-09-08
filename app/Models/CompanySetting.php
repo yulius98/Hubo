@@ -18,6 +18,8 @@ class CompanySetting extends Model
 
     public const KEY_DEFAULT_SHIPPING_CITY = 'ongkir.kota_default';
 
+    public const KEY_TWO_FA_REQUIRED = 'security.two_fa_required';
+
     protected $fillable = [
         'company_id',
         'key',

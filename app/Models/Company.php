@@ -59,6 +59,11 @@ class Company extends Model
         return $this->hasMany(User::class, 'company_id');
     }
 
+    public function settings(): HasMany
+    {
+        return $this->hasMany(CompanySetting::class);
+    }
+
     public function subscriptions(): HasMany
     {
         return $this->hasMany(Subscription::class);

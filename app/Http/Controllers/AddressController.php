@@ -34,12 +34,15 @@ class AddressController extends Controller
     public function store(StoreAddressRequest $request): RedirectResponse
     {
         $validated = $request->validated();
+        $isDefault = (bool) ($validated['is_default'] ?? false);
 
-        $this->normalizeDefault($request->user()->id);
+        if ($isDefault) {
+            $this->normalizeDefault($request->user()->id);
+        }
 
         $address = $request->user()->addresses()->create([
             ...$validated,
-            'is_default' => $validated['is_default'] ?? false,
+            'is_default' => $isDefault,
         ]);
 
         return redirect()->route('user.addresses')

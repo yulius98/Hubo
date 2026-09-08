@@ -85,9 +85,25 @@ class SubscriptionBillingService
      */
     public function payInvoice(SubscriptionInvoice $invoice): void
     {
+        $subscription = $invoice->subscription;
+
+        if ($subscription === null) {
+            return;
+        }
+
         $invoice->markPaid();
 
-        $this->markPeriodPaid($invoice->subscription);
+        // A cancelled subscription must never be resurrected by a late payment.
+        if (! $subscription->isCancelled()) {
+            $this->markPeriodPaid($subscription);
+        }
+
+        // Reinstate a tenant that was suspended because of an unpaid invoice.
+        $company = $subscription->company;
+
+        if ($company !== null && $company->status === Company::STATUS_EXPIRED) {
+            $company->activate();
+        }
 
         try {
             $invoice->loadMissing('subscription.company');
@@ -140,7 +156,10 @@ class SubscriptionBillingService
                 foreach ($invoices as $invoice) {
                     $due = Carbon::parse($invoice->period_end);
 
-                    if ($now->greaterThan($due)) {
+                    $graceDays = (int) config('billing.grace_days', 0);
+                    $hardDue = $due->copy()->addDays($graceDays);
+
+                    if ($now->greaterThan($hardDue)) {
                         $this->markOverdue($invoice);
 
                         $counts['overdue']++;
@@ -289,7 +308,7 @@ class SubscriptionBillingService
 
         if ($status === Subscription::STATUS_PAST_DUE
             && $subscription->current_period_end !== null
-            && $now->greaterThan($subscription->current_period_end)) {
+            && $now->greaterThan($subscription->current_period_end->copy()->addDays((int) config('billing.grace_days', 0)))) {
             $this->expire($subscription);
             $this->suspendCompany($subscription->company);
 

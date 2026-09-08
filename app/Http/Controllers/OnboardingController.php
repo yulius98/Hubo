@@ -2,6 +2,10 @@
 
 namespace App\Http\Controllers;
 
+use App\Http\Requests\Onboarding\FinishRequest;
+use App\Http\Requests\Onboarding\OutletRequest;
+use App\Http\Requests\Onboarding\PlanRequest;
+use App\Http\Requests\Onboarding\ProfileRequest;
 use App\Models\Company;
 use App\Models\CompanySetting;
 use App\Models\Outlet;
@@ -14,7 +18,6 @@ use App\Services\TenantService;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Str;
-use Illuminate\Validation\Rule;
 use Inertia\Inertia;
 use Inertia\Response;
 
@@ -64,16 +67,11 @@ class OnboardingController extends Controller
     /**
      * Step 1 — business profile (name, slug, logo, address).
      */
-    public function saveProfile(Request $request): RedirectResponse
+    public function saveProfile(ProfileRequest $request): RedirectResponse
     {
         $company = $this->tenantCompany($request);
 
-        $validated = $request->validate([
-            'name' => ['required', 'string', 'max:255'],
-            'slug' => ['required', 'string', 'max:255', 'regex:/^[a-z0-9-_]+$/', Rule::unique('companies', 'slug')->ignore($company->id)],
-            'logo' => ['nullable', 'string', 'max:255'],
-            'alamat_bisnis' => ['nullable', 'string', 'max:1000'],
-        ]);
+        $validated = $request->validated();
 
         $company->update([
             'name' => $validated['name'],
@@ -92,16 +90,23 @@ class OnboardingController extends Controller
     /**
      * Step 2 — choose a plan and confirm the trial.
      */
-    public function savePlan(Request $request): RedirectResponse
+    public function savePlan(PlanRequest $request): RedirectResponse
     {
         $company = $this->tenantCompany($request);
 
-        $validated = $request->validate([
-            'plan_id' => ['required', 'integer', Rule::exists('plans', 'id')->where('is_active', true)],
-        ]);
+        $validated = $request->validated();
 
-        if (! $company->subscription()->exists()) {
-            $plan = Plan::findOrFail($validated['plan_id']);
+        $plan = Plan::findOrFail($validated['plan_id']);
+        $currentSubscription = $company->subscription()->first();
+
+        if ($currentSubscription !== null && $currentSubscription->plan_id === $plan->id) {
+            // Same plan: keep the current subscription and let the trial run.
+        } elseif ($currentSubscription !== null) {
+            // A subscription already exists (e.g. the default "gratis" plan
+            // auto-created with the tenant). Swap to the selected plan so the
+            // choice actually takes effect.
+            $this->subscriptions->changePlan($company, $plan);
+        } else {
             $this->subscriptions->subscribe($company, $plan, Subscription::STATUS_TRIAL);
         }
 
@@ -114,20 +119,14 @@ class OnboardingController extends Controller
     /**
      * Step 3 — create the first outlet.
      */
-    public function saveOutlet(Request $request): RedirectResponse
+    public function saveOutlet(OutletRequest $request): RedirectResponse
     {
         $user = $request->user();
         $company = $this->tenantCompany($request);
 
         $this->subscriptions->assertCanCreate($company, SubscriptionService::RESOURCE_OUTLETS);
 
-        $validated = $request->validate([
-            'nama_outlet' => ['required', 'string', 'max:255'],
-            'slug' => ['nullable', 'string', 'max:255', 'regex:/^[a-z0-9-_]+$/', Rule::unique('outlets', 'slug')],
-            'alamat_outlet' => ['nullable', 'string', 'max:1000'],
-            'kota' => ['nullable', 'string', 'max:255'],
-            'telp' => ['nullable', 'string', 'max:20'],
-        ]);
+        $validated = $request->validated();
 
         $validated['slug'] = $validated['slug'] ?? $this->uniqueSlug($validated['nama_outlet']);
 
@@ -146,16 +145,11 @@ class OnboardingController extends Controller
     /**
      * Step 4 — quick configuration, then start.
      */
-    public function saveFinish(Request $request): RedirectResponse
+    public function saveFinish(FinishRequest $request): RedirectResponse
     {
         $company = $this->tenantCompany($request);
 
-        $validated = $request->validate([
-            'konfigurasi_pajak_ppn' => ['nullable', 'string', 'in:10,11', 'max:5'],
-            'ongkir_kota_default' => ['nullable', 'string', 'max:255'],
-            'mata_uang' => ['nullable', 'string', 'max:10'],
-            'alamat_pengiriman_default' => ['nullable', 'string', 'max:1000'],
-        ]);
+        $validated = $request->validated();
 
         CompanySetting::set($company->id, CompanySetting::KEY_TAX_PERCENT, $validated['konfigurasi_pajak_ppn'] ?? '11');
         CompanySetting::set($company->id, CompanySetting::KEY_DEFAULT_SHIPPING_CITY, $validated['ongkir_kota_default'] ?? null);

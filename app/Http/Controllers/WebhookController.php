@@ -24,14 +24,8 @@ class WebhookController extends Controller
         $config = config('services.xendit.webhook_token', '');
         $storedToken = $config ?: ($this->getConfigValue('xendit', 'webhook_token') ?? '');
 
-        if (! $storedToken) {
-            Log::warning('Xendit webhook: callback token tidak dikonfigurasi');
-
-            return response()->json(['message' => 'Unauthorized'], 401);
-        }
-
-        if ($token !== $storedToken) {
-            Log::warning('Xendit webhook: invalid token');
+        if (! $storedToken || ! hash_equals($storedToken, (string) $token)) {
+            Log::warning('Xendit webhook: callback token tidak valid atau tidak dikonfigurasi');
 
             return response()->json(['message' => 'Unauthorized'], 401);
         }

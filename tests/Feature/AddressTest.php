@@ -99,6 +99,27 @@ it('keeps a single default address per user', function () {
     expect(Address::where('user_id', $user->id)->where('is_default', true)->count())->toBe(1);
 });
 
+it('keeps an existing default when a non-default address is added', function () {
+    seedRoles();
+    $user = User::factory()->create();
+
+    $default = $user->addresses()->create([
+        'nama_penerima' => 'Budi',
+        'no_hp' => '0812-0000-1111',
+        'alamat' => 'Jl. Melati No. 12',
+        'is_default' => true,
+    ]);
+
+    $this->actingAs($user)->post(route('user.addresses.store'), [
+        'nama_penerima' => 'Sari',
+        'no_hp' => '0813-0000-1111',
+        'alamat' => 'Jl. Anggrek No. 3',
+    ]);
+
+    expect($default->refresh()->is_default)->toBeTrue()
+        ->and(Address::where('user_id', $user->id)->where('is_default', true)->count())->toBe(1);
+});
+
 it('updates its own address', function () {
     seedRoles();
     $user = User::factory()->create();
